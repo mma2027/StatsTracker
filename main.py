@@ -1,0 +1,276 @@
+#!/usr/bin/env python3
+"""
+StatsTracker Main Orchestrator
+
+This script coordinates all modules to:
+1. Check for games today
+2. Fetch statistics from websites
+3. Update player database
+4. Detect milestone proximities
+5. Send email notifications
+
+Run this script daily (e.g., via cron job) to send notifications.
+"""
+
+import sys
+import logging
+from datetime import date
+from pathlib import Path
+import yaml
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent))
+
+from src.gameday_checker import GamedayChecker
+from src.website_fetcher import NCAAFetcher, TFRRFetcher
+from src.player_database import PlayerDatabase
+from src.milestone_detector import MilestoneDetector
+from src.email_notifier import EmailNotifier
+
+
+def setup_logging(log_level: str = "INFO", log_file: str = None):
+    """
+    Configure logging for the application.
+
+    Args:
+        log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        log_file: Optional log file path
+    """
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+    handlers = [logging.StreamHandler()]
+    if log_file:
+        Path(log_file).parent.mkdir(parents=True, exist_ok=True)
+        handlers.append(logging.FileHandler(log_file))
+
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format=log_format,
+        handlers=handlers
+    )
+
+
+def load_config(config_path: str = "config/config.yaml") -> dict:
+    """
+    Load configuration from YAML file.
+
+    Args:
+        config_path: Path to configuration file
+
+    Returns:
+        Configuration dictionary
+    """
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        logging.info(f"Configuration loaded from {config_path}")
+        return config
+    except FileNotFoundError:
+        logging.error(f"Configuration file not found: {config_path}")
+        logging.info("Please copy config/config.example.yaml to config/config.yaml and configure it")
+        sys.exit(1)
+    except Exception as e:
+        logging.error(f"Error loading configuration: {e}")
+        sys.exit(1)
+
+
+def main():
+    """Main execution function"""
+
+    # Load configuration
+    config = load_config()
+
+    # Setup logging
+    log_config = config.get('logging', {})
+    setup_logging(
+        log_level=log_config.get('level', 'INFO'),
+        log_file=log_config.get('file')
+    )
+
+    logger = logging.getLogger(__name__)
+    logger.info("=" * 60)
+    logger.info("StatsTracker Starting")
+    logger.info("=" * 60)
+
+    try:
+        # Initialize modules
+        logger.info("Initializing modules...")
+
+        # 1. Gameday Checker
+        gameday_config = config.get('gameday', {})
+        gameday_checker = GamedayChecker(
+            schedule_url=gameday_config.get('haverford_schedule_url')
+        )
+
+        # 2. Player Database
+        db_config = config.get('database', {})
+        database = PlayerDatabase(
+            db_path=db_config.get('path', 'data/stats.db')
+        )
+
+        # 3. Milestone Detector
+        milestone_config = config.get('milestones', {})
+        milestone_detector = MilestoneDetector(database, milestone_config)
+
+        # 4. Email Notifier
+        email_config = config.get('email', {})
+        notifier = EmailNotifier(email_config)
+
+        # Validate email configuration
+        if not notifier.validate_config():
+            logger.error("Email configuration is invalid. Please check config/config.yaml")
+            return
+
+        logger.info("All modules initialized successfully")
+
+        # Check for games today
+        today = date.today()
+        logger.info(f"Checking for games on {today.strftime('%Y-%m-%d')}")
+
+        games_today = gameday_checker.get_games_for_today()
+        logger.info(f"Found {len(games_today)} game(s) today")
+
+        # Check if notifications are enabled
+        notification_config = config.get('notifications', {})
+        if not notification_config.get('enabled', True):
+            logger.info("Notifications are disabled in configuration")
+            return
+
+        # Get proximity threshold from config
+        proximity_threshold = notification_config.get('proximity_threshold', 10)
+
+        # Check for milestone proximities
+        logger.info("Checking for milestone proximities...")
+        all_proximities = milestone_detector.check_all_players_milestones(
+            proximity_threshold=proximity_threshold
+        )
+
+        # Flatten the proximities
+        proximities_list = []
+        for player_id, proximities in all_proximities.items():
+            proximities_list.extend(proximities)
+
+        logger.info(f"Found {len(proximities_list)} milestone proximity alerts")
+
+        # Send notification if there are games OR proximities
+        if games_today or proximities_list:
+            logger.info("Sending notification email...")
+            success = notifier.send_milestone_alert(
+                proximities=proximities_list,
+                games=games_today,
+                date_for=today
+            )
+
+            if success:
+                logger.info("Notification sent successfully")
+            else:
+                logger.error("Failed to send notification")
+        else:
+            logger.info("No games or milestone alerts today - skipping notification")
+
+        logger.info("StatsTracker completed successfully")
+
+    except Exception as e:
+        logger.error(f"Error in main execution: {e}", exc_info=True)
+        sys.exit(1)
+
+
+def update_stats():
+    """
+    Separate function to update stats from websites.
+
+    This can be run independently to fetch and update player statistics
+    without sending notifications.
+    """
+    config = load_config()
+
+    log_config = config.get('logging', {})
+    setup_logging(
+        log_level=log_config.get('level', 'INFO'),
+        log_file=log_config.get('file')
+    )
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting stats update...")
+
+    try:
+        # Initialize database
+        db_config = config.get('database', {})
+        database = PlayerDatabase(db_path=db_config.get('path', 'data/stats.db'))
+
+        # Initialize fetchers
+        fetcher_config = config.get('fetchers', {})
+
+        ncaa_config = fetcher_config.get('ncaa', {})
+        ncaa_fetcher = NCAAFetcher(
+            base_url=ncaa_config.get('base_url', 'https://stats.ncaa.org'),
+            timeout=ncaa_config.get('timeout', 30)
+        )
+
+        tfrr_config = fetcher_config.get('tfrr', {})
+        tfrr_fetcher = TFRRFetcher(
+            base_url=tfrr_config.get('base_url', 'https://www.tfrrs.org'),
+            timeout=tfrr_config.get('timeout', 30)
+        )
+
+        # TODO: Implement actual stats fetching logic
+        # This would involve:
+        # 1. Getting list of players from database
+        # 2. For each player, fetch latest stats from appropriate source
+        # 3. Update database with new stats
+
+        logger.info("Stats update completed")
+        logger.info("Note: Stats fetching logic needs to be implemented")
+
+    except Exception as e:
+        logger.error(f"Error updating stats: {e}", exc_info=True)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="StatsTracker - Haverford Sports Statistics Tracker")
+    parser.add_argument(
+        '--update-stats',
+        action='store_true',
+        help='Update player statistics from websites (no notifications)'
+    )
+    parser.add_argument(
+        '--test-email',
+        action='store_true',
+        help='Send a test email to verify configuration'
+    )
+    parser.add_argument(
+        '--config',
+        default='config/config.yaml',
+        help='Path to configuration file (default: config/config.yaml)'
+    )
+
+    args = parser.parse_args()
+
+    if args.test_email:
+        # Test email functionality
+        config = load_config(args.config)
+        setup_logging(log_level='INFO')
+
+        email_config = config.get('email', {})
+        notifier = EmailNotifier(email_config)
+
+        if notifier.validate_config():
+            print("Email configuration is valid")
+            print("Sending test email...")
+            if notifier.send_test_email():
+                print("Test email sent successfully!")
+            else:
+                print("Failed to send test email")
+        else:
+            print("Email configuration is invalid")
+
+    elif args.update_stats:
+        # Update stats only
+        update_stats()
+
+    else:
+        # Normal operation - check and notify
+        main()
