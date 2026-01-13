@@ -188,8 +188,8 @@ def main():
     parser.add_argument(
         "--output",
         "-O",
-        default="haverford_cricket_stats.csv",
-        help="Output CSV file path (default: haverford_cricket_stats.csv)",
+        default="csv_exports/haverford_cricket_stats.csv",
+        help="Output CSV file path (default: csv_exports/haverford_cricket_stats.csv)",
     )
 
     args = parser.parse_args()

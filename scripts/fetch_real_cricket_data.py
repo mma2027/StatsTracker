@@ -89,7 +89,7 @@ def main():
         return
 
     # Save batting to CSV
-    batting_df.to_csv("batting_real.csv", index=False)
+    batting_df.to_csv("csv_exports/batting_real.csv", index=False)
     print(f"💾 Saved to batting_real.csv")
 
     # Fetch bowling stats
@@ -101,7 +101,7 @@ def main():
         return
 
     # Save bowling to CSV
-    bowling_df.to_csv("bowling_real.csv", index=False)
+    bowling_df.to_csv("csv_exports/bowling_real.csv", index=False)
     print(f"💾 Saved to bowling_real.csv")
 
     # Fetch fielding stats
@@ -113,7 +113,7 @@ def main():
         return
 
     # Save fielding to CSV
-    fielding_df.to_csv("fielding_real.csv", index=False)
+    fielding_df.to_csv("csv_exports/fielding_real.csv", index=False)
     print(f"💾 Saved to fielding_real.csv")
 
     # Now merge using the manual merge script
@@ -124,10 +124,10 @@ def main():
     import subprocess
     result = subprocess.run([
         "python", "src/website_fetcher/merge_manual_cricket_data.py",
-        "--batting", "batting_real.csv",
-        "--bowling", "bowling_real.csv",
-        "--fielding", "fielding_real.csv",
-        "--output", "haverford_cricket_stats.csv"
+        "--batting", "csv_exports/batting_real.csv",
+        "--bowling", "csv_exports/bowling_real.csv",
+        "--fielding", "csv_exports/fielding_real.csv",
+        "--output", "csv_exports/haverford_cricket_stats.csv"
     ])
 
     if result.returncode == 0:
