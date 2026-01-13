@@ -179,23 +179,27 @@ This will:
 
 ### For Developers
 
-Choose a module to work on:
+Current module status and next steps:
 
-1. **Gameday Checker** - Implement website scraping for Haverford athletics
-   - See `src/gameday_checker/README.md`
-   - Start with `src/gameday_checker/checker.py`
+✅ **Completed Modules:**
+1. **Gameday Checker** - Fully implemented with calendar API
+   - See `src/gameday_checker/README.md` and `example_usage.py`
 
-2. **Website Fetcher** - Implement stats fetching from NCAA, TFRR, etc.
+2. **Player Database** - Complete with comprehensive tests
+   - See tests in `tests/player_database/`
+
+3. **Email Notifier** - Fully implemented with 48 tests
+   - See `tests/email_notifier/README.md` for details
+
+🔨 **Modules to Work On:**
+
+1. **Website Fetcher** - Implement stats fetching from NCAA, TFRR, etc.
    - See `src/website_fetcher/README.md`
    - Start with `src/website_fetcher/ncaa_fetcher.py`
 
-3. **Milestone Detector** - Enhance milestone detection logic
+2. **Milestone Detector** - Enhance milestone detection logic
    - See `src/milestone_detector/README.md`
-   - Add sport-specific milestone calculations
-
-4. **Email Templates** - Improve email formatting
-   - See `src/email_notifier/templates.py`
-   - Customize the HTML/CSS styling
+   - Add sport-specific milestone calculations and trend analysis
 
 ### Development Workflow
 
@@ -223,19 +227,45 @@ Choose a module to work on:
 
 ### Running Tests
 
+The project has comprehensive test coverage with 55+ tests.
+
 ```bash
 # Run all tests
 pytest
 
-# Run specific test file
-pytest tests/player_database/test_database.py
+# Run tests for specific modules
+pytest tests/gameday_checker/      # Gameday checker tests
+pytest tests/email_notifier/        # Email notifier tests (48 tests)
+pytest tests/player_database/       # Database tests
 
 # Run with coverage
-pytest --cov=src
+pytest --cov=src --cov-report=term-missing
 
 # Run with verbose output
 pytest -v
+
+# Run specific test
+pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init -v
 ```
+
+For detailed testing guide, see [TEST_GUIDE.md](../TEST_GUIDE.md).
+
+### Code Quality Checks
+
+Before committing, run these checks locally:
+
+```bash
+# Format code with black
+black src/ tests/
+
+# Check linting with flake8
+flake8 src/ tests/
+
+# Type checking with mypy (optional but recommended)
+mypy src/
+```
+
+These checks are automatically run in CI/CD on every pull request.
 
 ### Viewing Logs
 
@@ -291,12 +321,48 @@ grep "ERROR" logs/statstrack.log
 - Open an issue on GitHub for bugs or questions
 - Review the interfaces documentation for how modules connect
 
+## CI/CD and Automated Checks
+
+The project uses GitHub Actions for continuous integration:
+
+### What Runs on Every PR
+1. **Code Quality** (lint-and-format job):
+   - Black formatting check
+   - Flake8 linting
+   - MyPy type checking (advisory)
+
+2. **Tests** (test job):
+   - Full pytest suite (55+ tests)
+   - Coverage report generation
+   - Python 3.11
+
+### Running Checks Locally
+
+Before pushing code, run these checks to catch issues early:
+
+```bash
+# Format code
+black src/ tests/
+
+# Check linting
+flake8 src/ tests/
+
+# Run tests
+pytest tests/ -v
+
+# Check coverage
+pytest tests/ --cov=src --cov-report=term-missing
+```
+
+All PRs must pass these checks before merging to main.
+
 ## Next Steps
 
-1. Implement the gameday checker to fetch real game schedules
-2. Implement website fetchers to get real player stats
-3. Set up automated daily execution (see deployment guide)
-4. Customize milestone thresholds for your needs
-5. Enhance email templates with your branding
+1. ✅ ~~Implement the gameday checker~~ - **Complete**
+2. ✅ ~~Set up email notifier~~ - **Complete**
+3. Implement website fetchers to get real player stats - **In Progress**
+4. Enhance milestone detector with trend analysis - **In Progress**
+5. Set up automated daily execution (see deployment guide)
+6. Customize milestone thresholds for your needs
 
 Happy coding! 🎉

@@ -10,11 +10,12 @@ StatsTracker fetches sports statistics from various sources, tracks player progr
 
 The project is divided into independent modules that can be developed in parallel:
 
-### 1. **Gameday Checker** (`src/gameday_checker/`)
+### 1. **Gameday Checker** (`src/gameday_checker/`) ✅ **Complete**
 - **Purpose**: Determines which Haverford College sports teams have games on a given day
 - **Input**: Date
 - **Output**: List of teams with games scheduled
-- **Owner**: TBD
+- **Status**: Fully implemented using Haverford athletics calendar API
+- **Performance**: Single HTTP request, ~2-5 seconds, full season access
 
 ### 2. **Website Fetcher** (`src/website_fetcher/`)
 - **Purpose**: Fetches statistics from various sources (NCAA, TFRR, etc.)
@@ -25,13 +26,13 @@ The project is divided into independent modules that can be developed in paralle
   - Additional sport-specific fetchers
 - **Owner**: TBD
 
-### 3. **Player Database** (`src/player_database/`)
+### 3. **Player Database** (`src/player_database/`) ✅ **Complete**
 - **Purpose**: Stores and manages player statistics
 - **Responsibilities**:
-  - Data storage (SQLite/PostgreSQL)
+  - Data storage (SQLite)
   - CRUD operations for player data
   - Historical stats tracking
-- **Owner**: TBD
+- **Status**: Fully implemented with comprehensive test coverage
 
 ### 4. **Milestone Detector** (`src/milestone_detector/`)
 - **Purpose**: Analyzes player stats to identify who is close to milestones
@@ -39,11 +40,11 @@ The project is divided into independent modules that can be developed in paralle
 - **Output**: List of players near milestones with details
 - **Owner**: TBD
 
-### 5. **Email Notifier** (`src/email_notifier/`)
+### 5. **Email Notifier** (`src/email_notifier/`) ✅ **Complete**
 - **Purpose**: Sends formatted email notifications
 - **Input**: Milestone information and game schedule
 - **Output**: Email to recipients
-- **Owner**: TBD
+- **Status**: Fully implemented with customizable HTML templates and 48 tests
 
 ## Getting Started
 
@@ -93,16 +94,25 @@ See [docs/interfaces.md](docs/interfaces.md) for detailed interface specificatio
 
 ## Testing
 
+We have comprehensive test coverage with 55+ tests across multiple modules.
+
 ```bash
 # Run all tests
 pytest
 
 # Run tests for a specific module
 pytest tests/gameday_checker/
+pytest tests/email_notifier/
+pytest tests/player_database/
 
 # Run with coverage
 pytest --cov=src
+
+# Run with verbose output
+pytest -v
 ```
+
+See [TEST_GUIDE.md](TEST_GUIDE.md) for detailed testing documentation.
 
 ## Project Structure
 
@@ -133,6 +143,17 @@ StatsTracker/
 7. Open a Pull Request
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+## Continuous Integration
+
+The project includes automated CI/CD with GitHub Actions:
+
+- **Code Quality Checks**: Black formatting, Flake8 linting, MyPy type checking
+- **Automated Testing**: Full test suite runs on every PR and push to main
+- **Coverage Reports**: Test coverage tracking and reporting
+- **Branch Protection**: Requires passing tests and code review before merging
+
+All PRs must pass the CI pipeline before merging. See [CONTRIBUTING.md](CONTRIBUTING.md) for details on running checks locally.
 
 ## Configuration
 
