@@ -9,12 +9,7 @@ from bs4 import BeautifulSoup
 
 # Test the endpoint with March 2026
 url = "https://haverfordathletics.com/services/responsive-calendar.ashx"
-params = {
-    'type': 'month',
-    'sport': '0',  # 0 = all sports
-    'location': 'all',
-    'date': '3/5/2026'  # March 5, 2026
-}
+params = {"type": "month", "sport": "0", "location": "all", "date": "3/5/2026"}  # 0 = all sports  # March 5, 2026
 
 print("=" * 70)
 print(f"Testing: {url}")
@@ -48,11 +43,11 @@ except:
     print("✗ Response is not JSON, likely HTML")
 
 # If HTML, check for embedded data
-if 'text/html' in response.headers.get('content-type', ''):
+if "text/html" in response.headers.get("content-type", ""):
     print("\nResponse is HTML - checking for embedded data")
 
     # Look for the same regex pattern we use for sport pages
-    pattern = re.compile(r'var obj = (\{.*?\});\s*if\s*\(', re.DOTALL)
+    pattern = re.compile(r"var obj = (\{.*?\});\s*if\s*\(", re.DOTALL)
     matches = pattern.findall(response.text)
     print(f"Found {len(matches)} var obj matches")
 
@@ -64,13 +59,13 @@ if 'text/html' in response.headers.get('content-type', ''):
     for i, match in enumerate(matches):
         try:
             obj = json.loads(match)
-            if obj.get('type') == 'events' and 'data' in obj:
+            if obj.get("type") == "events" and "data" in obj:
                 events_found += 1
-                games = obj['data']
+                games = obj["data"]
                 total_games += len(games)
 
                 for game in games:
-                    date_str = game.get('date', '').split('T')[0]
+                    date_str = game.get("date", "").split("T")[0]
                     if date_str:
                         dates_found.add(date_str)
 
@@ -84,9 +79,9 @@ if 'text/html' in response.headers.get('content-type', ''):
         print(f"Date range: {min(dates_found)} to {max(dates_found)}")
 
         # Check for specific dates
-        if '2026-03-05' in dates_found:
+        if "2026-03-05" in dates_found:
             print("  ✓ Contains March 5, 2026")
-        if '2026-01-14' in dates_found:
+        if "2026-01-14" in dates_found:
             print("  ✓ Contains January 14, 2026")
 
 # Test with January date
@@ -94,12 +89,7 @@ print("\n" + "=" * 70)
 print("Testing with January 14, 2026")
 print("=" * 70)
 
-jan_params = {
-    'type': 'month',
-    'sport': '0',
-    'location': 'all',
-    'date': '1/14/2026'
-}
+jan_params = {"type": "month", "sport": "0", "location": "all", "date": "1/14/2026"}
 
 jan_response = requests.get(url, params=jan_params, timeout=10)
 print(f"Status: {jan_response.status_code}")

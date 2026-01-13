@@ -56,11 +56,7 @@ class TFRRFetcher(BaseFetcher):
 
             # Placeholder return
             logger.warning("TFRR fetch_player_stats not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
@@ -84,11 +80,7 @@ class TFRRFetcher(BaseFetcher):
             # TODO: Implement actual fetching logic
 
             logger.warning("TFRR fetch_team_stats not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
@@ -112,11 +104,7 @@ class TFRRFetcher(BaseFetcher):
             # TODO: Implement search logic
 
             logger.warning("TFRR search_player not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "searching for athlete")
@@ -140,11 +128,7 @@ class TFRRFetcher(BaseFetcher):
             # TODO: Implement event results fetching
 
             logger.warning("TFRR fetch_event_results not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching event results")

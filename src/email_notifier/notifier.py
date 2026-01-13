@@ -38,20 +38,15 @@ class EmailNotifier:
                 - sender_password: Sender email password/app password
                 - recipients: List of recipient email addresses
         """
-        self.smtp_server = email_config.get('smtp_server')
-        self.smtp_port = email_config.get('smtp_port', 587)
-        self.sender_email = email_config.get('sender_email')
-        self.sender_password = email_config.get('sender_password')
-        self.recipients = email_config.get('recipients', [])
+        self.smtp_server = email_config.get("smtp_server")
+        self.smtp_port = email_config.get("smtp_port", 587)
+        self.sender_email = email_config.get("sender_email")
+        self.sender_password = email_config.get("sender_password")
+        self.recipients = email_config.get("recipients", [])
 
         logger.info(f"EmailNotifier initialized for {len(self.recipients)} recipients")
 
-    def send_milestone_alert(
-        self,
-        proximities: List[MilestoneProximity],
-        games: List[Game],
-        date_for: date
-    ) -> bool:
+    def send_milestone_alert(self, proximities: List[MilestoneProximity], games: List[Game], date_for: date) -> bool:
         """
         Send an email alert about milestones.
 
@@ -97,12 +92,7 @@ class EmailNotifier:
             logger.error(f"Error sending test email: {e}")
             return False
 
-    def _send_email(
-        self,
-        subject: str,
-        html_body: str,
-        text_body: Optional[str] = None
-    ) -> bool:
+    def _send_email(self, subject: str, html_body: str, text_body: Optional[str] = None) -> bool:
         """
         Internal method to send an email.
 
@@ -116,17 +106,17 @@ class EmailNotifier:
         """
         try:
             # Create message
-            message = MIMEMultipart('alternative')
-            message['Subject'] = subject
-            message['From'] = self.sender_email
-            message['To'] = ', '.join(self.recipients)
+            message = MIMEMultipart("alternative")
+            message["Subject"] = subject
+            message["From"] = self.sender_email
+            message["To"] = ", ".join(self.recipients)
 
             # Add text and HTML parts
             if text_body:
-                text_part = MIMEText(text_body, 'plain')
+                text_part = MIMEText(text_body, "plain")
                 message.attach(text_part)
 
-            html_part = MIMEText(html_body, 'html')
+            html_part = MIMEText(html_body, "html")
             message.attach(html_part)
 
             # Connect to SMTP server and send

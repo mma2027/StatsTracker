@@ -27,6 +27,7 @@ class FetchResult:
         timestamp: When the data was fetched
         source: Name of the data source
     """
+
     success: bool
     data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
@@ -129,7 +130,7 @@ class BaseFetcher(ABC):
             logger.warning(f"{self.name}: Response is None")
             return False
 
-        if hasattr(response, 'status_code'):
+        if hasattr(response, "status_code"):
             if response.status_code != 200:
                 logger.warning(f"{self.name}: Bad status code {response.status_code}")
                 return False
@@ -154,11 +155,7 @@ class BaseFetcher(ABC):
 
         logger.error(error_msg)
 
-        return FetchResult(
-            success=False,
-            error=error_msg,
-            source=self.name
-        )
+        return FetchResult(success=False, error=error_msg, source=self.name)
 
     def get_source_name(self) -> str:
         """Get the name of this data source"""

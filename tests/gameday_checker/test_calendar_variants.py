@@ -25,17 +25,12 @@ print("\n" + "=" * 70)
 print("Test 2: With browser-like headers")
 print("=" * 70)
 headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Referer': 'https://haverfordathletics.com/calendar',
-    'X-Requested-With': 'XMLHttpRequest'
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer": "https://haverfordathletics.com/calendar",
+    "X-Requested-With": "XMLHttpRequest",
 }
 url2 = f"{base_url}/services/responsive-calendar.ashx"
-params = {
-    'type': 'month',
-    'sport': '0',
-    'location': 'all',
-    'date': '2/12/2026'
-}
+params = {"type": "month", "sport": "0", "location": "all", "date": "2/12/2026"}
 try:
     resp = requests.get(url2, params=params, headers=headers, timeout=10)
     print(f"Status: {resp.status_code}")
@@ -67,10 +62,11 @@ try:
     print(f"Status: {resp.status_code}")
 
     # Look for the calendar service URL in the page
-    if 'responsive-calendar' in resp.text:
+    if "responsive-calendar" in resp.text:
         print("Found 'responsive-calendar' in page")
         # Extract the actual URL being used
         import re
+
         url_pattern = re.compile(r'["\']([^"\']*responsive-calendar[^"\']*)["\']')
         matches = url_pattern.findall(resp.text)
         if matches:

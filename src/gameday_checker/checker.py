@@ -120,18 +120,13 @@ class GamedayChecker:
             date_str = f"{check_date.month}/{check_date.day}/{check_date.year}"
 
             # Request parameters
-            params = {
-                'type': 'month',
-                'sport': '0',  # 0 = all sports
-                'location': 'all',
-                'date': date_str
-            }
+            params = {"type": "month", "sport": "0", "location": "all", "date": date_str}  # 0 = all sports
 
             # Headers to mimic browser AJAX request
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': f'{self.schedule_url}/calendar',
-                'X-Requested-With': 'XMLHttpRequest'
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": f"{self.schedule_url}/calendar",
+                "X-Requested-With": "XMLHttpRequest",
             }
 
             logger.debug(f"Fetching calendar data: {url}?date={date_str}")
@@ -147,10 +142,10 @@ class GamedayChecker:
 
             # Find the target date in the calendar data
             for day in calendar_data:
-                day_date_str = day.get('date', '').split('T')[0]
+                day_date_str = day.get("date", "").split("T")[0]
 
                 if day_date_str == target_date_str:
-                    events = day.get('events')
+                    events = day.get("events")
                     if not events:
                         logger.info(f"No games on {target_date_str}")
                         return []
@@ -210,14 +205,23 @@ class GamedayChecker:
         # Hardcoded list of Haverford sports
         # This could be dynamically scraped, but a static list is more reliable
         return [
-            'baseball', 'mens-basketball', 'womens-basketball',
-            'mens-cross-country', 'womens-cross-country',
-            'field-hockey',
-            'mens-lacrosse', 'womens-lacrosse',
-            'mens-soccer', 'womens-soccer',
-            'softball', 'mens-squash', 'womens-squash',
-            'mens-tennis', 'wten',  # wten is women's tennis
-            'mens-track-and-field', 'womens-track-and-field'
+            "baseball",
+            "mens-basketball",
+            "womens-basketball",
+            "mens-cross-country",
+            "womens-cross-country",
+            "field-hockey",
+            "mens-lacrosse",
+            "womens-lacrosse",
+            "mens-soccer",
+            "womens-soccer",
+            "softball",
+            "mens-squash",
+            "womens-squash",
+            "mens-tennis",
+            "wten",  # wten is women's tennis
+            "mens-track-and-field",
+            "womens-track-and-field",
         ]
 
     def _parse_game_data_from_calendar(self, event_data: dict) -> Optional[Game]:
@@ -232,51 +236,44 @@ class GamedayChecker:
         """
         try:
             # Extract date and time
-            date_str = event_data.get('date')
+            date_str = event_data.get("date")
             if not date_str:
                 return None
 
-            game_datetime = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            game_datetime = datetime.fromisoformat(date_str.replace("Z", "+00:00"))
 
             # Extract opponent
-            opponent_data = event_data.get('opponent', {})
+            opponent_data = event_data.get("opponent", {})
             if isinstance(opponent_data, dict):
-                opponent_name = opponent_data.get('title', 'Unknown')
+                opponent_name = opponent_data.get("title", "Unknown")
             else:
                 opponent_name = str(opponent_data)
 
             # Extract location
-            location_indicator = event_data.get('location_indicator', '')
-            location_desc = event_data.get('location', '')
+            location_indicator = event_data.get("location_indicator", "")
+            location_desc = event_data.get("location", "")
 
             # Determine if home or away
-            if location_indicator == 'H':
-                location = 'home'
-            elif location_indicator == 'A':
-                location = 'away'
+            if location_indicator == "H":
+                location = "home"
+            elif location_indicator == "A":
+                location = "away"
             else:
                 location = location_desc
 
             # Extract sport info
-            sport_data = event_data.get('sport', {})
+            sport_data = event_data.get("sport", {})
             if isinstance(sport_data, dict):
-                sport_name = sport_data.get('title', 'Unknown')
+                sport_name = sport_data.get("title", "Unknown")
             else:
                 sport_name = str(sport_data)
 
             # Create Team object
-            team = Team(
-                name=f"Haverford {sport_name}",
-                sport=sport_name
-            )
+            team = Team(name=f"Haverford {sport_name}", sport=sport_name)
 
             # Create Game object
             game = Game(
-                team=team,
-                opponent=opponent_name.strip(),
-                date=game_datetime,
-                location=location,
-                time=event_data.get('time')
+                team=team, opponent=opponent_name.strip(), date=game_datetime, location=location, time=event_data.get("time")
             )
 
             return game
@@ -323,7 +320,7 @@ class GamedayChecker:
             season_param = self._get_season_param(date.today())
 
             sport_url = f"{self.schedule_url.rstrip('/')}/sports/{test_sport}/schedule"
-            response = requests.get(sport_url, params={'season': season_param}, timeout=10)
+            response = requests.get(sport_url, params={"season": season_param}, timeout=10)
 
             diagnostics = {
                 "url": f"{sport_url}?season={season_param}",
@@ -335,13 +332,13 @@ class GamedayChecker:
                 "events_objects": 0,
                 "total_games": 0,
                 "date_range": None,
-                "sample_dates": []
+                "sample_dates": [],
             }
 
             if response.status_code != 200:
                 return diagnostics
 
-            pattern = re.compile(r'var obj = (\{.*?\});\s*if\s*\(', re.DOTALL)
+            pattern = re.compile(r"var obj = (\{.*?\});\s*if\s*\(", re.DOTALL)
             matches = pattern.findall(response.text)
             diagnostics["matches_found"] = len(matches)
 
@@ -351,22 +348,21 @@ class GamedayChecker:
                     obj = json.loads(match)
                     diagnostics["valid_json_objects"] += 1
 
-                    if obj.get('type') == 'events' and 'data' in obj:
+                    if obj.get("type") == "events" and "data" in obj:
                         diagnostics["events_objects"] += 1
-                        games = obj['data']
+                        games = obj["data"]
                         diagnostics["total_games"] += len(games)
 
                         for game in games[:5]:  # Sample first 5
-                            date_str = game.get('date', '').split('T')[0]
+                            date_str = game.get("date", "").split("T")[0]
                             if date_str:
                                 all_dates.append(date_str)
                                 if len(diagnostics["sample_dates"]) < 5:
-                                    opponent = game.get('opponent', {})
-                                    opponent_name = opponent.get('name', 'Unknown') if isinstance(opponent, dict) else str(opponent)
-                                    diagnostics["sample_dates"].append({
-                                        "date": date_str,
-                                        "opponent": opponent_name
-                                    })
+                                    opponent = game.get("opponent", {})
+                                    opponent_name = (
+                                        opponent.get("name", "Unknown") if isinstance(opponent, dict) else str(opponent)
+                                    )
+                                    diagnostics["sample_dates"].append({"date": date_str, "opponent": opponent_name})
 
                 except json.JSONDecodeError:
                     pass

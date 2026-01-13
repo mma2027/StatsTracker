@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 @dataclass
 class Player:
     """Represents a player in the database"""
+
     player_id: str
     name: str
     sport: str
@@ -30,6 +31,7 @@ class StatEntry:
     Represents a single statistical entry.
     This is flexible to handle different sports' stat categories.
     """
+
     stat_id: Optional[int] = None
     player_id: str = ""
     stat_name: str = ""  # e.g., "points", "rebounds", "100m_time"
@@ -49,6 +51,7 @@ class PlayerStats:
     Aggregated statistics for a player.
     Contains both career and season stats.
     """
+
     player: Player
     career_stats: Dict[str, Any] = field(default_factory=dict)
     season_stats: Dict[str, Dict[str, Any]] = field(default_factory=dict)

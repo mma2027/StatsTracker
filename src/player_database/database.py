@@ -50,7 +50,8 @@ class PlayerDatabase:
         cursor = conn.cursor()
 
         # Players table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS players (
                 player_id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -62,10 +63,12 @@ class PlayerDatabase:
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
-        """)
+        """
+        )
 
         # Stats table - flexible design for different stat types
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS stats (
                 stat_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 player_id TEXT NOT NULL,
@@ -77,18 +80,23 @@ class PlayerDatabase:
                 notes TEXT,
                 FOREIGN KEY (player_id) REFERENCES players(player_id)
             )
-        """)
+        """
+        )
 
         # Create indexes for common queries
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_stats_player
             ON stats(player_id)
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_stats_season
             ON stats(season)
-        """)
+        """
+        )
 
         conn.commit()
         conn.close()
@@ -110,11 +118,13 @@ class PlayerDatabase:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO players (player_id, name, sport, team, position, year, active)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (player.player_id, player.name, player.sport, player.team,
-                  player.position, player.year, player.active))
+            """,
+                (player.player_id, player.name, player.sport, player.team, player.position, player.year, player.active),
+            )
 
             conn.commit()
             conn.close()
@@ -139,11 +149,14 @@ class PlayerDatabase:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT player_id, name, sport, team, position, year, active,
                        created_at, updated_at
                 FROM players WHERE player_id = ?
-            """, (player_id,))
+            """,
+                (player_id,),
+            )
 
             row = cursor.fetchone()
             conn.close()
@@ -158,7 +171,7 @@ class PlayerDatabase:
                     year=row[5],
                     active=bool(row[6]),
                     created_at=datetime.fromisoformat(row[7]),
-                    updated_at=datetime.fromisoformat(row[8])
+                    updated_at=datetime.fromisoformat(row[8]),
                 )
             return None
 
@@ -180,13 +193,15 @@ class PlayerDatabase:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE players
                 SET name = ?, sport = ?, team = ?, position = ?,
                     year = ?, active = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE player_id = ?
-            """, (player.name, player.sport, player.team, player.position,
-                  player.year, player.active, player.player_id))
+            """,
+                (player.name, player.sport, player.team, player.position, player.year, player.active, player.player_id),
+            )
 
             conn.commit()
             conn.close()
@@ -226,15 +241,12 @@ class PlayerDatabase:
             rows = cursor.fetchall()
             conn.close()
 
-            return [Player(
-                player_id=row[0],
-                name=row[1],
-                sport=row[2],
-                team=row[3],
-                position=row[4],
-                year=row[5],
-                active=bool(row[6])
-            ) for row in rows]
+            return [
+                Player(
+                    player_id=row[0], name=row[1], sport=row[2], team=row[3], position=row[4], year=row[5], active=bool(row[6])
+                )
+                for row in rows
+            ]
 
         except Exception as e:
             logger.error(f"Error getting all players: {e}")
@@ -256,13 +268,22 @@ class PlayerDatabase:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO stats (player_id, stat_name, stat_value, season,
                                    date_recorded, game_id, notes)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, (stat_entry.player_id, stat_entry.stat_name, str(stat_entry.stat_value),
-                  stat_entry.season, stat_entry.date_recorded, stat_entry.game_id,
-                  stat_entry.notes))
+            """,
+                (
+                    stat_entry.player_id,
+                    stat_entry.stat_name,
+                    str(stat_entry.stat_value),
+                    stat_entry.season,
+                    stat_entry.date_recorded,
+                    stat_entry.game_id,
+                    stat_entry.notes,
+                ),
+            )
 
             conn.commit()
             conn.close()
@@ -330,11 +351,7 @@ class PlayerDatabase:
                 else:
                     career_stats[stat_name] = stat_value
 
-            return PlayerStats(
-                player=player,
-                career_stats=career_stats,
-                season_stats=season_stats
-            )
+            return PlayerStats(player=player, career_stats=career_stats, season_stats=season_stats)
 
         except Exception as e:
             logger.error(f"Error getting player stats: {e}")
@@ -366,15 +383,12 @@ class PlayerDatabase:
             rows = cursor.fetchall()
             conn.close()
 
-            return [Player(
-                player_id=row[0],
-                name=row[1],
-                sport=row[2],
-                team=row[3],
-                position=row[4],
-                year=row[5],
-                active=bool(row[6])
-            ) for row in rows]
+            return [
+                Player(
+                    player_id=row[0], name=row[1], sport=row[2], team=row[3], position=row[4], year=row[5], active=bool(row[6])
+                )
+                for row in rows
+            ]
 
         except Exception as e:
             logger.error(f"Error searching players: {e}")

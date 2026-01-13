@@ -7,4 +7,4 @@ This module determines which Haverford College sports teams have games on a give
 from .checker import GamedayChecker
 from .models import Game, Team
 
-__all__ = ['GamedayChecker', 'Game', 'Team']
+__all__ = ["GamedayChecker", "Game", "Team"]

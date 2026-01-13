@@ -10,6 +10,7 @@ from typing import Optional
 @dataclass
 class Team:
     """Represents a sports team"""
+
     name: str
     sport: str
     division: Optional[str] = None
@@ -21,6 +22,7 @@ class Team:
 @dataclass
 class Game:
     """Represents a scheduled game"""
+
     team: Team
     opponent: str
     date: datetime

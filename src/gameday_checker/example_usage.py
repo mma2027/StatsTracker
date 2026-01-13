@@ -13,10 +13,8 @@ from datetime import date, timedelta
 import logging
 
 # Set up logging to see what's happening
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
+
 
 def test_basic_functionality():
     """Test basic gameday checker functionality"""
@@ -27,7 +25,7 @@ def test_basic_functionality():
 
     # Initialize checker
     checker = GamedayChecker(schedule_url="https://haverfordathletics.com")
-    
+
     # Test 1: Check today's games
     print("\n--- Test 1: Get today's games ---")
     try:
@@ -37,7 +35,7 @@ def test_basic_functionality():
             print(f"  - {game}")
     except Exception as e:
         print(f"Error: {e}")
-    
+
     # Test 2: Check a specific date
     print("\n--- Test 2: Get games for specific date (2026-03-05) ---")
     try:
@@ -53,8 +51,9 @@ def test_basic_functionality():
     except Exception as e:
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
-    
+
     # Test 3: Check if games exist on a date
     print("\n--- Test 3: Check if games exist on date ---")
     try:
@@ -71,7 +70,6 @@ def test_basic_functionality():
         print(f"Games on {future_date}: {len(future_games)}")
     except Exception as e:
         print(f"Error: {e}")
-    
 
 
 if __name__ == "__main__":
