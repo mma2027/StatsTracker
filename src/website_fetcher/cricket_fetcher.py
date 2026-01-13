@@ -1,23 +1,26 @@
 """
-Cricket Statistics Fetcher
+Cricket Statistics Fetcher using Selenium
 
 Fetches cricket statistics from cricclubs.com for Haverford Cricket Games.
-Supports fetching batting, bowling, and fielding records and merging them.
+Uses Selenium to bypass website protection and scrape data from all three records:
+- Batting Records
+- Bowling Records
+- Fielding Records
+
+Outputs a single CSV file with all stats combined per player (Haverford players only).
 """
 
-import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import pandas as pd
-from bs4 import BeautifulSoup
 from typing import Dict, Any, List, Optional
 import logging
-import csv
 from pathlib import Path
-
-try:
-    import cloudscraper
-    CLOUDSCRAPER_AVAILABLE = True
-except ImportError:
-    CLOUDSCRAPER_AVAILABLE = False
+import time
 
 from .base_fetcher import BaseFetcher, FetchResult
 from .cricket_urls import get_all_urls, get_url
@@ -28,58 +31,69 @@ logger = logging.getLogger(__name__)
 
 class CricketFetcher(BaseFetcher):
     """
-    Fetcher for Haverford Cricket statistics from cricclubs.com.
+    Fetcher for Haverford Cricket statistics from cricclubs.com using Selenium.
 
     This fetcher:
-    1. Scrapes batting, bowling, and fielding statistics
-    2. Merges all stats based on player name
-    3. Exports merged data to CSV
+    1. Uses Selenium WebDriver to bypass website protection
+    2. Scrapes batting, bowling, and fielding statistics
+    3. Merges all stats based on player name
+    4. Filters for Haverford players only
+    5. Exports merged data to CSV
     """
 
-    def __init__(self, timeout: int = 30, use_cloudscraper: bool = True):
+    def __init__(self, timeout: int = 30, headless: bool = True):
         """
-        Initialize the cricket fetcher with cricclubs.com URLs.
+        Initialize the cricket fetcher with Selenium WebDriver.
 
         Args:
             timeout: Request timeout in seconds
-            use_cloudscraper: Use cloudscraper to bypass Cloudflare (default: True)
+            headless: Run browser in headless mode (default: True)
         """
         base_url = "https://cricclubs.com/HaverfordCricketGames"
         super().__init__(base_url, timeout)
         self.urls = get_all_urls()
+        self.headless = headless
+        self.driver = None
 
-        # Use cloudscraper if available and requested
-        self.use_cloudscraper = use_cloudscraper and CLOUDSCRAPER_AVAILABLE
+    def _setup_driver(self):
+        """Setup and configure Chrome WebDriver."""
+        if self.driver is not None:
+            return
 
-        if self.use_cloudscraper:
-            # Create cloudscraper session to bypass Cloudflare
-            self.scraper = cloudscraper.create_scraper(
-                browser={
-                    'browser': 'chrome',
-                    'platform': 'windows',
-                    'desktop': True
-                }
-            )
-            logger.info("Using cloudscraper to bypass Cloudflare protection")
-        else:
-            # Fallback to regular requests with headers
-            self.scraper = requests.Session()
-            self.scraper.headers.update({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-            })
-            if not CLOUDSCRAPER_AVAILABLE:
-                logger.warning("cloudscraper not available, using regular requests (may fail with Cloudflare)")
+        chrome_options = Options()
+
+        if self.headless:
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+
+        # Additional options to avoid detection
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option('useAutomationExtension', False)
+
+        try:
+            self.driver = webdriver.Chrome(options=chrome_options)
+            self.driver.set_page_load_timeout(self.timeout)
+            logger.info("Chrome WebDriver initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize Chrome WebDriver: {e}")
+            raise
+
+    def _close_driver(self):
+        """Close the WebDriver."""
+        if self.driver:
+            try:
+                self.driver.quit()
+                self.driver = None
+                logger.info("Chrome WebDriver closed")
+            except Exception as e:
+                logger.error(f"Error closing WebDriver: {e}")
 
     def fetch_player_stats(self, player_id: str, sport: str = "cricket") -> FetchResult:
         """
         Fetch statistics for a specific player.
-
-        Note: For cricket, we fetch all player stats and filter by name.
 
         Args:
             player_id: Player name (used as identifier in cricket)
@@ -120,6 +134,8 @@ class CricketFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, f"fetching stats for player {player_id}")
+        finally:
+            self._close_driver()
 
     def fetch_team_stats(self, team_id: str = "Haverford", sport: str = "cricket") -> FetchResult:
         """
@@ -138,6 +154,8 @@ class CricketFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
+        finally:
+            self._close_driver()
 
     def search_player(self, name: str, sport: str = "cricket") -> FetchResult:
         """
@@ -182,6 +200,8 @@ class CricketFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, f"searching for player {name}")
+        finally:
+            self._close_driver()
 
     def fetch_all_stats(self) -> Dict[str, Any]:
         """
@@ -191,19 +211,43 @@ class CricketFetcher(BaseFetcher):
             Dictionary with 'success', 'data' (DataFrame), and optional 'error'
         """
         try:
-            logger.info("Fetching all cricket statistics from cricclubs.com")
+            logger.info("Fetching all cricket statistics from cricclubs.com using Selenium")
+
+            # Setup driver
+            self._setup_driver()
 
             # Fetch each type of statistics
             batting_df = self._fetch_batting_stats()
             bowling_df = self._fetch_bowling_stats()
             fielding_df = self._fetch_fielding_stats()
 
-            # Check if all fetches were successful
-            if batting_df is None or bowling_df is None or fielding_df is None:
+            # Check if at least one fetch was successful
+            successful_fetches = []
+            if batting_df is not None and not batting_df.empty:
+                successful_fetches.append("batting")
+            if bowling_df is not None and not bowling_df.empty:
+                successful_fetches.append("bowling")
+            if fielding_df is not None and not fielding_df.empty:
+                successful_fetches.append("fielding")
+
+            if not successful_fetches:
                 return {
                     "success": False,
-                    "error": "Failed to fetch one or more stat types",
+                    "error": "Failed to fetch any stat types",
                 }
+
+            logger.info(f"Successfully fetched: {', '.join(successful_fetches)}")
+
+            # Use empty DataFrames for failed fetches
+            if batting_df is None or batting_df.empty:
+                batting_df = pd.DataFrame()
+                logger.warning("Using empty DataFrame for batting stats")
+            if bowling_df is None or bowling_df.empty:
+                bowling_df = pd.DataFrame()
+                logger.warning("Using empty DataFrame for bowling stats")
+            if fielding_df is None or fielding_df.empty:
+                fielding_df = pd.DataFrame()
+                logger.warning("Using empty DataFrame for fielding stats")
 
             # Merge all dataframes on Player column
             merged_df = self._merge_stats(batting_df, bowling_df, fielding_df)
@@ -215,203 +259,198 @@ class CricketFetcher(BaseFetcher):
         except Exception as e:
             logger.error(f"Error fetching all stats: {e}")
             return {"success": False, "error": str(e)}
+        finally:
+            self._close_driver()
 
     def _fetch_batting_stats(self) -> Optional[pd.DataFrame]:
-        """Fetch batting statistics from cricclubs.com."""
+        """Fetch batting statistics using Selenium."""
         try:
             url = get_url("batting")
             logger.info(f"Fetching batting stats from {url}")
 
-            response = self.scraper.get(url, timeout=self.timeout)
+            self.driver.get(url)
 
-            if not self.validate_response(response):
-                logger.error("Invalid response for batting stats")
-                return None
+            # Wait for page to load (reduced wait time)
+            time.sleep(8)
 
-            # Parse HTML table
-            soup = BeautifulSoup(response.content, "html.parser")
-            df = self._parse_batting_table(soup)
+            # Get page source and parse with BeautifulSoup
+            from bs4 import BeautifulSoup
+            page_source = self.driver.page_source
+            soup = BeautifulSoup(page_source, 'html.parser')
 
-            logger.info(f"Fetched batting stats for {len(df)} players")
+            # Find the stats table
+            df = self._parse_table_from_soup(soup, "batting")
+
+            if df is not None and not df.empty:
+                logger.info(f"Fetched batting stats for {len(df)} players")
+            else:
+                logger.warning("No batting stats found")
+
             return df
 
+        except TimeoutException:
+            logger.error("Timeout waiting for batting stats page to load")
+            return None
         except Exception as e:
             logger.error(f"Error fetching batting stats: {e}")
             return None
 
     def _fetch_bowling_stats(self) -> Optional[pd.DataFrame]:
-        """Fetch bowling statistics from cricclubs.com."""
+        """Fetch bowling statistics using Selenium."""
         try:
             url = get_url("bowling")
             logger.info(f"Fetching bowling stats from {url}")
 
-            response = self.scraper.get(url, timeout=self.timeout)
+            self.driver.get(url)
 
-            if not self.validate_response(response):
-                logger.error("Invalid response for bowling stats")
-                return None
+            # Wait for page to load
+            time.sleep(8)
 
-            # Parse HTML table
-            soup = BeautifulSoup(response.content, "html.parser")
-            df = self._parse_bowling_table(soup)
+            # Get page source and parse with BeautifulSoup
+            from bs4 import BeautifulSoup
+            page_source = self.driver.page_source
+            soup = BeautifulSoup(page_source, 'html.parser')
 
-            logger.info(f"Fetched bowling stats for {len(df)} players")
+            df = self._parse_table_from_soup(soup, "bowling")
+
+            if df is not None and not df.empty:
+                logger.info(f"Fetched bowling stats for {len(df)} players")
+            else:
+                logger.warning("No bowling stats found")
+
             return df
 
+        except TimeoutException:
+            logger.error("Timeout waiting for bowling stats page to load")
+            return None
         except Exception as e:
             logger.error(f"Error fetching bowling stats: {e}")
             return None
 
     def _fetch_fielding_stats(self) -> Optional[pd.DataFrame]:
-        """Fetch fielding statistics from cricclubs.com."""
+        """Fetch fielding statistics using Selenium."""
         try:
             url = get_url("fielding")
             logger.info(f"Fetching fielding stats from {url}")
 
-            response = self.scraper.get(url, timeout=self.timeout)
+            self.driver.get(url)
 
-            if not self.validate_response(response):
-                logger.error("Invalid response for fielding stats")
-                return None
+            # Wait for page to load
+            time.sleep(8)
 
-            # Parse HTML table
-            soup = BeautifulSoup(response.content, "html.parser")
-            df = self._parse_fielding_table(soup)
+            # Get page source and parse with BeautifulSoup
+            from bs4 import BeautifulSoup
+            page_source = self.driver.page_source
+            soup = BeautifulSoup(page_source, 'html.parser')
 
-            logger.info(f"Fetched fielding stats for {len(df)} players")
+            df = self._parse_table_from_soup(soup, "fielding")
+
+            if df is not None and not df.empty:
+                logger.info(f"Fetched fielding stats for {len(df)} players")
+            else:
+                logger.warning("No fielding stats found")
+
             return df
 
+        except TimeoutException:
+            logger.error("Timeout waiting for fielding stats page to load")
+            return None
         except Exception as e:
             logger.error(f"Error fetching fielding stats: {e}")
             return None
 
-    def _parse_batting_table(self, soup: BeautifulSoup) -> pd.DataFrame:
+    def _parse_table_from_soup(self, soup, stat_type: str) -> Optional[pd.DataFrame]:
         """
-        Parse batting statistics table from HTML.
+        Parse statistics table from BeautifulSoup object.
 
         Args:
             soup: BeautifulSoup object of the page
+            stat_type: One of 'batting', 'bowling', or 'fielding'
 
         Returns:
-            DataFrame with batting statistics
+            DataFrame with statistics
         """
-        # Find the main stats table
-        table = soup.find("table", {"class": "table"}) or soup.find("table")
+        try:
+            from bs4 import BeautifulSoup
 
-        if not table:
-            logger.warning("No table found in batting stats page")
+            # Find all tables on the page
+            tables = soup.find_all("table")
+
+            if not tables:
+                logger.warning(f"No tables found on {stat_type} stats page")
+                return pd.DataFrame()
+
+            # Try to find the main stats table (usually the largest one with data)
+            for table in tables:
+                try:
+                    # Get all rows
+                    rows = table.find_all("tr")
+
+                    if len(rows) < 2:  # Need at least header + 1 data row
+                        continue
+
+                    # Extract headers from first row
+                    header_row = rows[0]
+                    headers = []
+                    for cell in header_row.find_all(["th", "td"]):
+                        headers.append(cell.get_text(strip=True))
+
+                    if not headers:
+                        continue
+
+                    # Extract data rows
+                    data = []
+                    for row in rows[1:]:
+                        cells = row.find_all("td")
+                        if cells:
+                            row_data = [cell.get_text(strip=True) for cell in cells]
+                            if row_data and any(row_data):  # Skip empty rows
+                                data.append(row_data)
+
+                    if not data:
+                        continue
+
+                    # Create DataFrame
+                    # Handle case where row length doesn't match header length
+                    max_cols = max(len(headers), max(len(row) for row in data))
+
+                    # Pad headers if needed
+                    while len(headers) < max_cols:
+                        headers.append(f"Column_{len(headers)}")
+
+                    # Pad rows if needed
+                    for row in data:
+                        while len(row) < len(headers):
+                            row.append("")
+
+                    df = pd.DataFrame(data, columns=headers[:len(data[0])])
+
+                    # Prefix columns with stat type (except Player/Name column)
+                    prefix = stat_type.capitalize()
+                    df.columns = [
+                        col if col.lower() in ["player", "name"] else f"{prefix}_{col}"
+                        for col in df.columns
+                    ]
+
+                    # Standardize player column name
+                    for col in df.columns:
+                        if col.lower() in ["name", "player"]:
+                            df.rename(columns={col: "Player"}, inplace=True)
+                            break
+
+                    # Return the first table with substantial data
+                    if len(df) > 0 and "Player" in df.columns:
+                        return df
+
+                except Exception as e:
+                    logger.debug(f"Error parsing table: {e}")
+                    continue
+
+            logger.warning(f"Could not find valid stats table on {stat_type} page")
             return pd.DataFrame()
 
-        # Extract headers and rows
-        rows = []
-        headers = []
-
-        # Get headers
-        header_row = table.find("tr")
-        if header_row:
-            headers = [th.get_text(strip=True) for th in header_row.find_all(["th", "td"])]
-
-        # Get data rows
-        for row in table.find_all("tr")[1:]:  # Skip header row
-            cols = [td.get_text(strip=True) for td in row.find_all("td")]
-            if cols:
-                rows.append(cols)
-
-        # Create DataFrame
-        if headers and rows:
-            df = pd.DataFrame(rows, columns=headers)
-            # Prefix columns with 'Batting_' except for Player column
-            df.columns = [
-                col if col.lower() in ["player", "name"] else f"Batting_{col}"
-                for col in df.columns
-            ]
-            # Standardize player column name
-            if "name" in df.columns.str.lower():
-                df.rename(columns={df.columns[df.columns.str.lower() == "name"][0]: "Player"}, inplace=True)
-            return df
-        else:
-            return pd.DataFrame()
-
-    def _parse_bowling_table(self, soup: BeautifulSoup) -> pd.DataFrame:
-        """
-        Parse bowling statistics table from HTML.
-
-        Args:
-            soup: BeautifulSoup object of the page
-
-        Returns:
-            DataFrame with bowling statistics
-        """
-        table = soup.find("table", {"class": "table"}) or soup.find("table")
-
-        if not table:
-            logger.warning("No table found in bowling stats page")
-            return pd.DataFrame()
-
-        rows = []
-        headers = []
-
-        header_row = table.find("tr")
-        if header_row:
-            headers = [th.get_text(strip=True) for th in header_row.find_all(["th", "td"])]
-
-        for row in table.find_all("tr")[1:]:
-            cols = [td.get_text(strip=True) for td in row.find_all("td")]
-            if cols:
-                rows.append(cols)
-
-        if headers and rows:
-            df = pd.DataFrame(rows, columns=headers)
-            # Prefix columns with 'Bowling_' except for Player column
-            df.columns = [
-                col if col.lower() in ["player", "name"] else f"Bowling_{col}"
-                for col in df.columns
-            ]
-            if "name" in df.columns.str.lower():
-                df.rename(columns={df.columns[df.columns.str.lower() == "name"][0]: "Player"}, inplace=True)
-            return df
-        else:
-            return pd.DataFrame()
-
-    def _parse_fielding_table(self, soup: BeautifulSoup) -> pd.DataFrame:
-        """
-        Parse fielding statistics table from HTML.
-
-        Args:
-            soup: BeautifulSoup object of the page
-
-        Returns:
-            DataFrame with fielding statistics
-        """
-        table = soup.find("table", {"class": "table"}) or soup.find("table")
-
-        if not table:
-            logger.warning("No table found in fielding stats page")
-            return pd.DataFrame()
-
-        rows = []
-        headers = []
-
-        header_row = table.find("tr")
-        if header_row:
-            headers = [th.get_text(strip=True) for th in header_row.find_all(["th", "td"])]
-
-        for row in table.find_all("tr")[1:]:
-            cols = [td.get_text(strip=True) for td in row.find_all("td")]
-            if cols:
-                rows.append(cols)
-
-        if headers and rows:
-            df = pd.DataFrame(rows, columns=headers)
-            # Prefix columns with 'Fielding_' except for Player column
-            df.columns = [
-                col if col.lower() in ["player", "name"] else f"Fielding_{col}"
-                for col in df.columns
-            ]
-            if "name" in df.columns.str.lower():
-                df.rename(columns={df.columns[df.columns.str.lower() == "name"][0]: "Player"}, inplace=True)
-            return df
-        else:
+        except Exception as e:
+            logger.error(f"Error parsing {stat_type} table: {e}")
             return pd.DataFrame()
 
     def _merge_stats(
@@ -422,6 +461,7 @@ class CricketFetcher(BaseFetcher):
     ) -> pd.DataFrame:
         """
         Merge batting, bowling, and fielding statistics based on Player name.
+        Filters for Haverford players only.
 
         Args:
             batting_df: Batting statistics DataFrame
@@ -429,52 +469,74 @@ class CricketFetcher(BaseFetcher):
             fielding_df: Fielding statistics DataFrame
 
         Returns:
-            Merged DataFrame with all statistics
+            Merged DataFrame with all statistics for Haverford players only
         """
         # Ensure all dataframes have Player column
         for df, name in [(batting_df, "batting"), (bowling_df, "bowling"), (fielding_df, "fielding")]:
-            if "Player" not in df.columns:
+            if df is not None and not df.empty and "Player" not in df.columns:
                 logger.warning(f"{name} DataFrame missing Player column")
-                return pd.DataFrame()
 
-        # Merge on Player column (outer join to include all players)
-        merged = batting_df.merge(bowling_df, on="Player", how="outer")
-        merged = merged.merge(fielding_df, on="Player", how="outer")
+        # Start with batting as base (or first non-empty dataframe)
+        if not batting_df.empty:
+            merged = batting_df.copy()
+        elif not bowling_df.empty:
+            merged = bowling_df.copy()
+        elif not fielding_df.empty:
+            merged = fielding_df.copy()
+        else:
+            logger.error("All dataframes are empty")
+            return pd.DataFrame()
 
-        # Filter for Haverford team players only (if team column exists)
-        # This filters out opponent players
-        if "Batting_Team" in merged.columns:
-            merged = merged[
-                merged["Batting_Team"].str.contains("Haverford", case=False, na=False)
-            ]
-        elif "Bowling_Team" in merged.columns:
-            merged = merged[
-                merged["Bowling_Team"].str.contains("Haverford", case=False, na=False)
-            ]
-        elif "Fielding_Team" in merged.columns:
-            merged = merged[
-                merged["Fielding_Team"].str.contains("Haverford", case=False, na=False)
-            ]
+        # Merge bowling stats
+        if not bowling_df.empty and "Player" in bowling_df.columns:
+            if "Player" in merged.columns:
+                merged = merged.merge(bowling_df, on="Player", how="outer")
+            else:
+                merged = bowling_df.copy()
+
+        # Merge fielding stats
+        if not fielding_df.empty and "Player" in fielding_df.columns:
+            if "Player" in merged.columns:
+                merged = merged.merge(fielding_df, on="Player", how="outer")
+            else:
+                merged = fielding_df.copy()
+
+        # Filter for Haverford team players only
+        # Look for team column in any of the stat categories
+        team_columns = [col for col in merged.columns if "team" in col.lower()]
+
+        if team_columns:
+            # Try to filter by Haverford team
+            for team_col in team_columns:
+                if merged[team_col].notna().any():
+                    haverford_mask = merged[team_col].str.contains("Haverford", case=False, na=False)
+                    if haverford_mask.any():
+                        merged = merged[haverford_mask]
+                        logger.info(f"Filtered to Haverford players using column: {team_col}")
+                        break
 
         # Sort by player name
-        merged = merged.sort_values("Player")
+        if "Player" in merged.columns:
+            merged = merged.sort_values("Player")
 
         # Reset index
         merged = merged.reset_index(drop=True)
+
+        # Remove duplicate player entries (keep first occurrence)
+        if "Player" in merged.columns:
+            merged = merged.drop_duplicates(subset=["Player"], keep="first")
 
         return merged
 
     def export_to_csv(
         self,
         output_path: str = "haverford_cricket_stats.csv",
-        include_all_players: bool = True,
     ) -> bool:
         """
-        Export cricket statistics to CSV file.
+        Export cricket statistics to CSV file (Haverford players only).
 
         Args:
             output_path: Path where CSV file should be saved
-            include_all_players: If True, includes all players. If False, only Haverford
 
         Returns:
             True if successful, False otherwise
@@ -491,6 +553,10 @@ class CricketFetcher(BaseFetcher):
 
             df = result["data"]
 
+            if df.empty:
+                logger.warning("No data to export")
+                return False
+
             # Create output directory if it doesn't exist
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -498,7 +564,7 @@ class CricketFetcher(BaseFetcher):
             # Export to CSV
             df.to_csv(output_path, index=False, encoding="utf-8")
 
-            logger.info(f"Successfully exported {len(df)} player records to {output_path}")
+            logger.info(f"Successfully exported {len(df)} Haverford player records to {output_path}")
             return True
 
         except Exception as e:

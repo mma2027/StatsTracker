@@ -18,6 +18,7 @@ All fetchers inherit from `BaseFetcher` and must implement:
 
 1. **NCAAFetcher** - Fetches from NCAA.org
 2. **TFRRFetcher** - Fetches from TFRR (Track & Field Results Reporting)
+3. **CricketFetcher** - Fetches from cricclubs.com (Haverford Cricket Games) using Selenium
 
 ### Adding New Fetchers
 
@@ -181,6 +182,133 @@ The parser dynamically extracts whatever stat columns are present for that sport
 - ✅ `fetch_team_stats()` - Fully implemented with Selenium
 - ⏸️ `fetch_player_stats()` - Deferred (not needed for current use case)
 - ⏸️ `search_player()` - Deferred (not needed for current use case)
+
+## Cricket Fetcher - Haverford Cricket Implementation ✅
+
+The CricketFetcher has been implemented to fetch statistics from cricclubs.com for Haverford Cricket Games using Selenium WebDriver to bypass website protection.
+
+### Features
+- ✅ Uses Selenium WebDriver to handle protected website
+- ✅ Fetches batting statistics from cricclubs.com
+- ✅ Fetches bowling statistics from cricclubs.com
+- ✅ Fetches fielding statistics from cricclubs.com
+- ✅ Merges all three stat types into a single dataset
+- ✅ Filters for Haverford players only
+- ✅ Exports combined stats to CSV file
+
+### URLs (Stored in cricket_urls.py)
+
+All URLs are stored in [cricket_urls.py](cricket_urls.py) for easy updates:
+
+| Stat Type | URL |
+|-----------|-----|
+| Batting | https://cricclubs.com/HaverfordCricketGames/battingRecords.do?clubId=1114507 |
+| Bowling | https://cricclubs.com/HaverfordCricketGames/bowlingRecords.do?clubId=1114507 |
+| Fielding | https://cricclubs.com/HaverfordCricketGames/fieldingRecords.do?clubId=1114507 |
+
+**To update URLs**: Edit the values in `cricket_urls.py`.
+
+### Usage Examples
+
+#### Basic Usage - Export to CSV
+
+```python
+from src.website_fetcher import CricketFetcher
+
+# Create fetcher (headless=True by default)
+fetcher = CricketFetcher(timeout=30, headless=True)
+
+# Export all stats to CSV (Haverford players only)
+success = fetcher.export_to_csv("haverford_cricket_stats.csv")
+
+if success:
+    print("Successfully exported cricket stats!")
+```
+
+#### Fetch and Work with Data
+
+```python
+from src.website_fetcher import CricketFetcher
+
+fetcher = CricketFetcher()
+
+# Fetch all stats
+result = fetcher.fetch_all_stats()
+
+if result["success"]:
+    df = result["data"]
+    print(f"Fetched stats for {len(df)} Haverford players")
+    print(f"Columns: {list(df.columns)}")
+
+    # Access the merged DataFrame
+    # Columns include: Player, Batting_*, Bowling_*, Fielding_*
+    print(df.head())
+```
+
+#### Search for Specific Player
+
+```python
+from src.website_fetcher import CricketFetcher
+
+fetcher = CricketFetcher()
+
+# Search for players by name
+result = fetcher.search_player("Smith")
+
+if result.success:
+    print(f"Found {result.data['count']} matching players:")
+    print(result.data['players'])
+```
+
+See [example_cricket_usage.py](example_cricket_usage.py) for more examples.
+
+### Data Format
+
+The CricketFetcher returns a merged DataFrame with all stats combined:
+
+```python
+{
+    "success": True,
+    "data": pandas.DataFrame with columns:
+        - Player (name)
+        - Batting_* (all batting stats)
+        - Bowling_* (all bowling stats)
+        - Fielding_* (all fielding stats)
+}
+```
+
+Each row represents one Haverford player with all their statistics from batting, bowling, and fielding records.
+
+### CSV Output Format
+
+The exported CSV file contains one row per Haverford player with all statistics:
+- Player name
+- All batting statistics (prefixed with "Batting_")
+- All bowling statistics (prefixed with "Bowling_")
+- All fielding statistics (prefixed with "Fielding_")
+
+### Requirements
+
+The CricketFetcher requires Selenium and ChromeDriver:
+
+```bash
+pip install selenium pandas beautifulsoup4
+
+# Install ChromeDriver (Mac)
+brew install chromedriver
+
+# Or download from: https://chromedriver.chromium.org/
+```
+
+### Implementation Status
+
+- ✅ `fetch_all_stats()` - Fully implemented with Selenium
+- ✅ `fetch_team_stats()` - Implemented (calls fetch_all_stats)
+- ✅ `fetch_player_stats()` - Implemented (filters from all stats)
+- ✅ `search_player()` - Implemented (searches in all stats)
+- ✅ `export_to_csv()` - Implemented (exports merged data)
+- ✅ Selenium WebDriver integration for protected website
+- ✅ Automatic filtering for Haverford players only
 
 ## Implementation Tasks
 
