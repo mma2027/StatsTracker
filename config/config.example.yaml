@@ -24,7 +24,7 @@ database:
 
 # Gameday Checker Configuration
 gameday:
-  haverford_schedule_url: "https://haverfordathletics.com/calendar"
+  haverford_schedule_url: "https://haverfordathletics.com"
   check_days_ahead: 7  # How many days to check in advance
   timezone: "America/New_York"
 
