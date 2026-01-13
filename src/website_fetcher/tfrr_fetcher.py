@@ -90,13 +90,13 @@ class TFRRFetcher(BaseFetcher):
             FetchResult with team statistics and roster
         """
         try:
-            logger.info(f"Fetching TFRR team stats for {team_id} in {sport}")
+            logger.info(f"Fetching TFRR team stats for {team_code} in {sport}")
 
             # Determine subdomain based on sport
             if sport.lower() in ["cross_country", "xc", "cross country"]:
-                url = f"https://xc.tfrrs.org/teams/{team_id}.html"
+                url = f"https://xc.tfrrs.org/teams/{team_code}.html"
             else:
-                url = f"{self.base_url}/teams/{team_id}.html"
+                url = f"{self.base_url}/teams/{team_code}.html"
 
             response = requests.get(url, timeout=self.timeout)
 
