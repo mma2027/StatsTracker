@@ -4,6 +4,7 @@ Test the updated gameday checker with calendar endpoint
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from gameday_checker.checker import GamedayChecker
@@ -11,7 +12,7 @@ from datetime import date
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 
 checker = GamedayChecker(schedule_url="https://haverfordathletics.com")
 

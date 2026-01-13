@@ -9,6 +9,7 @@ from enum import Enum
 
 class MilestoneType(Enum):
     """Types of milestones"""
+
     CAREER_TOTAL = "career_total"  # e.g., 1000 career points
     SEASON_TOTAL = "season_total"  # e.g., 500 points in a season
     PERSONAL_RECORD = "personal_record"  # e.g., new PR in track event
@@ -19,6 +20,7 @@ class MilestoneType(Enum):
 @dataclass
 class Milestone:
     """Represents a milestone achievement target"""
+
     milestone_id: str
     sport: str
     stat_name: str
@@ -36,6 +38,7 @@ class MilestoneProximity:
     """
     Represents how close a player is to achieving a milestone.
     """
+
     player_id: str
     player_name: str
     milestone: Milestone

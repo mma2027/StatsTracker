@@ -17,7 +17,7 @@ class TestPlayerDatabase:
     def temp_db(self):
         """Create temporary database for testing"""
         # Create temporary file
-        fd, path = tempfile.mkstemp(suffix='.db')
+        fd, path = tempfile.mkstemp(suffix=".db")
         os.close(fd)
 
         # Create database
@@ -31,12 +31,7 @@ class TestPlayerDatabase:
 
     def test_add_player(self, temp_db):
         """Test adding a player to database"""
-        player = Player(
-            player_id="test001",
-            name="Test Player",
-            sport="basketball",
-            position="Guard"
-        )
+        player = Player(player_id="test001", name="Test Player", sport="basketball", position="Guard")
 
         result = temp_db.add_player(player)
         assert result is True
@@ -55,11 +50,7 @@ class TestPlayerDatabase:
     def test_update_player(self, temp_db):
         """Test updating player information"""
         # Add player
-        player = Player(
-            player_id="test002",
-            name="Test Player 2",
-            sport="soccer"
-        )
+        player = Player(player_id="test002", name="Test Player 2", sport="soccer")
         temp_db.add_player(player)
 
         # Update player
@@ -74,31 +65,18 @@ class TestPlayerDatabase:
     def test_add_stat(self, temp_db):
         """Test adding a stat entry"""
         # First add a player
-        player = Player(
-            player_id="test003",
-            name="Test Player 3",
-            sport="basketball"
-        )
+        player = Player(player_id="test003", name="Test Player 3", sport="basketball")
         temp_db.add_player(player)
 
         # Add stat
-        stat = StatEntry(
-            player_id="test003",
-            stat_name="points",
-            stat_value=25,
-            season="2023-24"
-        )
+        stat = StatEntry(player_id="test003", stat_name="points", stat_value=25, season="2023-24")
         result = temp_db.add_stat(stat)
         assert result is True
 
     def test_get_player_stats(self, temp_db):
         """Test retrieving player statistics"""
         # Add player
-        player = Player(
-            player_id="test004",
-            name="Test Player 4",
-            sport="basketball"
-        )
+        player = Player(player_id="test004", name="Test Player 4", sport="basketball")
         temp_db.add_player(player)
 
         # Add multiple stats

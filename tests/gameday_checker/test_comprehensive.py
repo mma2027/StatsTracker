@@ -4,6 +4,7 @@ Comprehensive test of gameday checker across multiple months
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from gameday_checker.checker import GamedayChecker

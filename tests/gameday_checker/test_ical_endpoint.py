@@ -25,16 +25,17 @@ try:
         print(response.text[:2000])
 
         # Count events in iCal
-        event_count = response.text.count('BEGIN:VEVENT')
+        event_count = response.text.count("BEGIN:VEVENT")
         print(f"\nFound {event_count} events in iCal feed")
 
         # Look for dates
-        if '20260' in response.text:  # 2026 dates
+        if "20260" in response.text:  # 2026 dates
             print("\nContains 2026 dates!")
 
             # Extract a few dates for testing
             import re
-            date_pattern = re.compile(r'DTSTART[^:]*:(\d{8})')
+
+            date_pattern = re.compile(r"DTSTART[^:]*:(\d{8})")
             dates = date_pattern.findall(response.text)
 
             if dates:
@@ -52,7 +53,7 @@ print("\n" + "=" * 70)
 print("Testing other sports")
 print("=" * 70)
 
-for sport in ['mens-basketball', 'mens-lacrosse', 'wten']:
+for sport in ["mens-basketball", "mens-lacrosse", "wten"]:
     sport_url = f"https://haverfordathletics.com/sports/{sport}/schedule.ics"
     try:
         resp = requests.head(sport_url, timeout=5, allow_redirects=True)

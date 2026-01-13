@@ -61,17 +61,13 @@ class MilestoneDetector:
                             stat_name=stat_name,
                             threshold=threshold,
                             milestone_type=MilestoneType.CAREER_TOTAL,
-                            description=f"{threshold} career {stat_name} in {sport}"
+                            description=f"{threshold} career {stat_name} in {sport}",
                         )
                         milestones.append(milestone)
 
         return milestones
 
-    def check_player_milestones(
-        self,
-        player_id: str,
-        proximity_threshold: int = 10
-    ) -> List[MilestoneProximity]:
+    def check_player_milestones(self, player_id: str, proximity_threshold: int = 10) -> List[MilestoneProximity]:
         """
         Check if a player is close to any milestones.
 
@@ -104,9 +100,7 @@ class MilestoneDetector:
         return close_milestones
 
     def check_all_players_milestones(
-        self,
-        sport: Optional[str] = None,
-        proximity_threshold: int = 10
+        self, sport: Optional[str] = None, proximity_threshold: int = 10
     ) -> Dict[str, List[MilestoneProximity]]:
         """
         Check all players for milestone proximity.
@@ -124,10 +118,7 @@ class MilestoneDetector:
         players = self.database.get_all_players(sport=sport)
 
         for player in players:
-            close_milestones = self.check_player_milestones(
-                player.player_id,
-                proximity_threshold
-            )
+            close_milestones = self.check_player_milestones(player.player_id, proximity_threshold)
 
             if close_milestones:
                 results[player.player_id] = close_milestones
@@ -135,11 +126,7 @@ class MilestoneDetector:
         logger.info(f"Found milestone proximities for {len(results)} players")
         return results
 
-    def _calculate_proximity(
-        self,
-        player_stats: PlayerStats,
-        milestone: Milestone
-    ) -> Optional[MilestoneProximity]:
+    def _calculate_proximity(self, player_stats: PlayerStats, milestone: Milestone) -> Optional[MilestoneProximity]:
         """
         Calculate how close a player is to a milestone.
 
@@ -174,11 +161,7 @@ class MilestoneDetector:
             percentage = (current_value / milestone.threshold) * 100 if milestone.threshold > 0 else 0
 
             # Estimate games to milestone (simplified - can be improved)
-            estimated_games = self._estimate_games_to_milestone(
-                current_value,
-                milestone.threshold,
-                player_stats
-            )
+            estimated_games = self._estimate_games_to_milestone(current_value, milestone.threshold, player_stats)
 
             return MilestoneProximity(
                 player_id=player_stats.player.player_id,
@@ -187,18 +170,14 @@ class MilestoneDetector:
                 current_value=current_value,
                 distance=distance,
                 percentage=percentage,
-                estimated_games_to_milestone=estimated_games
+                estimated_games_to_milestone=estimated_games,
             )
 
         except Exception as e:
             logger.error(f"Error calculating proximity: {e}")
             return None
 
-    def _is_close_to_milestone(
-        self,
-        proximity: MilestoneProximity,
-        threshold: int
-    ) -> bool:
+    def _is_close_to_milestone(self, proximity: MilestoneProximity, threshold: int) -> bool:
         """
         Determine if a player is close enough to alert about.
 
@@ -220,12 +199,7 @@ class MilestoneDetector:
 
         return False
 
-    def _estimate_games_to_milestone(
-        self,
-        current_value: Any,
-        threshold: Any,
-        player_stats: PlayerStats
-    ) -> Optional[int]:
+    def _estimate_games_to_milestone(self, current_value: Any, threshold: Any, player_stats: PlayerStats) -> Optional[int]:
         """
         Estimate how many games until milestone is reached.
 
@@ -262,10 +236,7 @@ class MilestoneDetector:
             logger.error(f"Error estimating games to milestone: {e}")
             return None
 
-    def get_priority_alerts(
-        self,
-        sport: Optional[str] = None
-    ) -> List[MilestoneProximity]:
+    def get_priority_alerts(self, sport: Optional[str] = None) -> List[MilestoneProximity]:
         """
         Get high-priority milestone alerts.
 
@@ -284,6 +255,6 @@ class MilestoneDetector:
                     priority_alerts.append(proximity)
 
         # Sort by distance (closest first)
-        priority_alerts.sort(key=lambda x: x.distance if isinstance(x.distance, (int, float)) else float('inf'))
+        priority_alerts.sort(key=lambda x: x.distance if isinstance(x.distance, (int, float)) else float("inf"))
 
         return priority_alerts

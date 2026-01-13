@@ -23,12 +23,12 @@ def test_find_march_5_2026_baseball_game():
     assert len(games) > 0, "Should find at least one game on March 5, 2026"
 
     # Find baseball game
-    baseball_games = [g for g in games if 'baseball' in g.team.sport.lower()]
+    baseball_games = [g for g in games if "baseball" in g.team.sport.lower()]
     assert len(baseball_games) > 0, "Should find baseball game"
 
     # Verify details
     game = baseball_games[0]
-    assert 'rowan' in game.opponent.lower(), f"Expected Rowan, got {game.opponent}"
+    assert "rowan" in game.opponent.lower(), f"Expected Rowan, got {game.opponent}"
 
 
 def test_find_games_on_march_9_2026():
@@ -42,7 +42,7 @@ def test_find_games_on_march_9_2026():
     assert len(games) >= 2, "Should find at least 2 games on March 9, 2026"
 
     # Verify tennis games are found
-    tennis_games = [g for g in games if 'tennis' in g.team.sport.lower()]
+    tennis_games = [g for g in games if "tennis" in g.team.sport.lower()]
     assert len(tennis_games) >= 2, "Should find tennis games"
 
 
@@ -56,12 +56,12 @@ def test_find_january_14_2026_basketball_games():
     assert len(games) >= 2, "Should find at least 2 games on January 14, 2026"
 
     # Find basketball games
-    basketball_games = [g for g in games if 'basketball' in g.team.sport.lower()]
+    basketball_games = [g for g in games if "basketball" in g.team.sport.lower()]
     assert len(basketball_games) >= 2, "Should find at least 2 basketball games"
 
     # Verify opponent
     opponents = [g.opponent.lower() for g in basketball_games]
-    assert any('ursinus' in opp for opp in opponents), "Should have Ursinus as opponent"
+    assert any("ursinus" in opp for opp in opponents), "Should have Ursinus as opponent"
 
 
 def test_find_april_15_2026_games():

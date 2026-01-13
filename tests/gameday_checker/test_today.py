@@ -4,6 +4,7 @@ Test gameday checker with today's date
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from gameday_checker.checker import GamedayChecker
@@ -11,7 +12,7 @@ from datetime import date
 import logging
 
 # Set up logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
 
 checker = GamedayChecker(schedule_url="https://haverfordathletics.com")
 
@@ -42,7 +43,7 @@ print("=" * 70)
 
 diagnostics = checker.validate_scraping("baseball")
 print(f"Total games: {diagnostics.get('total_games')}")
-date_range = diagnostics.get('date_range')
+date_range = diagnostics.get("date_range")
 if date_range:
     print(f"Date range: {date_range['min']} to {date_range['max']}")
     print(f"\nToday ({today}) is in range: {date_range['min'] <= str(today) <= date_range['max']}")

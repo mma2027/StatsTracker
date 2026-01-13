@@ -8,4 +8,4 @@ from .base_fetcher import BaseFetcher, FetchResult
 from .ncaa_fetcher import NCAAFetcher
 from .tfrr_fetcher import TFRRFetcher
 
-__all__ = ['BaseFetcher', 'FetchResult', 'NCAAFetcher', 'TFRRFetcher']
+__all__ = ["BaseFetcher", "FetchResult", "NCAAFetcher", "TFRRFetcher"]
