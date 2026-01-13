@@ -141,6 +141,94 @@ flake8 src/
 mypy src/
 ```
 
+## Continuous Integration
+
+All pull requests must pass CI checks before merging.
+
+### Running Checks Locally
+
+Before pushing your PR, run these checks locally to catch issues early:
+
+```bash
+# Format code
+black src/ tests/
+
+# Check linting
+flake8 src/ tests/
+
+# Type checking
+mypy src/
+
+# Run tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=term-missing
+```
+
+### CI Pipeline
+
+Our GitHub Actions pipeline runs on every PR and push to main:
+
+1. **Code Quality** (`lint-and-format` job):
+   - black format checking
+   - flake8 linting
+   - mypy type checking (advisory)
+
+2. **Required Tests** (`test-main-python` job):
+   - pytest on Python 3.11
+   - Coverage report generation
+   - **This job must pass for PR approval**
+
+3. **Matrix Testing** (`test` job):
+   - pytest on Python 3.8, 3.9, 3.10, 3.11, 3.12
+   - Separate unit and integration test runs
+   - Coverage upload to Codecov
+   - Informational only (not required for merge)
+
+### Handling CI Failures
+
+**Black failures:**
+```bash
+# Fix formatting automatically
+black src/ tests/
+git add -u
+git commit -m "Fix: Code formatting"
+git push
+```
+
+**Flake8 failures:**
+- Fix linting issues in the reported files
+- If a warning is acceptable, add a `# noqa: E501` comment (replace E501 with the specific error code)
+
+**Test failures:**
+- Review the test output in GitHub Actions
+- Fix the failing tests locally
+- Run `pytest tests/` to verify fixes
+- If a test is intermittently flaky, mark it with `@pytest.mark.flaky(reruns=3)` or investigate the root cause
+
+**Coverage drops:**
+- Add tests for new or uncovered code
+- Review coverage report artifact in GitHub Actions
+
+### Integration Test Notes
+
+Some integration tests may be flaky due to external API dependencies (e.g., Haverford Athletics calendar). If integration tests fail intermittently:
+
+1. Re-run the workflow from GitHub Actions UI
+2. Check if the external service is accessible
+3. Review test logs for timeout or connection errors
+4. Consider marking the test with `@pytest.mark.integration` if not already marked
+
+### Branch Protection
+
+The `main` branch is protected with the following rules:
+
+- Requires 1 PR approval before merging
+- Requires passing status checks: `lint-and-format` and `test-main-python`
+- Requires up-to-date branches before merging
+- Requires conversation resolution before merging
+
 ### Testing
 
 Write tests for your code:
