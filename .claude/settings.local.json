@@ -3,7 +3,9 @@
     "allow": [
       "WebFetch(domain:haverfordathletics.com)",
       "Bash(pip install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(chmod:*)",
+      "Bash(curl:*)"
     ]
   }
 }
