@@ -5,14 +5,14 @@ lxml>=4.9.0
 
 # Database
 sqlalchemy>=2.0.0
-sqlite3  # Built-in with Python
+# Note: sqlite3 is built-in with Python, no need to install
 
 # Configuration
 pyyaml>=6.0.0
 python-dotenv>=1.0.0
 
 # Email
-smtplib  # Built-in with Python
+# Note: smtplib is built-in with Python, no need to install
 email-validator>=2.0.0
 
 # Date/Time handling

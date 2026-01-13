@@ -174,17 +174,13 @@ Our GitHub Actions pipeline runs on every PR and push to main:
    - black format checking
    - flake8 linting
    - mypy type checking (advisory)
-
-2. **Required Tests** (`test-main-python` job):
-   - pytest on Python 3.11
-   - Coverage report generation
    - **This job must pass for PR approval**
 
-3. **Matrix Testing** (`test` job):
-   - pytest on Python 3.8, 3.9, 3.10, 3.11, 3.12
-   - Separate unit and integration test runs
-   - Coverage upload to Codecov
-   - Informational only (not required for merge)
+2. **Tests** (`test` job):
+   - pytest on Python 3.11
+   - Coverage report generation
+   - Coverage artifacts uploaded
+   - **This job must pass for PR approval**
 
 ### Handling CI Failures
 
@@ -225,7 +221,7 @@ Some integration tests may be flaky due to external API dependencies (e.g., Have
 The `main` branch is protected with the following rules:
 
 - Requires 1 PR approval before merging
-- Requires passing status checks: `lint-and-format` and `test-main-python`
+- Requires passing status checks: `lint-and-format` and `test`
 - Requires up-to-date branches before merging
 - Requires conversation resolution before merging
 
