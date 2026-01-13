@@ -27,7 +27,7 @@ from src.website_fetcher import NCAAFetcher, TFRRFetcher
 from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier
-from auto_update_team_ids import fetch_with_auto_recovery
+from scripts.auto_update_team_ids import fetch_with_auto_recovery
 
 
 def setup_logging(log_level: str = "INFO", log_file: str = None):
