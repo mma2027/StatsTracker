@@ -1,7 +1,15 @@
 # Gameday Checker Module
 
 ## Purpose
-Determines which Haverford College sports teams have games on a given day.
+Determines which Haverford College sports teams have games on a given day by scraping the athletics website.
+
+## Implementation Details
+
+This module fetches game schedules from https://haverfordathletics.com by:
+1. Iterating through all Haverford sports
+2. Fetching each sport's schedule page
+3. Extracting embedded JSON data from the JavaScript on each page
+4. Parsing game information and filtering by date
 
 ## Interface
 
@@ -37,39 +45,54 @@ def has_games_on_date(self, check_date: date) -> bool:
 - `sport`: str
 - `division`: Optional[str]
 
-## Implementation Tasks
+## Implementation Status
 
-1. **Data Source Integration**
-   - Determine the data source (Haverford athletics website, API, etc.)
-   - Implement web scraping or API calls in `_fetch_games()`
+✅ **Completed** - The gameday checker is fully implemented and working.
 
-2. **Parsing Logic**
-   - Parse schedule data into Game objects
-   - Handle different date formats
-   - Extract team, opponent, and location information
+### How It Works
 
-3. **Error Handling**
-   - Handle network errors
-   - Handle parsing errors
-   - Return empty list on failure with appropriate logging
+The module uses Haverford's athletics calendar AJAX endpoint:
+- Endpoint: `https://haverfordathletics.com/services/responsive-calendar.ashx`
+- Makes a single request to fetch a full month of games across all sports
+- Returns clean JSON data (no HTML scraping required)
+- Games are parsed from the response and filtered by the requested date
 
-4. **Caching** (Optional)
-   - Cache schedule data to reduce network requests
-   - Implement cache invalidation strategy
+### Features
+
+- ✅ **Full season access** - Can fetch games months in advance
+- ✅ **Fast performance** - Single HTTP request instead of 17+ per query
+- ✅ Parse opponent, location (home/away), and time information
+- ✅ Handle all sports automatically in one request
+- ✅ Robust error handling with logging
+- ✅ Returns structured Game objects
+- ✅ Clean JSON API (no regex scraping)
+
+### Performance Improvements
+
+**Before (sport pages):** 17+ HTTP requests, 30-60 seconds, rolling window only
+**After (calendar endpoint):** 1 HTTP request, ~2-5 seconds, full season access ⚡
 
 ## Testing
 
-Create tests in `tests/gameday_checker/test_checker.py`:
-- Test date parsing
-- Test game filtering
-- Test with mock data
-- Test error conditions
+Unit tests are located in `tests/gameday_checker/test_checker.py`:
+- ✅ Test finding games on various dates (January, March, April, etc.)
+- ✅ Test game details (opponent, time, location)
+- ✅ Test with real data from live endpoint
+- ✅ Test edge cases and error conditions
+
+Run tests with: `pytest tests/gameday_checker/test_checker.py -v`
 
 ## Dependencies
 
-- `requests` for HTTP requests
-- `beautifulsoup4` for HTML parsing (if scraping)
-- `datetime` for date handling
+- `requests` - For HTTP requests to fetch calendar data
+- Standard library: `datetime`, `logging`
+
+## Performance Notes
+
+- Makes 1 HTTP request per query (calendar endpoint)
+- Request takes ~2-5 seconds depending on network latency
+- Returns full month of data in single response
+- **Optimization**: Consider caching calendar data for 1-2 hours to reduce load on athletics website
 
 ## Example Usage
 
@@ -77,18 +100,30 @@ Create tests in `tests/gameday_checker/test_checker.py`:
 from datetime import date
 from src.gameday_checker import GamedayChecker
 
-checker = GamedayChecker(schedule_url="https://haverfordathletics.com/calendar")
+# Initialize the checker
+checker = GamedayChecker(schedule_url="https://haverfordathletics.com")
 
 # Get today's games
 today_games = checker.get_games_for_today()
+print(f"Games today: {len(today_games)}")
 for game in today_games:
-    print(f"{game.team.name} vs {game.opponent} at {game.time}")
+    print(f"  {game.team.sport}: {game.team.name} vs {game.opponent}")
+    print(f"    Time: {game.time}, Location: {game.location}")
 
-# Check specific date
-games = checker.get_games_for_date(date(2024, 3, 15))
+# Check a specific date
+games = checker.get_games_for_date(date(2026, 2, 22))
 if games:
-    print(f"Found {len(games)} games on March 15")
+    print(f"\nFound {len(games)} games on 2026-02-22:")
+    for game in games:
+        home_away = "Home" if game.is_home_game else "Away"
+        print(f"  - {game.team.sport}: vs {game.opponent} ({home_away})")
+
+# Check if games exist on a date
+has_games = checker.has_games_on_date(date(2026, 2, 22))
+print(f"\nGames on 2026-02-22: {has_games}")
 ```
+
+See `example_usage.py` for a complete working example.
 
 ## Integration Points
 
