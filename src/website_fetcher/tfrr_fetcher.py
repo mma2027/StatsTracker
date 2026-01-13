@@ -16,18 +16,26 @@ from .base_fetcher import BaseFetcher, FetchResult
 logger = logging.getLogger(__name__)
 
 
+# Haverford College TFRR team codes
+# Format: /teams/PA_college_m_Haverford.html or /teams/PA_college_f_Haverford.html
+HAVERFORD_TEAMS = {
+    "mens_track": "PA_college_m_Haverford",
+    "womens_track": "PA_college_f_Haverford",
+    "mens_cross_country": "PA_college_m_Haverford",
+    "womens_cross_country": "PA_college_f_Haverford",
+}
+
+
 class TFRRFetcher(BaseFetcher):
     """
     Fetcher for TFRR (Track & Field Results Reporting) website.
 
-    Developer Notes:
-    - TFRR has data for track and field and cross country
-    - Implement scraping for athlete profiles and results
-    - Handle PR (personal record) tracking
+    Handles both track & field and cross country statistics.
     """
 
     def __init__(self, base_url: str = "https://www.tfrrs.org", timeout: int = 30):
         super().__init__(base_url, timeout)
+        self.driver = None
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
         """
@@ -67,12 +75,15 @@ class TFRRFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
 
-    def fetch_team_stats(self, team_id: str, sport: str) -> FetchResult:
+        finally:
+            self._close_driver()
+
+    def fetch_team_stats(self, team_code: str, sport: str) -> FetchResult:
         """
         Fetch team statistics from TFRR.
 
         Args:
-            team_id: TFRR team ID
+            team_code: TFRR team code (e.g., "PA_college_m_Haverford")
             sport: Either "track" or "cross_country"
 
         Returns:
@@ -409,6 +420,10 @@ class TFRRFetcher(BaseFetcher):
     def _parse_athlete_data(self, response, sport: str) -> Optional[Dict[str, Any]]:
         """
         Parse TFRR athlete data from response.
+
+        TFRR athlete pages have PR tables where each event gets its own table.
+        The table header contains the event name, and the first data row contains
+        the best mark/time.
 
         Args:
             response: HTTP response
