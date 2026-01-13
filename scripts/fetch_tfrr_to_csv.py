@@ -17,7 +17,7 @@ sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS
 
 
-def save_team_to_csv(team_data, sport_name, output_dir="tfrr_stats_output"):
+def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
     """
     Save team stats to a CSV file.
 
@@ -64,7 +64,7 @@ def save_team_to_csv(team_data, sport_name, output_dir="tfrr_stats_output"):
         return None
 
 
-def fetch_all_to_csv(output_dir="tfrr_stats_output"):
+def fetch_all_to_csv(output_dir="csv_exports"):
     """
     Fetch stats for all Haverford TFRR teams and save each to CSV.
 
@@ -192,7 +192,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--output-dir',
-        default='tfrr_stats_output',
+        default='csv_exports',
         help='Directory to save CSV files (default: tfrr_stats_output)'
     )
     parser.add_argument(

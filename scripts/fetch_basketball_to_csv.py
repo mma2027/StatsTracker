@@ -13,7 +13,7 @@ sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
 
 
-def fetch_basketball_to_csv(output_file="haverford_mens_basketball_stats.csv"):
+def fetch_basketball_to_csv(output_file="csv_exports/haverford_mens_basketball_stats.csv"):
     """
     Fetch Haverford Men's Basketball stats and save to CSV.
 
