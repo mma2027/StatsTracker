@@ -48,7 +48,9 @@ class EmailNotifier:
 
     def send_milestone_alert(self, proximities: List[MilestoneProximity], games: List[Game], date_for: date) -> bool:
         """
-        Send an email alert about milestones.
+        Send an email alert about milestones and games.
+
+        Now always sends email, even if both lists are empty (empty-day notification).
 
         Args:
             proximities: List of MilestoneProximity objects
@@ -59,10 +61,11 @@ class EmailNotifier:
             True if email sent successfully, False otherwise
         """
         try:
-            logger.info(f"Sending milestone alert for {len(proximities)} proximities")
+            logger.info(f"Sending milestone alert for {len(proximities)} proximities and {len(games)} games")
 
             # Generate email content
-            subject = EmailTemplate.generate_subject(date_for, len(games))
+            has_milestones = len(proximities) > 0
+            subject = EmailTemplate.generate_subject(date_for, len(games), has_milestones)
             html_body = EmailTemplate.generate_milestone_email(proximities, games, date_for)
             text_body = EmailTemplate.generate_text_version(proximities, games, date_for)
 

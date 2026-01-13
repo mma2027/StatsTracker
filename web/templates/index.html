@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Home - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to StatsTracker</h1>
+    <p class="subtitle">Haverford College Athletics Statistics Dashboard</p>
+</div>
+
+<div class="features-grid">
+    <div class="feature-card">
+        <h2>📊 CSV Browser</h2>
+        <p>Browse and view all player statistics exported from NCAA and TFRR sources.</p>
+        <a href="{{ url_for('csv_browser') }}" class="btn btn-primary">Browse CSV Files</a>
+    </div>
+
+    <div class="feature-card">
+        <h2>🎮 Demo & Testing</h2>
+        <p>Test the system by simulating gameday checks and manually updating stats.</p>
+        <a href="{{ url_for('demo') }}" class="btn btn-primary">Open Demo Panel</a>
+    </div>
+
+    <div class="feature-card">
+        <h2>📧 Email Notifications</h2>
+        <p>Daily automated emails with games schedule and milestone proximity alerts.</p>
+        <div class="badge">Automated via Cron</div>
+    </div>
+
+    <div class="feature-card">
+        <h2>🗄️ Database Stats</h2>
+        <p>SQLite database stores all player stats with milestone tracking.</p>
+        <div class="badge">{{ '136 Players' }}</div>
+    </div>
+</div>
+
+<div class="system-status">
+    <h2>System Overview</h2>
+    <div class="status-grid">
+        <div class="status-item">
+            <strong>NCAA Teams:</strong> 10 sports
+        </div>
+        <div class="status-item">
+            <strong>TFRR Sports:</strong> Track & Field
+        </div>
+        <div class="status-item">
+            <strong>Daily Updates:</strong> 8:00 AM
+        </div>
+        <div class="status-item">
+            <strong>Status:</strong> <span class="status-active">Active</span>
+        </div>
+    </div>
+</div>
+
+<div class="quick-links">
+    <h3>Quick Links</h3>
+    <ul>
+        <li><a href="https://haverfordathletics.com" target="_blank">Haverford Athletics</a></li>
+        <li><a href="https://stats.ncaa.org" target="_blank">NCAA Stats</a></li>
+        <li><a href="https://www.tfrrs.org" target="_blank">TFRR (Track & Field)</a></li>
+    </ul>
+</div>
+{% endblock %}

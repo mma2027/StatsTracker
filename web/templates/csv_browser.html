@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}CSV Browser - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📊 CSV File Browser</h1>
+    <p>Browse and view exported player statistics</p>
+</div>
+
+<div class="csv-sections">
+    <!-- NCAA Stats -->
+    <section class="csv-section">
+        <h2>NCAA Stats ({{ csv_files.ncaa|length }} files)</h2>
+        <p class="section-description">Player career stats from NCAA website</p>
+
+        {% if csv_files.ncaa %}
+        <div class="file-list">
+            {% for file in csv_files.ncaa %}
+            <div class="file-item">
+                <div class="file-info">
+                    <span class="file-name">{{ file.name }}</span>
+                    <span class="file-meta">{{ file.size|filesizeformat }} | Modified: {{ file.modified }}</span>
+                </div>
+                <div class="file-actions">
+                    <a href="{{ url_for('view_csv', filepath=file.path) }}" class="btn btn-sm btn-primary">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No NCAA CSV files found. Run the stats update to generate files.</p>
+            <a href="{{ url_for('demo') }}" class="btn btn-secondary">Go to Demo Panel</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- TFRR Stats -->
+    <section class="csv-section">
+        <h2>TFRR Stats ({{ csv_files.tfrr|length }} files)</h2>
+        <p class="section-description">Track & Field athlete PRs from TFRR website</p>
+
+        {% if csv_files.tfrr %}
+        <div class="file-list">
+            {% for file in csv_files.tfrr %}
+            <div class="file-item">
+                <div class="file-info">
+                    <span class="file-name">{{ file.name }}</span>
+                    <span class="file-meta">{{ file.size|filesizeformat }} | Modified: {{ file.modified }}</span>
+                </div>
+                <div class="file-actions">
+                    <a href="{{ url_for('view_csv', filepath=file.path) }}" class="btn btn-sm btn-primary">View</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No TFRR CSV files found.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Archive -->
+    <section class="csv-section">
+        <h2>Archive</h2>
+        <p class="section-description">{{ csv_files.archive_count or 0 }} archived CSV files</p>
+    </section>
+</div>
+{% endblock %}

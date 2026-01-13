@@ -19,20 +19,29 @@ class EmailTemplate:
     """
 
     @staticmethod
-    def generate_subject(date_for: date, num_games: int) -> str:
+    def generate_subject(date_for: date, num_games: int, has_milestones: bool = False) -> str:
         """
         Generate email subject line.
 
         Args:
             date_for: Date the notification is for
             num_games: Number of games scheduled
+            has_milestones: Whether there are milestone alerts
 
         Returns:
             Subject line string
         """
         date_str = date_for.strftime("%B %d, %Y")
+
+        # Empty day case
+        if num_games == 0 and not has_milestones:
+            return f"Haverford Daily Update - {date_str} (No Games Today)"
+
+        # Normal case with games
         if num_games > 0:
             return f"Haverford Milestone Alert - {date_str} ({num_games} games today)"
+
+        # Milestones only (no games)
         return f"Haverford Milestone Alert - {date_str}"
 
     @staticmethod
@@ -122,6 +131,37 @@ class EmailTemplate:
             <p><strong>Date:</strong> {date_str}</p>
         """
 
+        # Check if this is an empty day
+        is_empty_day = not games and not proximities
+
+        if is_empty_day:
+            html += """
+            <div style="background-color: #f0f8ff; padding: 25px; margin: 20px 0;
+                        border-radius: 8px; border: 2px solid #0066cc;">
+                <h2 style="color: #0066cc; margin-top: 0; text-align: center;">
+                    No Games or Milestone Alerts Today
+                </h2>
+                <p style="font-size: 1.1em; color: #555; text-align: center; margin: 15px 0;">
+                    No Haverford teams have scheduled games today, and no players are currently
+                    within proximity range of milestone achievements.
+                </p>
+                <p style="color: #666; text-align: center; margin-top: 15px;">
+                    <em>This is your daily StatsTracker update confirming the system is monitoring
+                    all teams. The database was updated this morning with the latest statistics.</em>
+                </p>
+            </div>
+            """
+
+            html += """
+                <div class="footer">
+                    <p>This is an automated notification from the Haverford College StatsTracker system.</p>
+                    <p>Track the progress of our student-athletes throughout the season!</p>
+                </div>
+            </body>
+            </html>
+            """
+            return html
+
         # Add games section if there are games
         if games:
             html += "<h2>Today's Games</h2>"
@@ -202,6 +242,22 @@ class EmailTemplate:
         text = f"HAVERFORD COLLEGE SPORTS MILESTONES\n"
         text += f"Date: {date_str}\n"
         text += "=" * 60 + "\n\n"
+
+        # Check if this is an empty day
+        is_empty_day = not games and not proximities
+
+        if is_empty_day:
+            text += "NO GAMES OR MILESTONE ALERTS TODAY\n"
+            text += "-" * 60 + "\n\n"
+            text += "No Haverford teams have scheduled games today, and no players\n"
+            text += "are currently within proximity range of milestone achievements.\n\n"
+            text += "This is your daily StatsTracker update confirming the system is\n"
+            text += "monitoring all teams. The database was updated this morning with\n"
+            text += "the latest statistics.\n\n"
+            text += "=" * 60 + "\n"
+            text += "This is an automated notification from the Haverford College\n"
+            text += "StatsTracker system.\n"
+            return text
 
         # Add games section
         if games:
