@@ -27,7 +27,7 @@ from src.website_fetcher import NCAAFetcher, TFRRFetcher
 from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier
-from auto_update_team_ids import fetch_with_auto_recovery
+from scripts.auto_update_team_ids import fetch_with_auto_recovery
 
 
 def setup_logging(log_level: str = "INFO", log_file: str = None):
@@ -280,15 +280,15 @@ def main():
 
         logger.info("All modules initialized successfully")
 
-        # Auto-update stats if configured
+        # Always update stats for daily automation
         notification_config = config.get('notifications', {})
-        if notification_config.get('auto_update_stats', False):
-            logger.info("Auto-update stats enabled, fetching latest data...")
-            try:
-                update_stats(auto_mode=True)
-            except Exception as e:
-                logger.warning(f"Stats update failed: {e}")
-                logger.warning("Continuing with existing data...")
+        logger.info("Fetching latest stats for all teams (daily update)...")
+        try:
+            update_stats(auto_mode=True)
+            logger.info("Stats update completed successfully")
+        except Exception as e:
+            logger.warning(f"Stats update failed: {e}")
+            logger.warning("Continuing with existing data...")
 
         # Check for games today
         today = date.today()
@@ -305,34 +305,52 @@ def main():
         # Get proximity threshold from config
         proximity_threshold = notification_config.get('proximity_threshold', 10)
 
-        # Check for milestone proximities
+        # Extract sports with games today (only check milestones for these sports)
+        sports_with_games_today = set()
+        if games_today:
+            for game in games_today:
+                # Normalize sport name from Haverford Athletics API format to database format
+                # e.g., "Men's Basketball" -> "mens_basketball"
+                sport_key = game.team.sport.lower().replace(' ', '_').replace("'", '')
+                sports_with_games_today.add(sport_key)
+
+            logger.info(f"Sports with games today: {', '.join(sports_with_games_today)}")
+
+        # Check for milestone proximities (ONLY for sports with games today)
         logger.info("Checking for milestone proximities...")
-        all_proximities = milestone_detector.check_all_players_milestones(
-            proximity_threshold=proximity_threshold
+        proximities_list = []
+
+        if sports_with_games_today:
+            for sport_key in sports_with_games_today:
+                logger.info(f"Checking milestones for {sport_key}...")
+                sport_proximities = milestone_detector.check_all_players_milestones(
+                    sport=sport_key,
+                    proximity_threshold=proximity_threshold
+                )
+
+                # Flatten the proximities for this sport
+                for player_id, proximities in sport_proximities.items():
+                    proximities_list.extend(proximities)
+
+            logger.info(f"Found {len(proximities_list)} milestone alerts for players with games today")
+        else:
+            logger.info("No games today - skipping milestone checks")
+
+        # ALWAYS send notification (even if empty day)
+        logger.info("Sending daily notification email...")
+        success = notifier.send_milestone_alert(
+            proximities=proximities_list,
+            games=games_today,
+            date_for=today
         )
 
-        # Flatten the proximities
-        proximities_list = []
-        for player_id, proximities in all_proximities.items():
-            proximities_list.extend(proximities)
-
-        logger.info(f"Found {len(proximities_list)} milestone proximity alerts")
-
-        # Send notification if there are games OR proximities
-        if games_today or proximities_list:
-            logger.info("Sending notification email...")
-            success = notifier.send_milestone_alert(
-                proximities=proximities_list,
-                games=games_today,
-                date_for=today
-            )
-
-            if success:
-                logger.info("Notification sent successfully")
+        if success:
+            if not games_today and not proximities_list:
+                logger.info("Empty-day notification sent successfully")
             else:
-                logger.error("Failed to send notification")
+                logger.info("Notification sent successfully")
         else:
-            logger.info("No games or milestone alerts today - skipping notification")
+            logger.error("Failed to send notification")
 
         logger.info("StatsTracker completed successfully")
 

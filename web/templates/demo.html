@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+
+{% block title %}Demo & Testing - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🎮 Demo & Testing Panel</h1>
+    <p>Manually trigger system operations and test functionality</p>
+</div>
+
+<div class="demo-sections">
+    <!-- Stats Update Section -->
+    <section class="demo-section">
+        <h2>1. Update NCAA Stats</h2>
+        <p>Re-fetch all player stats from NCAA website (10 teams). This will take 5-10 minutes.</p>
+
+        <button id="btn-update-stats" class="btn btn-primary btn-lg">
+            🔄 Update Stats Now
+        </button>
+
+        <div id="update-status" class="status-message" style="display: none;"></div>
+    </section>
+
+    <!-- Gameday Simulator Section -->
+    <section class="demo-section">
+        <h2>2. Simulate Gameday Checker</h2>
+        <p>Check for games on a specific date and see what email would be sent.</p>
+
+        <div class="form-group">
+            <label for="gameday-date">Select Date:</label>
+            <input type="date" id="gameday-date" class="input-date" value="{{ today }}">
+        </div>
+
+        <button id="btn-simulate-gameday" class="btn btn-primary btn-lg">
+            📅 Simulate Gameday
+        </button>
+
+        <div id="gameday-status" class="status-message" style="display: none;"></div>
+
+        <!-- Results Display -->
+        <div id="gameday-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+
+            <div class="results-summary">
+                <div class="summary-item">
+                    <strong>Games:</strong> <span id="games-count">0</span>
+                </div>
+                <div class="summary-item">
+                    <strong>Milestone Alerts:</strong> <span id="milestones-count">0</span>
+                </div>
+                <div class="summary-item">
+                    <strong>Sports:</strong> <span id="sports-list">-</span>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h4>Games Scheduled:</h4>
+                <div id="games-list"></div>
+            </div>
+
+            <div class="results-section">
+                <h4>Milestone Proximities:</h4>
+                <div id="milestones-list"></div>
+            </div>
+
+            <div class="results-section">
+                <h4>Email Preview:</h4>
+                <div class="email-subject">
+                    <strong>Subject:</strong> <span id="email-subject"></span>
+                </div>
+                <div id="email-preview" class="email-preview"></div>
+            </div>
+
+            <button id="btn-send-test-email" class="btn btn-secondary">
+                ✉️ Send Test Email
+            </button>
+            <div id="email-send-status" class="status-message" style="display: none;"></div>
+        </div>
+    </section>
+
+    <!-- System Info Section -->
+    <section class="demo-section">
+        <h2>3. System Information</h2>
+        <div class="system-info">
+            <div class="info-item">
+                <strong>NCAA Teams:</strong> 10 (Basketball, Soccer, Lacrosse, Field Hockey, Volleyball, Baseball, Softball)
+            </div>
+            <div class="info-item">
+                <strong>Database:</strong> data/stats.db
+            </div>
+            <div class="info-item">
+                <strong>CSV Exports:</strong> csv_exports/ncaa/ and csv_exports/tfrr/
+            </div>
+            <div class="info-item">
+                <strong>Cron Schedule:</strong> Daily at 8:00 AM
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+// Today's date for default
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('gameday-date').value = today;
+
+// Update Stats Button
+document.getElementById('btn-update-stats').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('update-status');
+
+    button.disabled = true;
+    button.textContent = '⏳ Updating... (this may take 5-10 minutes)';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Fetching stats from NCAA website...';
+
+    try {
+        const response = await fetch('/api/update-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            status.className = 'status-message status-success';
+            status.textContent = '✅ Stats updated successfully!';
+            button.textContent = '✅ Update Complete';
+        } else {
+            throw new Error(data.error || 'Update failed');
+        }
+    } catch (error) {
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '🔄 Update Stats Now';
+        button.disabled = false;
+    }
+});
+
+// Simulate Gameday Button
+document.getElementById('btn-simulate-gameday').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('gameday-status');
+    const results = document.getElementById('gameday-results');
+    const date = document.getElementById('gameday-date').value;
+
+    button.disabled = true;
+    button.textContent = '⏳ Simulating...';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Checking games and milestones...';
+    results.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/simulate-gameday', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: date })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            status.className = 'status-message status-success';
+            status.textContent = '✅ Simulation complete!';
+
+            // Update summary
+            document.getElementById('games-count').textContent = data.games_count;
+            document.getElementById('milestones-count').textContent = data.proximities_count;
+            document.getElementById('sports-list').textContent = data.sports_with_games.join(', ') || 'None';
+
+            // Display games
+            const gamesList = document.getElementById('games-list');
+            if (data.games.length > 0) {
+                gamesList.innerHTML = data.games.map(game => `
+                    <div class="result-item">
+                        <strong>${game.sport}</strong> vs ${game.opponent} (${game.location})<br>
+                        Time: ${game.time}
+                    </div>
+                `).join('');
+            } else {
+                gamesList.innerHTML = '<p class="empty">No games scheduled</p>';
+            }
+
+            // Display milestones
+            const milestonesList = document.getElementById('milestones-list');
+            if (data.proximities.length > 0) {
+                milestonesList.innerHTML = data.proximities.map(prox => `
+                    <div class="result-item">
+                        <strong>${prox.player_name}</strong><br>
+                        ${prox.milestone}<br>
+                        Current: ${prox.current} | Target: ${prox.target} | Remaining: ${prox.remaining} (${prox.percentage})
+                    </div>
+                `).join('');
+            } else {
+                milestonesList.innerHTML = '<p class="empty">No players close to milestones</p>';
+            }
+
+            // Display email preview
+            document.getElementById('email-subject').textContent = data.email_subject;
+            document.getElementById('email-preview').innerHTML = data.email_html;
+
+            results.style.display = 'block';
+            button.textContent = '📅 Simulate Gameday';
+            button.disabled = false;
+        } else {
+            throw new Error(data.error || 'Simulation failed');
+        }
+    } catch (error) {
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '📅 Simulate Gameday';
+        button.disabled = false;
+    }
+});
+
+// Send Test Email Button
+document.getElementById('btn-send-test-email').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('email-send-status');
+    const date = document.getElementById('gameday-date').value;
+
+    if (!confirm('Send test email to configured recipients?')) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '⏳ Sending...';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Sending email...';
+
+    try {
+        const response = await fetch('/api/send-test-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: date })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            status.className = 'status-message status-success';
+            status.textContent = '✅ Email sent successfully!';
+        } else {
+            throw new Error(data.error || 'Email send failed');
+        }
+    } catch (error) {
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+    } finally {
+        button.textContent = '✉️ Send Test Email';
+        button.disabled = false;
+    }
+});
+</script>
+{% endblock %}
