@@ -1,189 +1,189 @@
-# StatsTracker 测试指南
+# StatsTracker Testing Guide
 
-完整的测试运行和调试指南。
+Complete guide for running and debugging tests.
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 运行所有测试
+### Run All Tests
 ```bash
-# 在项目根目录运行
+# Run from project root directory
 python -m pytest tests/ -v
 
-# 预期输出：
+# Expected output:
 # 55 passed ✅
 ```
 
-### 运行特定模块的测试
+### Run Tests for Specific Modules
 ```bash
-# Email notifier 测试 (48 个)
+# Email notifier tests (48 tests)
 python -m pytest tests/email_notifier/ -v
 
-# Player database 测试 (7 个)
+# Player database tests (7 tests)
 python -m pytest tests/player_database/ -v
 ```
 
-## 📝 测试命令详解
+## 📝 Test Command Reference
 
-### 基础命令
+### Basic Commands
 
-| 命令 | 说明 |
-|------|------|
-| `pytest tests/` | 运行所有测试（简洁输出） |
-| `pytest tests/ -v` | 详细模式（显示每个测试名称） |
-| `pytest tests/ -vv` | 超详细模式（显示更多细节） |
-| `pytest tests/ -q` | 安静模式（最少输出） |
+| Command | Description |
+|---------|-------------|
+| `pytest tests/` | Run all tests (concise output) |
+| `pytest tests/ -v` | Verbose mode (show each test name) |
+| `pytest tests/ -vv` | Extra verbose mode (show more details) |
+| `pytest tests/ -q` | Quiet mode (minimal output) |
 
-### 选择性运行
+### Selective Execution
 
 ```bash
-# 运行特定文件
+# Run specific file
 pytest tests/email_notifier/test_notifier.py -v
 
-# 运行特定类的所有测试
+# Run all tests in a specific class
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier -v
 
-# 运行特定测试函数
+# Run specific test function
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init -v
 
-# 使用关键字匹配测试名称
-pytest tests/ -k "email" -v          # 运行名称包含 "email" 的测试
-pytest tests/ -k "smtp" -v           # 运行名称包含 "smtp" 的测试
-pytest tests/ -k "not slow" -v       # 运行不包含 "slow" 的测试
+# Use keyword matching for test names
+pytest tests/ -k "email" -v          # Run tests with "email" in name
+pytest tests/ -k "smtp" -v           # Run tests with "smtp" in name
+pytest tests/ -k "not slow" -v       # Run tests without "slow" in name
 ```
 
-### 调试和输出
+### Debugging and Output
 
 ```bash
-# 显示 print 输出
+# Show print output
 pytest tests/ -v -s
 
-# 显示局部变量（调试失败的测试）
+# Show local variables (for debugging failed tests)
 pytest tests/ -v -l
 
-# 失败时进入调试器
+# Enter debugger on failure
 pytest tests/ --pdb
 
-# 第一个失败后停止
+# Stop after first failure
 pytest tests/ -x
 
-# 最多允许 N 个失败
+# Allow maximum N failures
 pytest tests/ --maxfail=3
 ```
 
-### 重新运行失败的测试
+### Re-run Failed Tests
 
 ```bash
-# 只运行上次失败的测试
+# Only run tests that failed last time
 pytest --lf
 
-# 先运行上次失败的，再运行其他的
+# Run failed tests first, then others
 pytest --ff
 ```
 
-### 测试覆盖率
+### Test Coverage
 
 ```bash
-# 生成覆盖率报告（需要先安装 pytest-cov）
+# Generate coverage report (requires pytest-cov)
 pip install pytest-cov
 
-# 查看 email_notifier 的覆盖率
+# Check coverage for email_notifier
 pytest tests/email_notifier/ --cov=src/email_notifier --cov-report=term-missing
 
-# 生成 HTML 覆盖率报告
+# Generate HTML coverage report
 pytest tests/ --cov=src --cov-report=html
-# 然后打开 htmlcov/index.html 查看
+# Then open htmlcov/index.html to view
 ```
 
-## 🎯 Email Notifier 测试示例
+## 🎯 Email Notifier Test Examples
 
-### 场景 1：开发新功能前运行测试
-确保现有功能正常：
+### Scenario 1: Run Tests Before Developing New Features
+Ensure existing functionality works:
 ```bash
 pytest tests/email_notifier/ -v
 ```
 
-### 场景 2：修改代码后快速验证
+### Scenario 2: Quick Verification After Code Changes
 ```bash
-# 只运行相关测试
+# Run only related tests
 pytest tests/email_notifier/test_notifier.py -v
 
-# 或者使用关键字
+# Or use keywords
 pytest tests/ -k "notifier" -v
 ```
 
-### 场景 3：调试失败的测试
+### Scenario 3: Debug Failed Tests
 ```bash
-# 详细输出 + 显示 print + 显示局部变量
+# Verbose output + show print statements + show local variables
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_send_test_email_success -vv -s -l
 ```
 
-### 场景 4：测试错误处理
+### Scenario 4: Test Error Handling
 ```bash
-# 运行所有错误处理相关的测试
+# Run all error handling related tests
 pytest tests/ -k "error or exception" -v
 ```
 
-## 📂 测试文件结构
+## 📂 Test File Structure
 
 ```
 tests/
-├── email_notifier/              # Email 模块测试
+├── email_notifier/              # Email module tests
 │   ├── __init__.py
-│   ├── test_notifier.py         # EmailNotifier 类测试 (22个)
-│   ├── test_templates.py        # EmailTemplate 类测试 (26个)
-│   └── README.md               # 详细测试文档
-├── player_database/            # 数据库模块测试
+│   ├── test_notifier.py         # EmailNotifier class tests (22 tests)
+│   ├── test_templates.py        # EmailTemplate class tests (26 tests)
+│   └── README.md               # Detailed test documentation
+├── player_database/            # Database module tests
 │   ├── __init__.py
-│   └── test_database.py        # PlayerDatabase 测试 (7个)
-└── (未来会添加其他模块的测试)
+│   └── test_database.py        # PlayerDatabase tests (7 tests)
+└── (Other module tests will be added in the future)
 ```
 
-## ✅ 测试最佳实践
+## ✅ Testing Best Practices
 
-### 1. 提交代码前运行测试
+### 1. Run Tests Before Committing Code
 ```bash
-# 确保所有测试通过
+# Ensure all tests pass
 pytest tests/ -v
 
-# 检查你修改的模块
+# Check the module you modified
 pytest tests/email_notifier/ -v
 ```
 
-### 2. 编写新功能时的TDD流程
+### 2. TDD Workflow for New Features
 ```bash
-# 1. 先写测试（会失败）
-# 2. 运行测试确认失败
+# 1. Write test first (it will fail)
+# 2. Run test to confirm failure
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_new_feature -v
 
-# 3. 实现功能
-# 4. 再次运行测试直到通过
+# 3. Implement feature
+# 4. Run test again until it passes
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_new_feature -v
 
-# 5. 运行所有测试确保没有破坏其他功能
+# 5. Run all tests to ensure nothing broke
 pytest tests/ -v
 ```
 
-### 3. 修复 bug 的流程
+### 3. Bug Fix Workflow
 ```bash
-# 1. 先写一个复现 bug 的测试（应该失败）
-# 2. 修复 bug
-# 3. 运行测试确认修复
+# 1. Write a test that reproduces the bug (should fail)
+# 2. Fix the bug
+# 3. Run test to confirm fix
 pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_bug_fix -v
 
-# 4. 运行相关的所有测试
+# 4. Run all related tests
 pytest tests/email_notifier/ -v
 ```
 
-## 🔍 理解测试输出
+## 🔍 Understanding Test Output
 
-### 成功的测试
+### Successful Test
 ```
 tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init PASSED [  1%]
 ```
-- `PASSED` = 测试通过 ✅
-- `[  1%]` = 进度百分比
+- `PASSED` = Test passed ✅
+- `[  1%]` = Progress percentage
 
-### 失败的测试
+### Failed Test
 ```
 tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init FAILED [ 1%]
 
@@ -196,54 +196,54 @@ E       AssertionError: assert 'actual' == 'expected'
 
 tests/email_notifier/test_notifier.py:75: AssertionError
 ```
-- 显示失败的位置
-- 显示断言的实际值和期望值
-- 帮助你快速定位问题
+- Shows where the failure occurred
+- Shows actual vs expected assertion values
+- Helps you quickly locate the issue
 
-### 错误的测试
+### Test Error
 ```
 tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init ERROR [ 1%]
 ```
-- `ERROR` = 测试在运行前就出错（通常是导入错误或 fixture 问题）
+- `ERROR` = Test errored before running (usually import error or fixture issue)
 
-## 🛠️ 常见问题解决
+## 🛠️ Common Issues and Solutions
 
-### 问题 1：找不到模块
+### Issue 1: Module Not Found
 ```bash
 ModuleNotFoundError: No module named 'src'
 ```
 
-**解决方案**：确保在项目根目录运行测试
+**Solution**: Ensure you're running tests from the project root directory
 ```bash
 cd /Users/zero_legend/StatsTracker
 python -m pytest tests/ -v
 ```
 
-### 问题 2：导入错误
+### Issue 2: Import Error
 ```bash
 ImportError: cannot import name 'EmailNotifier'
 ```
 
-**解决方案**：检查 `__init__.py` 文件是否正确导出
+**Solution**: Check that `__init__.py` correctly exports the classes
 ```python
 # src/email_notifier/__init__.py
 from .notifier import EmailNotifier
 from .templates import EmailTemplate
 ```
 
-### 问题 3：测试依赖缺失
+### Issue 3: Missing Test Dependencies
 ```bash
 ModuleNotFoundError: No module named 'pytest'
 ```
 
-**解决方案**：安装测试依赖
+**Solution**: Install test dependencies
 ```bash
 pip install pytest pytest-mock
-# 或安装所有依赖
+# Or install all dependencies
 pip install -r requirements.txt
 ```
 
-## 📊 当前测试状态
+## 📊 Current Test Status
 
 ```
 ✅ Total: 55 tests
@@ -256,23 +256,23 @@ pip install -r requirements.txt
 Status: All passing ✅
 ```
 
-## 🎓 学习资源
+## 🎓 Learning Resources
 
-### Pytest 文档
-- 官方文档: https://docs.pytest.org/
+### Pytest Documentation
+- Official docs: https://docs.pytest.org/
 - Fixtures: https://docs.pytest.org/en/stable/fixture.html
 - Parametrize: https://docs.pytest.org/en/stable/parametrize.html
 
-### 项目特定测试文档
-- Email Notifier 测试详情: [tests/email_notifier/README.md](tests/email_notifier/README.md)
-- 测试覆盖哪些功能、如何使用 fixtures、测试策略等
+### Project-Specific Test Documentation
+- Email Notifier test details: [tests/email_notifier/README.md](tests/email_notifier/README.md)
+- Covers what features are tested, how to use fixtures, testing strategies, etc.
 
-## 💡 快捷命令别名
+## 💡 Command Aliases
 
-可以在 `.bashrc` 或 `.zshrc` 中添加别名：
+You can add aliases to `.bashrc` or `.zshrc`:
 
 ```bash
-# 测试别名
+# Test aliases
 alias test-all="python -m pytest tests/ -v"
 alias test-email="python -m pytest tests/email_notifier/ -v"
 alias test-db="python -m pytest tests/player_database/ -v"
@@ -280,16 +280,16 @@ alias test-quick="python -m pytest tests/ -q"
 alias test-failed="python -m pytest --lf -v"
 ```
 
-然后就可以简单地运行：
+Then you can simply run:
 ```bash
-test-all       # 运行所有测试
-test-email     # 运行邮件测试
-test-failed    # 重跑失败的测试
+test-all       # Run all tests
+test-email     # Run email tests
+test-failed    # Re-run failed tests
 ```
 
-## 🚦 CI/CD 集成
+## 🚦 CI/CD Integration
 
-### GitHub Actions 示例
+### GitHub Actions Example
 ```yaml
 name: Tests
 on: [push, pull_request]
@@ -308,38 +308,38 @@ jobs:
         run: pytest tests/ -v
 ```
 
-## 📈 下一步
+## 📈 Next Steps
 
-1. **安装覆盖率工具**
+1. **Install Coverage Tools**
    ```bash
    pip install pytest-cov
    pytest tests/ --cov=src --cov-report=html
    ```
 
-2. **为其他模块添加测试**
+2. **Add Tests for Other Modules**
    - milestone_detector
    - gameday_checker
    - website_fetcher
 
-3. **添加集成测试**
-   - 测试模块之间的交互
-   - 端到端测试
+3. **Add Integration Tests**
+   - Test module interactions
+   - End-to-end tests
 
-4. **性能测试**
-   - 使用 `pytest-benchmark`
-   - 测试大数据集处理
+4. **Performance Testing**
+   - Use `pytest-benchmark`
+   - Test large dataset processing
 
 ---
 
-**快速参考卡片**
+**Quick Reference Card**
 
-| 我想要... | 命令 |
-|----------|------|
-| 运行所有测试 | `pytest tests/ -v` |
-| 运行邮件测试 | `pytest tests/email_notifier/ -v` |
-| 运行单个测试 | `pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init -v` |
-| 调试失败的测试 | `pytest tests/ -vv -s -l` |
-| 只重跑失败的 | `pytest --lf` |
-| 查看覆盖率 | `pytest tests/ --cov=src` |
-| 按名称过滤 | `pytest tests/ -k "email" -v` |
-| 第一个失败就停 | `pytest tests/ -x` |
+| I want to... | Command |
+|--------------|---------|
+| Run all tests | `pytest tests/ -v` |
+| Run email tests | `pytest tests/email_notifier/ -v` |
+| Run single test | `pytest tests/email_notifier/test_notifier.py::TestEmailNotifier::test_init -v` |
+| Debug failed test | `pytest tests/ -vv -s -l` |
+| Re-run failed only | `pytest --lf` |
+| Check coverage | `pytest tests/ --cov=src` |
+| Filter by name | `pytest tests/ -k "email" -v` |
+| Stop on first failure | `pytest tests/ -x` |
