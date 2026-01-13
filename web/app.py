@@ -159,7 +159,8 @@ def api_simulate_gameday():
         config = load_config(str(CONFIG_PATH))
 
         # Initialize modules
-        gameday_checker = GamedayChecker()
+        schedule_url = config.get('gameday', {}).get('haverford_schedule_url', 'https://haverfordathletics.com/calendar')
+        gameday_checker = GamedayChecker(schedule_url=schedule_url)
         database = PlayerDatabase(db_path=str(PROJECT_ROOT / 'data' / 'stats.db'))
         milestone_config = config.get('milestones', {})
         milestone_detector = MilestoneDetector(database, milestone_config)
@@ -258,7 +259,8 @@ def api_send_test_email():
         notifier = EmailNotifier(email_config)
 
         # Run simulation to get games and milestones
-        gameday_checker = GamedayChecker()
+        schedule_url = config.get('gameday', {}).get('haverford_schedule_url', 'https://haverfordathletics.com/calendar')
+        gameday_checker = GamedayChecker(schedule_url=schedule_url)
         database = PlayerDatabase(db_path=str(PROJECT_ROOT / 'data' / 'stats.db'))
         milestone_config = config.get('milestones', {})
         milestone_detector = MilestoneDetector(database, milestone_config)
