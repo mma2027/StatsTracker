@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Fetch all Haverford TFRR team stats and save each to a separate CSV file.
+Fetch Haverford TFRR athlete PRs and save each athlete to a separate CSV file.
 
-This script fetches track & field and cross country stats for Haverford teams
-and saves each team's stats to its own CSV file in the output directory.
+This script fetches track & field and cross country personal records for Haverford athletes
+and saves each athlete's PRs to their own CSV file.
 """
 
 import sys
@@ -17,45 +17,51 @@ sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS
 
 
-def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
+def save_athlete_prs_csv(athlete_data, sport_name, output_dir="csv_exports/tfrr"):
     """
-    Save team stats to a CSV file.
+    Save athlete PRs to a CSV file with one row per event.
 
     Args:
-        team_data: The data dict from FetchResult
+        athlete_data: Athlete dict with name, year, and events
         sport_name: Name of the sport (for filename)
         output_dir: Directory to save CSV files
 
     Returns:
         Path to saved CSV file, or None if failed
+
+    CSV format:
+    Athlete Name,Year,Event,PR
+    Jory Lee,SR,60m,7.70
+    Jory Lee,SR,200m,25.47
+    Jory Lee,SR,Long Jump,5.89m
     """
-    # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # Generate filename
+    athlete_name = athlete_data['name']
+    athlete_year = athlete_data.get('year', '')
+    safe_athlete_name = athlete_name.replace(' ', '_').replace('.', '')
     safe_sport_name = sport_name.replace(' ', '_').lower()
     timestamp = datetime.now().strftime('%Y%m%d')
-    season = team_data.get('season', 'unknown').replace(' ', '_').lower()
-    filename = f"haverford_{safe_sport_name}_{season}_{timestamp}.csv"
+
+    filename = f"{safe_sport_name}_{safe_athlete_name}_prs_{timestamp}.csv"
     filepath = os.path.join(output_dir, filename)
 
     try:
         with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
-            # Prepare headers: Athlete Name, Year + all event categories
-            headers = ['Athlete Name', 'Year'] + team_data['event_categories']
-
+            headers = ['Athlete Name', 'Year', 'Event', 'PR']
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             writer.writeheader()
 
-            # Write athlete data
-            for athlete in team_data['athletes']:
-                row = {
-                    'Athlete Name': athlete['name'],
-                    'Year': athlete.get('year', '')
-                }
-                # Add event results
-                row.update(athlete['events'])
-                writer.writerow(row)
+            # Write one row per event
+            for event_name, pr_value in athlete_data['events'].items():
+                if pr_value:  # Only write events with actual PR values
+                    row = {
+                        'Athlete Name': athlete_name,
+                        'Year': athlete_year,
+                        'Event': event_name,
+                        'PR': pr_value
+                    }
+                    writer.writerow(row)
 
         return filepath
 
@@ -64,22 +70,91 @@ def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
         return None
 
 
-def fetch_all_to_csv(output_dir="csv_exports"):
+def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_exports/tfrr"):
     """
-    Fetch stats for all Haverford TFRR teams and save each to CSV.
+    Fetch PRs for all athletes on a team and save individual CSV files.
+
+    Args:
+        team_code: TFRR team code
+        sport_key: Sport key (e.g., "mens_track")
+        sport_display: Display name (e.g., "Men's Track")
+        output_dir: Directory to save CSV files
+
+    Returns:
+        Dict with results
+    """
+    fetcher = TFRRFetcher()
+
+    print(f"\n{'='*70}")
+    print(f"Processing: {sport_display}")
+    print(f"{'='*70}")
+
+    # Determine sport type
+    sport_type = "cross_country" if "cross_country" in sport_key else "track"
+
+    # Fetch team stats
+    print(f"\n[1/2] Fetching team roster and PRs...")
+    result = fetcher.fetch_team_stats(team_code, sport_type)
+
+    if not result.success:
+        print(f"  ✗ Failed to fetch team: {result.error}")
+        return {'success': False, 'error': result.error}
+
+    team_data = result.data
+    athletes = team_data['athletes']
+    print(f"  ✓ Found {len(athletes)} athletes\n")
+
+    # Save individual CSV for each athlete
+    print(f"[2/2] Saving individual athlete PR files...")
+    successful_files = []
+    failed_athletes = []
+
+    for i, athlete in enumerate(athletes, 1):
+        athlete_name = athlete['name']
+        num_events = len([v for v in athlete['events'].values() if v])  # Count non-empty PRs
+
+        print(f"  [{i}/{len(athletes)}] {athlete_name}... ", end='', flush=True)
+
+        if num_events == 0:
+            print(f"⊘ (no PRs)")
+            continue
+
+        try:
+            csv_path = save_athlete_prs_csv(athlete, sport_display, output_dir)
+
+            if csv_path:
+                print(f"✓ ({num_events} PRs)")
+                successful_files.append(csv_path)
+            else:
+                print(f"✗ (failed to save)")
+                failed_athletes.append({'name': athlete_name, 'error': 'CSV save failed'})
+
+        except Exception as e:
+            print(f"✗ ({str(e)})")
+            failed_athletes.append({'name': athlete_name, 'error': str(e)})
+
+    return {
+        'success': True,
+        'files': successful_files,
+        'failed': failed_athletes,
+        'num_athletes': len(athletes)
+    }
+
+
+def fetch_all_teams_prs(output_dir="csv_exports/tfrr"):
+    """
+    Fetch PRs for all Haverford TFRR teams.
 
     Args:
         output_dir: Directory to save CSV files
     """
     print("=" * 70)
-    print("Fetching All Haverford TFRR Team Stats to CSV")
+    print("Fetching PRs for All Haverford TFRR Athletes")
+    print("Using Individual Athlete Approach")
     print("=" * 70)
-    print()
 
-    fetcher = TFRRFetcher()
     results = {
         'successful': [],
-        'no_stats': [],
         'failed': []
     }
 
@@ -88,47 +163,27 @@ def fetch_all_to_csv(output_dir="csv_exports"):
     for i, (sport_key, team_code) in enumerate(HAVERFORD_TEAMS.items(), 1):
         sport_display = sport_key.replace('_', ' ').title()
 
-        print(f"[{i}/{total_teams}] {sport_display}...")
+        print(f"\n[{i}/{total_teams}] {sport_display}")
 
         try:
-            # Determine sport type (track or cross_country)
-            sport_type = "cross_country" if "cross_country" in sport_key else "track"
+            result = fetch_team_athlete_prs(
+                team_code,
+                sport_key,
+                sport_display,
+                output_dir
+            )
 
-            # Fetch the team stats
-            result = fetcher.fetch_team_stats(team_code, sport_type)
-
-            if result.success:
-                data = result.data
-                num_athletes = len(data['athletes'])
-                num_events = len(data['event_categories'])
-
-                # Save to CSV
-                csv_path = save_team_to_csv(data, sport_display, output_dir)
-
-                if csv_path:
-                    print(f"  ✓ Saved {num_athletes} athletes ({num_events} events) to {csv_path}")
-                    results['successful'].append({
-                        'sport': sport_display,
-                        'athletes': num_athletes,
-                        'events': num_events,
-                        'file': csv_path
-                    })
-                else:
-                    print(f"  ⚠️  Fetched data but failed to save CSV")
-                    results['failed'].append({
-                        'sport': sport_display,
-                        'error': 'CSV save failed'
-                    })
-
-            elif "No athlete data available" in result.error or "season may not have started" in result.error:
-                print(f"  ⚠️  No stats yet (season hasn't started)")
-                results['no_stats'].append(sport_display)
-
+            if result['success']:
+                results['successful'].append({
+                    'sport': sport_display,
+                    'files': result['files'],
+                    'failed_athletes': result['failed'],
+                    'num_athletes': result['num_athletes']
+                })
             else:
-                print(f"  ✗ Error: {result.error}")
                 results['failed'].append({
                     'sport': sport_display,
-                    'error': result.error
+                    'error': result['error']
                 })
 
         except Exception as e:
@@ -138,47 +193,36 @@ def fetch_all_to_csv(output_dir="csv_exports"):
                 'error': str(e)
             })
 
-        print()
-
     # Summary
-    print("=" * 70)
+    print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print()
-
-    print(f"Total teams: {total_teams}")
-    print(f"✓ Successfully saved: {len(results['successful'])}")
-    print(f"⚠️  No stats yet: {len(results['no_stats'])}")
+    print(f"\nTotal teams: {total_teams}")
+    print(f"✓ Successful: {len(results['successful'])}")
     print(f"✗ Failed: {len(results['failed'])}")
-    print()
 
     if results['successful']:
-        print("=" * 70)
-        print("SAVED FILES:")
+        print("\n" + "=" * 70)
+        print("SUCCESSFULLY PROCESSED:")
         print("=" * 70)
         for item in results['successful']:
-            print(f"  • {item['sport']:<30} {item['athletes']} athletes, {item['events']} events")
-            print(f"    → {item['file']}")
-        print()
-
-    if results['no_stats']:
-        print("=" * 70)
-        print("NO STATS YET (Season not started):")
-        print("=" * 70)
-        for sport in results['no_stats']:
-            print(f"  • {sport}")
-        print()
+            num_files = len(item['files'])
+            num_failed = len(item['failed_athletes'])
+            total_athletes = item['num_athletes']
+            print(f"\n  • {item['sport']} ({total_athletes} athletes)")
+            print(f"    CSV files: {num_files}")
+            if num_failed > 0:
+                print(f"    Failed: {num_failed} athletes")
 
     if results['failed']:
-        print("=" * 70)
+        print("\n" + "=" * 70)
         print("FAILED:")
         print("=" * 70)
         for item in results['failed']:
             print(f"  • {item['sport']}: {item['error']}")
-        print()
 
-    print("=" * 70)
-    print(f"✓ Complete! CSV files saved to: {output_dir}/")
+    print("\n" + "=" * 70)
+    print(f"✓ Complete! Files saved to: {output_dir}/")
     print("=" * 70)
 
     return len(results['successful']) > 0
@@ -188,12 +232,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Fetch all Haverford TFRR team stats and save to CSV files'
+        description='Fetch TFRR athlete PRs for Haverford teams (individual athlete approach)'
     )
     parser.add_argument(
         '--output-dir',
-        default='csv_exports',
-        help='Directory to save CSV files (default: tfrr_stats_output)'
+        default='csv_exports/tfrr',
+        help='Directory to save CSV files (default: csv_exports/tfrr)'
     )
     parser.add_argument(
         '--sport',
@@ -204,13 +248,32 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     try:
-        # If specific sport requested, temporarily modify HAVERFORD_TEAMS
         if args.sport:
+            # Fetch specific sport
             from src.website_fetcher.tfrr_fetcher import HAVERFORD_TEAMS as ALL_TEAMS
-            HAVERFORD_TEAMS = {args.sport: ALL_TEAMS[args.sport]}
 
-        success = fetch_all_to_csv(output_dir=args.output_dir)
+            if args.sport not in ALL_TEAMS:
+                print(f"✗ Unknown sport: {args.sport}")
+                print(f"Available sports: {', '.join(ALL_TEAMS.keys())}")
+                sys.exit(1)
+
+            team_code = ALL_TEAMS[args.sport]
+            sport_display = args.sport.replace('_', ' ').title()
+
+            result = fetch_team_athlete_prs(
+                team_code,
+                args.sport,
+                sport_display,
+                args.output_dir
+            )
+
+            success = result['success']
+        else:
+            # Fetch all sports
+            success = fetch_all_teams_prs(output_dir=args.output_dir)
+
         sys.exit(0 if success else 1)
+
     except Exception as e:
         print(f"\n✗ Fatal exception: {e}")
         import traceback

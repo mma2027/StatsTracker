@@ -89,6 +89,102 @@ class NCAAFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching player stats")
 
+    def fetch_player_career_stats(self, player_id: str, sport: str, school_filter: str = "Haverford") -> FetchResult:
+        """
+        Fetch career statistics for an individual player across all their seasons.
+
+        This method visits the player's individual page which contains season-by-season
+        stats. It filters to only include seasons at the specified school.
+
+        Args:
+            player_id: NCAA player ID (e.g., "9335071")
+            sport: Sport name (e.g., "mens_basketball")
+            school_filter: School name to filter for (default: "Haverford")
+
+        Returns:
+            FetchResult with player career statistics
+
+        Example data format:
+        {
+            "player_id": "9335071",
+            "player_name": "Seth Anderson",
+            "sport": "mens_basketball",
+            "seasons": [
+                {
+                    "year": "2025-26",
+                    "team": "Haverford",
+                    "stats": {"G": "13", "PTS": "44", ...}
+                },
+                {
+                    "year": "2024-25",
+                    "team": "Haverford",
+                    "stats": {"G": "20", "PTS": "81", ...}
+                }
+            ],
+            "stat_categories": ["Year", "Team", "G", "MP", "FGM", ...]
+        }
+
+        Notes:
+        - Player pages are at: https://stats.ncaa.org/players/{player_id}
+        - Player roster links are found on: https://stats.ncaa.org/teams/{team_id}/roster
+        - The second table on player pages contains season-by-season stats
+        - Rows with "Totals" in the year column are filtered out
+        """
+        try:
+            logger.info(f"Fetching career stats for player {player_id} in {sport}")
+
+            # Initialize Selenium driver
+            self._init_selenium_driver()
+
+            # Navigate to player page
+            player_url = f"{self.base_url}/players/{player_id}"
+            logger.debug(f"Fetching URL: {player_url}")
+            self.driver.get(player_url)
+
+            # Wait for page to load
+            time.sleep(3)
+
+            # Get page source and parse
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+
+            # Check for page errors
+            page_error = self._check_for_page_errors(soup)
+            if page_error:
+                logger.error(f"Invalid player page for {player_id}: {page_error}")
+                return FetchResult(
+                    success=False,
+                    error=page_error,
+                    source=self.name,
+                )
+
+            # Parse player career table
+            player_data = self._parse_player_career_table(soup, school_filter)
+
+            if not player_data or not player_data.get("seasons"):
+                logger.warning(f"No {school_filter} career data found for player {player_id}")
+                return FetchResult(
+                    success=False,
+                    error=f"No {school_filter} career statistics found",
+                    source=self.name,
+                )
+
+            # Add player_id and sport to data
+            player_data["player_id"] = player_id
+            player_data["sport"] = sport
+
+            logger.info(
+                f"Successfully fetched {len(player_data['seasons'])} seasons for player {player_id}"
+            )
+
+            return FetchResult(success=True, data=player_data, source=self.name)
+
+        except Exception as e:
+            return self.handle_error(e, "fetching player career stats")
+
+        finally:
+            # Always close the driver
+            self._close_driver()
+
     def fetch_team_stats(self, team_id: str, sport: str) -> FetchResult:
         """
         Fetch team statistics from NCAA.
@@ -172,6 +268,115 @@ class NCAAFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
+
+        finally:
+            # Always close the driver
+            self._close_driver()
+
+    def fetch_team_roster_with_ids(self, team_id: str, sport: str) -> FetchResult:
+        """
+        Fetch team roster with player IDs from the roster page.
+
+        Unlike fetch_team_stats() which gets current season stats from the stats page,
+        this method visits the roster page to extract player names and their NCAA player IDs.
+        These player IDs can then be used with fetch_player_career_stats() to get
+        career statistics for each player.
+
+        Args:
+            team_id: NCAA team ID
+            sport: Sport name
+
+        Returns:
+            FetchResult with roster data
+
+        Example data format:
+        {
+            "team_id": "611523",
+            "sport": "mens_basketball",
+            "players": [
+                {
+                    "name": "Seth Anderson",
+                    "player_id": "9335071"
+                },
+                {
+                    "name": "Raja Coleman",
+                    "player_id": "11198481"
+                },
+                ...
+            ]
+        }
+        """
+        try:
+            logger.info(f"Fetching roster with player IDs for team {team_id}")
+
+            # Initialize Selenium driver
+            self._init_selenium_driver()
+
+            # Navigate to team roster page
+            roster_url = f"{self.base_url}/teams/{team_id}/roster"
+            logger.debug(f"Fetching URL: {roster_url}")
+            self.driver.get(roster_url)
+
+            # Wait for page to load
+            time.sleep(3)
+
+            # Get page source and parse
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+
+            # Check for page errors
+            page_error = self._check_for_page_errors(soup)
+            if page_error:
+                logger.error(f"Invalid roster page for {team_id}: {page_error}")
+                return FetchResult(
+                    success=False,
+                    error=page_error,
+                    source=self.name,
+                )
+
+            # Extract player links
+            import re
+            players = []
+
+            # Find all links with /players/{player_id} pattern
+            all_links = soup.find_all('a', href=True)
+            player_links = [l for l in all_links if '/players/' in l.get('href', '')]
+
+            for link in player_links:
+                href = link.get('href')
+                name = link.get_text().strip()
+
+                # Extract player ID from href (e.g., /players/9335071 → 9335071)
+                match = re.search(r'/players/(\d+)', href)
+                if match:
+                    player_id = match.group(1)
+
+                    # Skip generic links like "Players" or "Game By Game"
+                    if player_id and name and len(name) > 3 and not name.lower() in ['players', 'game by game']:
+                        players.append({
+                            "name": name,
+                            "player_id": player_id
+                        })
+
+            if not players:
+                logger.warning(f"No players found on roster page for team {team_id}")
+                return FetchResult(
+                    success=False,
+                    error="No players found on roster page",
+                    source=self.name,
+                )
+
+            data = {
+                "team_id": team_id,
+                "sport": sport,
+                "players": players
+            }
+
+            logger.info(f"Successfully fetched roster with {len(players)} players")
+
+            return FetchResult(success=True, data=data, source=self.name)
+
+        except Exception as e:
+            return self.handle_error(e, "fetching team roster")
 
         finally:
             # Always close the driver
@@ -428,6 +633,158 @@ class NCAAFetcher(BaseFetcher):
 
         logger.warning("Could not extract season from page")
         return "Unknown"
+
+    def _parse_player_career_table(self, soup: BeautifulSoup, school_filter: str = "Haverford") -> Dict[str, Any]:
+        """
+        Parse the career statistics table from an individual player's page.
+
+        Player pages have multiple tables. The second table (index 1) contains
+        season-by-season career stats. This method extracts that table and filters
+        for only seasons at the specified school.
+
+        Args:
+            soup: BeautifulSoup object of the player page
+            school_filter: School name to filter for (case-insensitive)
+
+        Returns:
+            Dictionary with:
+            {
+                "player_name": "Player Name",
+                "seasons": [
+                    {
+                        "year": "2025-26",
+                        "team": "Haverford",
+                        "stats": {"G": "13", "PTS": "44", ...}
+                    },
+                    ...
+                ],
+                "stat_categories": ["Year", "Team", "G", "MP", ...]
+            }
+
+        Table Structure (example for basketball):
+        Headers: ['Year', 'Team', 'G', 'MP', 'FGM', 'FGA', 'FG%', ...]
+        Row 1: ['Totals', '52', '663:54', '59', '157', ...] <- Skip this
+        Row 2: ['2023-24', 'Haverford', '19', '171:21', ...] <- Include
+        Row 3: ['2024-25', 'Haverford', '20', '286:09', ...] <- Include
+        Row 4: ['2025-26', 'Haverford', '13', '206:24', ...] <- Include
+        """
+        import re
+
+        # Find all tables on the page
+        tables = soup.find_all('table')
+
+        if len(tables) < 2:
+            logger.warning("Player page does not have career stats table (expected at least 2 tables)")
+            return {}
+
+        # The second table (index 1) contains season-by-season career stats
+        career_table = tables[1]
+
+        # Extract headers
+        headers = career_table.find_all('th')
+        if not headers:
+            logger.warning("No headers found in career stats table")
+            return {}
+
+        stat_categories = [h.get_text().strip() for h in headers]
+        logger.debug(f"Career table headers: {stat_categories}")
+
+        # Extract player name from page (usually in h1 or title)
+        player_name = "Unknown"
+        h1_tag = soup.find('h1')
+        if h1_tag:
+            player_name = h1_tag.get_text().strip()
+
+        # Parse data rows
+        rows = career_table.find_all('tr')
+        data_rows = [r for r in rows if r.find_all('td')]
+
+        seasons = []
+        career_totals = None
+        school_filter_lower = school_filter.lower()
+
+        for row in data_rows:
+            cells = row.find_all('td')
+            cell_values = [c.get_text().strip() for c in cells]
+
+            if not cell_values:
+                logger.debug(f"Skipping row: no cells")
+                continue
+
+            # First cell should be the year
+            year = cell_values[0] if cell_values else ""
+            logger.debug(f"Processing row with year='{year}', {len(cell_values)} cells")
+
+            # Check if this row is shorter than headers (common for totals rows)
+            # If so, pad it with empty strings to match header length
+            while len(cell_values) < len(stat_categories):
+                cell_values.append("")
+
+            # Check if this is the "Totals" row
+            if "total" in year.lower():
+                logger.debug(f"Detected totals row with year='{year}', {len(cell_values)} cells")
+
+                # IMPORTANT: Totals row is missing the "Team" column, so it's shifted left by 1
+                # Insert empty string at position 1 to align with headers
+                # Before: ["Totals", "52", "663:54", "59", "157", ...]
+                # After:  ["Totals", "", "52", "663:54", "59", "157", ...]
+                cell_values.insert(1, "")
+                logger.debug(f"After inserting empty Team: {len(cell_values)} cells")
+
+                # Build stats dictionary for career totals
+                stats = {}
+                for i, stat_name in enumerate(stat_categories):
+                    if i < len(cell_values):
+                        stats[stat_name] = cell_values[i]
+
+                # Store career totals separately
+                career_totals = {
+                    "year": "Career",  # Label it as "Career" instead of "Totals"
+                    "team": school_filter,  # Use school filter as team name
+                    "stats": stats
+                }
+                logger.debug(f"Stored career_totals: G={stats.get('G', 'N/A')}, PTS={stats.get('PTS', 'N/A')}")
+                continue
+
+            # Second cell should be the team
+            team = cell_values[1] if len(cell_values) > 1 else ""
+
+            # Filter for specified school only
+            if school_filter_lower not in team.lower():
+                logger.debug(f"Skipping row with team '{team}' (not {school_filter})")
+                continue
+
+            # Check if this looks like a valid season year (e.g., "2024-25")
+            if not re.match(r'\d{4}-\d{2}', year):
+                logger.debug(f"Skipping row with invalid year format: {year}")
+                continue
+
+            # Build stats dictionary mapping stat names to values
+            stats = {}
+            for i, stat_name in enumerate(stat_categories):
+                if i < len(cell_values):
+                    stats[stat_name] = cell_values[i]
+
+            seasons.append({
+                "year": year,
+                "team": team,
+                "stats": stats
+            })
+
+        # Add career totals as the last row if we found it
+        if career_totals:
+            logger.debug(f"Adding career totals row: {career_totals['year']}")
+            seasons.append(career_totals)
+        else:
+            logger.debug("No career totals found to add")
+
+        logger.info(f"Found {len(seasons)} {school_filter} seasons for {player_name}")
+
+        return {
+            "player_name": player_name,
+            "seasons": seasons,
+            "stat_categories": stat_categories
+        }
 
     def _parse_stats_table(
         self, soup: BeautifulSoup
