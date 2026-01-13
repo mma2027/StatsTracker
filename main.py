@@ -14,7 +14,8 @@ Run this script daily (e.g., via cron job) to send notifications.
 
 import sys
 import logging
-from datetime import date
+import hashlib
+from datetime import date, datetime
 from pathlib import Path
 import yaml
 
@@ -23,9 +24,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from src.gameday_checker import GamedayChecker
 from src.website_fetcher import NCAAFetcher, TFRRFetcher
-from src.player_database import PlayerDatabase
+from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier
+from auto_update_team_ids import fetch_with_auto_recovery
 
 
 def setup_logging(log_level: str = "INFO", log_file: str = None):
@@ -72,6 +74,161 @@ def load_config(config_path: str = "config/config.yaml") -> dict:
     except Exception as e:
         logging.error(f"Error loading configuration: {e}")
         sys.exit(1)
+
+
+def generate_player_id(name: str, sport: str) -> str:
+    """
+    Generate a unique player ID from name and sport.
+
+    Args:
+        name: Player name
+        sport: Sport
+
+    Returns:
+        Unique player ID (hash-based)
+    """
+    raw = f"{name.lower().strip()}_{sport.lower()}"
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
+def extract_player_info(player_data: dict, sport: str) -> dict:
+    """
+    Extract player metadata from NCAA stats.
+
+    Args:
+        player_data: Player dict from NCAA fetcher
+        sport: Sport name
+
+    Returns:
+        Dict with position, year, etc.
+    """
+    stats = player_data.get('stats', {})
+
+    return {
+        'position': stats.get('Pos', stats.get('Position', '')),
+        'year': stats.get('Yr', stats.get('Year', stats.get('Class', ''))),
+        'number': stats.get('#', stats.get('No', stats.get('Jersey', ''))),
+    }
+
+
+def update_team_stats(
+    fetcher: NCAAFetcher,
+    db: PlayerDatabase,
+    sport_key: str,
+    team_id: str,
+    season: str,
+    logger: logging.Logger
+) -> dict:
+    """
+    Fetch stats for one team and update database.
+
+    Args:
+        fetcher: NCAAFetcher instance
+        db: PlayerDatabase instance
+        sport_key: Sport key (e.g., 'mens_basketball')
+        team_id: NCAA team ID
+        season: Season string (e.g., '2025-26')
+        logger: Logger instance
+
+    Returns:
+        Dict with results (players_added, stats_added, errors)
+    """
+    sport_display = sport_key.replace('_', ' ').title()
+    logger.info(f"Processing {sport_display} (ID: {team_id})")
+
+    # Fetch with auto-recovery
+    result = fetch_with_auto_recovery(team_id, sport_key)
+
+    if not result:
+        logger.error(f"Auto-recovery failed for {sport_display}")
+        return {'error': 'Auto-recovery failed', 'players_added': 0, 'stats_added': 0}
+
+    if not result.success:
+        if "No statistics available yet" in result.error:
+            logger.warning(f"Season not started yet for {sport_display} - skipping")
+            return {'skipped': True, 'players_added': 0, 'stats_added': 0}
+        else:
+            logger.error(f"Error fetching {sport_display}: {result.error}")
+            return {'error': result.error, 'players_added': 0, 'stats_added': 0}
+
+    # Process players
+    data = result.data
+    players = data['players']
+    stat_categories = data['stat_categories']
+
+    logger.info(f"Found {len(players)} players with {len(stat_categories)} stat categories")
+
+    players_added = 0
+    players_updated = 0
+    stats_added = 0
+    errors = []
+
+    for player_data in players:
+        player_name = player_data['name']
+
+        try:
+            # Generate player ID
+            player_id = generate_player_id(player_name, sport_key)
+
+            # Extract player info
+            player_info = extract_player_info(player_data, sport_key)
+
+            # Check if player exists
+            existing_player = db.get_player(player_id)
+
+            if existing_player:
+                # Update player info if needed
+                existing_player.position = player_info['position'] or existing_player.position
+                existing_player.year = player_info['year'] or existing_player.year
+                db.update_player(existing_player)
+                players_updated += 1
+            else:
+                # Add new player
+                player = Player(
+                    player_id=player_id,
+                    name=player_name,
+                    sport=sport_key,
+                    team='Haverford',
+                    position=player_info['position'],
+                    year=player_info['year'],
+                    active=True
+                )
+                db.add_player(player)
+                players_added += 1
+
+            # Add stats
+            for stat_name, stat_value in player_data['stats'].items():
+                if stat_value == '' or stat_value is None:
+                    continue
+
+                stat_entry = StatEntry(
+                    player_id=player_id,
+                    stat_name=stat_name,
+                    stat_value=stat_value,
+                    season=season,
+                    date_recorded=datetime.now()
+                )
+                db.add_stat(stat_entry)
+                stats_added += 1
+
+        except Exception as e:
+            error_msg = f"Error processing {player_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    logger.info(f"Added {players_added} new players, updated {players_updated} players")
+    logger.info(f"Added {stats_added} stat entries")
+
+    if errors:
+        logger.warning(f"{len(errors)} errors occurred")
+
+    return {
+        'success': True,
+        'players_added': players_added,
+        'players_updated': players_updated,
+        'stats_added': stats_added,
+        'errors': errors
+    }
 
 
 def main():
@@ -123,6 +280,16 @@ def main():
 
         logger.info("All modules initialized successfully")
 
+        # Auto-update stats if configured
+        notification_config = config.get('notifications', {})
+        if notification_config.get('auto_update_stats', False):
+            logger.info("Auto-update stats enabled, fetching latest data...")
+            try:
+                update_stats(auto_mode=True)
+            except Exception as e:
+                logger.warning(f"Stats update failed: {e}")
+                logger.warning("Continuing with existing data...")
+
         # Check for games today
         today = date.today()
         logger.info(f"Checking for games on {today.strftime('%Y-%m-%d')}")
@@ -131,7 +298,6 @@ def main():
         logger.info(f"Found {len(games_today)} game(s) today")
 
         # Check if notifications are enabled
-        notification_config = config.get('notifications', {})
         if not notification_config.get('enabled', True):
             logger.info("Notifications are disabled in configuration")
             return
@@ -175,56 +341,119 @@ def main():
         sys.exit(1)
 
 
-def update_stats():
+def update_stats(auto_mode: bool = False):
     """
-    Separate function to update stats from websites.
+    Update stats from NCAA websites.
 
     This can be run independently to fetch and update player statistics
     without sending notifications.
+
+    Args:
+        auto_mode: If True, called from main() - use quieter logging
     """
     config = load_config()
 
     log_config = config.get('logging', {})
-    setup_logging(
-        log_level=log_config.get('level', 'INFO'),
-        log_file=log_config.get('file')
-    )
+    if not auto_mode:
+        setup_logging(
+            log_level=log_config.get('level', 'INFO'),
+            log_file=log_config.get('file')
+        )
 
     logger = logging.getLogger(__name__)
-    logger.info("Starting stats update...")
+
+    if not auto_mode:
+        logger.info("=" * 60)
+        logger.info("Update Player Database from NCAA Stats")
+        logger.info("=" * 60)
+    else:
+        logger.info("Updating player statistics from NCAA...")
 
     try:
         # Initialize database
         db_config = config.get('database', {})
         database = PlayerDatabase(db_path=db_config.get('path', 'data/stats.db'))
 
-        # Initialize fetchers
+        # Initialize NCAA fetcher
         fetcher_config = config.get('fetchers', {})
-
         ncaa_config = fetcher_config.get('ncaa', {})
         ncaa_fetcher = NCAAFetcher(
             base_url=ncaa_config.get('base_url', 'https://stats.ncaa.org'),
             timeout=ncaa_config.get('timeout', 30)
         )
 
-        tfrr_config = fetcher_config.get('tfrr', {})
-        tfrr_fetcher = TFRRFetcher(
-            base_url=tfrr_config.get('base_url', 'https://www.tfrrs.org'),
-            timeout=tfrr_config.get('timeout', 30)
-        )
+        # Get NCAA teams from config
+        ncaa_teams = ncaa_config.get('haverford_teams', {})
+        if not ncaa_teams:
+            logger.error("No NCAA teams configured in config file")
+            return
 
-        # TODO: Implement actual stats fetching logic
-        # This would involve:
-        # 1. Getting list of players from database
-        # 2. For each player, fetch latest stats from appropriate source
-        # 3. Update database with new stats
+        # Determine current season (e.g., "2025-26")
+        today = date.today()
+        if today.month >= 8:  # August or later
+            season = f"{today.year}-{str(today.year + 1)[-2:]}"
+        else:
+            season = f"{today.year - 1}-{str(today.year)[-2:]}"
 
-        logger.info("Stats update completed")
-        logger.info("Note: Stats fetching logic needs to be implemented")
+        logger.info(f"Season: {season}")
+        logger.info(f"Processing {len(ncaa_teams)} NCAA teams")
+
+        # Track results
+        total_results = {
+            'teams_processed': 0,
+            'teams_skipped': 0,
+            'teams_failed': 0,
+            'players_added': 0,
+            'players_updated': 0,
+            'stats_added': 0
+        }
+
+        # Process each team
+        for sport_key, team_id in ncaa_teams.items():
+            result = update_team_stats(
+                ncaa_fetcher,
+                database,
+                sport_key,
+                str(team_id),
+                season,
+                logger
+            )
+
+            if result.get('skipped'):
+                total_results['teams_skipped'] += 1
+            elif result.get('error'):
+                total_results['teams_failed'] += 1
+            else:
+                total_results['teams_processed'] += 1
+                total_results['players_added'] += result.get('players_added', 0)
+                total_results['players_updated'] += result.get('players_updated', 0)
+                total_results['stats_added'] += result.get('stats_added', 0)
+
+        # Final summary
+        if not auto_mode:
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info("SUMMARY")
+            logger.info("=" * 60)
+
+        logger.info(f"Teams processed: {total_results['teams_processed']}")
+        logger.info(f"Teams skipped (no stats): {total_results['teams_skipped']}")
+        logger.info(f"Teams failed: {total_results['teams_failed']}")
+        logger.info(f"Players added: {total_results['players_added']}")
+        logger.info(f"Players updated: {total_results['players_updated']}")
+        logger.info(f"Stats added: {total_results['stats_added']}")
+
+        if not auto_mode:
+            logger.info("=" * 60)
+            logger.info("Database update complete")
+            logger.info("=" * 60)
 
     except Exception as e:
         logger.error(f"Error updating stats: {e}", exc_info=True)
-        sys.exit(1)
+        if not auto_mode:
+            sys.exit(1)
+        else:
+            raise
 
 
 if __name__ == "__main__":

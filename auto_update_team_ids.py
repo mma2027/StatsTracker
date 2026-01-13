@@ -9,7 +9,7 @@ when the fetcher encounters invalid team IDs.
 import sys
 from pathlib import Path
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
 

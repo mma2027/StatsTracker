@@ -10,8 +10,9 @@ import sys
 import hashlib
 from datetime import datetime
 from typing import Dict, Any, List
+from pathlib import Path
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, str(Path(__file__).parent))
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
 from src.player_database.database import PlayerDatabase

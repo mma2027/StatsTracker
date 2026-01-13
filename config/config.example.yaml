@@ -90,6 +90,7 @@ notifications:
   proximity_threshold: 10  # Alert when within X units of milestone
   send_time: "08:00"  # Time to send daily notifications
   include_historical: false  # Include historical achievement data
+  auto_update_stats: false  # Auto-fetch stats before checking milestones
 
 # Logging
 logging:
