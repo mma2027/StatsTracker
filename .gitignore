@@ -72,7 +72,14 @@ data/*.csv
 data/*.json
 data/cache/
 
+# Test output directories
+test_csv_output/
+ncaa_stats_output/
+
 # Temporary files
 *.tmp
 *.bak
 temp/
+
+# Claude Code
+.claude/

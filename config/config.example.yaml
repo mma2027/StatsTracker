@@ -33,6 +33,24 @@ fetchers:
   ncaa:
     base_url: "https://stats.ncaa.org"
     timeout: 30
+    haverford_school_id: 276
+    # Haverford College NCAA team IDs for 2025-26 season
+    # Note: Team IDs change each academic year
+    haverford_teams:
+      mens_basketball: 611523
+      womens_basketball: 611724
+      mens_soccer: 604522
+      womens_soccer: 603609
+      field_hockey: 603834
+      womens_volleyball: 605677
+      baseball: 615223
+      mens_lacrosse: 612459
+      womens_lacrosse: 613103
+      softball: 614273
+    selenium:
+      headless: true
+      timeout: 10
+      page_load_timeout: 15
   tfrr:
     base_url: "https://www.tfrrs.org"
     timeout: 30
