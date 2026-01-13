@@ -57,32 +57,97 @@ fetchers:
   # Add more fetcher configurations as needed
 
 # Milestone Configuration
+# Milestones follow pattern: 10, 25, 50, 75, 100, 150, 200, 250, 300, then multiples of 100
 milestones:
   basketball:
     points:
+      - 10
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 400
+      - 500
+      - 600
+      - 700
+      - 800
+      - 900
       - 1000
+      - 1100
+      - 1200
+      - 1300
+      - 1400
       - 1500
+      - 1600
+      - 1700
+      - 1800
+      - 1900
       - 2000
     rebounds:
+      - 10
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 400
       - 500
-      - 750
+      - 600
+      - 700
+      - 800
+      - 900
       - 1000
     assists:
+      - 10
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+      - 200
+      - 250
       - 300
+      - 400
       - 500
-      - 750
-  track:
-    pr_improvement: 0.05  # 5% improvement threshold
+      - 600
+      - 700
+      - 800
   soccer:
     goals:
-      - 20
-      - 30
-      - 40
-    assists:
-      - 15
+      - 10
       - 25
-      - 35
+      - 50
+      - 75
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 400
+      - 500
+    assists:
+      - 10
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+      - 400
+      - 500
   # Add milestones for other sports
+  # You can also use "auto" to automatically generate standard thresholds:
+  # field_hockey:
+  #   goals: "auto"  # Will use: 10, 25, 50, 75, 100, 150, 200, 250, 300, 400, 500, ...
 
 # Notification Settings
 notifications:

@@ -14,6 +14,28 @@ from ..player_database import PlayerDatabase, PlayerStats
 logger = logging.getLogger(__name__)
 
 
+def generate_milestone_thresholds(max_value: int = 3000) -> List[int]:
+    """
+    Generate standard milestone thresholds: 10, 25, 50, 75, 100, 150, 200, 250, 300,
+    then multiples of 100 (400, 500, 600, etc.).
+
+    Args:
+        max_value: Maximum milestone value to generate
+
+    Returns:
+        List of milestone threshold values
+    """
+    milestones = [10, 25, 50, 75, 100, 150, 200, 250, 300]
+
+    # Add multiples of 100 after 300
+    current = 400
+    while current <= max_value:
+        milestones.append(current)
+        current += 100
+
+    return milestones
+
+
 class MilestoneDetector:
     """
     Detects when players are close to achieving milestones.
@@ -45,14 +67,20 @@ class MilestoneDetector:
         Returns:
             List of Milestone objects
 
-        TODO: Implement configuration parsing
+        Supports:
+        - List of thresholds: [10, 25, 50, ...]
+        - "auto" keyword to auto-generate standard thresholds
         """
         milestones = []
 
-        # Example: Parse config to create Milestone objects
-        # This is a template - implement based on your config structure
+        # Parse config to create Milestone objects
         for sport, sport_config in config.items():
             for stat_name, thresholds in sport_config.items():
+                # Handle "auto" keyword for automatic threshold generation
+                if thresholds == "auto":
+                    thresholds = generate_milestone_thresholds()
+
+                # Process list of thresholds
                 if isinstance(thresholds, list):
                     for threshold in thresholds:
                         milestone = Milestone(
@@ -188,12 +216,15 @@ class MilestoneDetector:
         Returns:
             True if player is close enough to milestone
         """
-        # Check if within threshold distance
-        if isinstance(proximity.distance, (int, float)):
-            if proximity.distance <= threshold and proximity.distance > 0:
-                return True
+        # Only alert if player hasn't passed the milestone yet
+        if not isinstance(proximity.distance, (int, float)) or proximity.distance <= 0:
+            return False
 
-        # Or check if very close by percentage
+        # Check if within threshold distance
+        if proximity.distance <= threshold:
+            return True
+
+        # Or check if very close by percentage (90% or more, but not past)
         if proximity.percentage >= 90:
             return True
 
