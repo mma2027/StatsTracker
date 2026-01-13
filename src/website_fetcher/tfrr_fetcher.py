@@ -36,6 +36,15 @@ class TFRRFetcher(BaseFetcher):
     def __init__(self, base_url: str = "https://www.tfrrs.org", timeout: int = 30):
         super().__init__(base_url, timeout)
         self.driver = None
+        # Set headers to mimic a browser request and avoid 403 errors
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
         """
@@ -57,7 +66,7 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/athletes/{player_id}.html"
 
-            response = requests.get(url, timeout=self.timeout)
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -74,9 +83,6 @@ class TFRRFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
-
-        finally:
-            self._close_driver()
 
     def fetch_team_stats(self, team_code: str, sport: str) -> FetchResult:
         """
@@ -98,7 +104,7 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/teams/{team_code}.html"
 
-            response = requests.get(url, timeout=self.timeout)
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -172,24 +178,34 @@ class TFRRFetcher(BaseFetcher):
         """Extract team roster from page."""
         roster = []
         try:
-            # Look for roster table
-            roster_table = soup.find("table", class_=re.compile("roster|athletes"))
+            # Look for tables with athlete links - TFRR uses "tablesaw" class
+            tables = soup.find_all("table", class_="tablesaw")
 
-            if roster_table:
-                rows = roster_table.find_all("tr")
+            # Find the table with the most athlete links (usually the roster)
+            best_table = None
+            max_athletes = 0
+
+            for table in tables:
+                athlete_links = table.find_all("a", href=re.compile(r"/athletes/"))
+                if len(athlete_links) > max_athletes:
+                    max_athletes = len(athlete_links)
+                    best_table = table
+
+            if best_table:
+                logger.debug(f"Found roster table with {max_athletes} athletes")
+                rows = best_table.find_all("tr")
                 for row in rows[1:]:  # Skip header
-                    cols = row.find_all("td")
-                    if len(cols) >= 2:
-                        athlete_link = row.find("a", href=re.compile(r"/athletes/"))
-                        if athlete_link:
-                            athlete = {
-                                "name": athlete_link.text.strip(),
-                                "athlete_id": self._extract_athlete_id(
-                                    athlete_link["href"]
-                                ),
-                                "year": cols[1].text.strip() if len(cols) > 1 else "",
-                            }
-                            roster.append(athlete)
+                    athlete_link = row.find("a", href=re.compile(r"/athletes/"))
+                    if athlete_link:
+                        cols = row.find_all("td")
+                        athlete = {
+                            "name": athlete_link.text.strip(),
+                            "athlete_id": self._extract_athlete_id(athlete_link["href"]),
+                            "year": cols[1].text.strip() if len(cols) > 1 else "",
+                        }
+                        roster.append(athlete)
+
+                logger.info(f"Extracted {len(roster)} athletes from roster")
 
         except Exception as e:
             logger.warning(f"Error extracting roster: {e}")
@@ -228,7 +244,7 @@ class TFRRFetcher(BaseFetcher):
             search_url = f"{self.base_url}/search.html"
             params = {"q": name, "type": "athlete"}
 
-            response = requests.get(search_url, params=params, timeout=self.timeout)
+            response = requests.get(search_url, params=params, headers=self.headers, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -311,7 +327,7 @@ class TFRRFetcher(BaseFetcher):
 
             # Fetch the athlete's full profile first
             url = f"{self.base_url}/athletes/{athlete_id}.html"
-            response = requests.get(url, timeout=self.timeout)
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -488,8 +504,28 @@ class TFRRFetcher(BaseFetcher):
                     cols = row.find_all("td")
                     if len(cols) >= 2:
                         event = cols[0].text.strip()
-                        mark = cols[1].text.strip()
-                        prs[event] = mark
+                        mark_raw = cols[1].text.strip()
+
+                        # Clean the mark: take only the first line, remove wind info and imperial conversions
+                        # Examples: "22.75\n(0.1)" -> "22.75", "6.18m\n\n20' 3.5\"" -> "6.18m"
+
+                        # First split by newline to isolate the metric value (always comes first)
+                        lines = mark_raw.split('\n')
+                        if not lines:
+                            continue
+
+                        # Take first non-empty line
+                        mark = lines[0].strip()
+
+                        # Remove wind speed indicators in parentheses: "22.75 (0.1)" -> "22.75"
+                        mark = re.sub(r'\s*\([+-]?\d+\.?\d*\)\s*', '', mark).strip()
+
+                        # Remove any imperial measurements (feet/inches) if they leaked through
+                        # Pattern: remove anything with feet (') or inches (")
+                        mark = re.sub(r"[\s]*\d+['\"][\s\d.\"']*", '', mark).strip()
+
+                        if mark and mark != '-' and mark != '—':
+                            prs[event] = mark
 
             # Also check for divs with PR data
             if not prs:

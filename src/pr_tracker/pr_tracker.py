@@ -33,7 +33,11 @@ class PRTracker:
     TIME_EVENTS = ['m', 'h', 'hurdle', 'relay', 'walk', 'steeple']
 
     # Distance/height events (higher is better)
-    DISTANCE_EVENTS = ['jump', 'throw', 'put', 'javelin', 'shot', 'discus', 'hammer']
+    DISTANCE_EVENTS = [
+        'jump', 'throw', 'put', 'javelin', 'shot', 'discus', 'hammer',
+        'lj', 'tj', 'hj', 'pv',  # Long Jump, Triple Jump, High Jump, Pole Vault
+        'sp', 'dt', 'jt', 'ht',  # Shot Put, Discus Throw, Javelin Throw, Hammer Throw
+    ]
 
     def __init__(self,
                  tfrr_fetcher: TFRRFetcher,
@@ -60,6 +64,8 @@ class PRTracker:
             {athlete_name: {event: pr_value}}
         """
         try:
+            # Step 1: Fetch team roster to get athlete IDs
+            logger.info(f"Fetching team roster for {team_code}")
             result = self.tfrr_fetcher.fetch_team_stats(team_code, sport)
 
             if not result.success:
@@ -69,22 +75,57 @@ class PRTracker:
             team_data = result.data
             current_prs = {}
 
-            # Extract PR for each athlete from team data
-            if 'athletes' in team_data:
-                for athlete in team_data['athletes']:
-                    athlete_name = athlete['name']
-                    events = athlete.get('events', {})
+            # Step 2: Extract roster (athlete IDs and names)
+            roster = team_data.get('roster', [])
+
+            if not roster:
+                logger.warning(f"No roster found in team data for {team_code}")
+                return {}
+
+            logger.info(f"Found {len(roster)} athletes in roster")
+
+            # Step 3: For each athlete, fetch their individual stats (including PRs)
+            for athlete in roster:
+                athlete_id = athlete.get('athlete_id')
+                athlete_name = athlete.get('name')
+
+                if not athlete_id or not athlete_name:
+                    continue
+
+                try:
+                    logger.debug(f"Fetching PRs for {athlete_name} (ID: {athlete_id})")
+
+                    # Call fetch_player_stats to get individual athlete data
+                    player_result = self.tfrr_fetcher.fetch_player_stats(athlete_id, sport)
+
+                    if not player_result.success:
+                        logger.warning(f"Failed to fetch stats for {athlete_name}: {player_result.error}")
+                        continue
+
+                    player_data = player_result.data
+
+                    # Extract personal records from player data
+                    personal_records = player_data.get('personal_records', {})
+
+                    if not personal_records:
+                        logger.debug(f"No PRs found for {athlete_name}")
+                        continue
 
                     # Filter valid PR data
                     valid_prs = {
-                        event: pr for event, pr in events.items()
-                        if pr and pr.strip() and pr != '-' and pr != '—'
+                        event: pr for event, pr in personal_records.items()
+                        if pr and str(pr).strip() and pr != '-' and pr != '—'
                     }
 
                     if valid_prs:
                         current_prs[athlete_name] = valid_prs
+                        logger.debug(f"Fetched {len(valid_prs)} PRs for {athlete_name}")
 
-            logger.info(f"Fetched PRs for {len(current_prs)} athletes from {team_code}")
+                except Exception as e:
+                    logger.warning(f"Error fetching PRs for {athlete_name}: {e}")
+                    continue  # Continue with next athlete even if this one fails
+
+            logger.info(f"Successfully fetched PRs for {len(current_prs)} out of {len(roster)} athletes from {team_code}")
             return current_prs
 
         except Exception as e:
