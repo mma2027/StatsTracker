@@ -7,17 +7,8 @@ Fetches statistics from tfrrs.org
 import requests
 from typing import Dict, Any, List, Optional
 import logging
-import time
-import re
-
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+import re
 
 from .base_fetcher import BaseFetcher, FetchResult
 
@@ -52,7 +43,7 @@ class TFRRFetcher(BaseFetcher):
 
         Args:
             player_id: TFRR athlete ID
-            sport: Either "track" or "cross_country"
+            sport: Either "track" or "cross_country" (determines subdomain)
 
         Returns:
             FetchResult with athlete statistics including PRs
@@ -60,43 +51,26 @@ class TFRRFetcher(BaseFetcher):
         try:
             logger.info(f"Fetching TFRR athlete stats for {player_id} in {sport}")
 
-            # Initialize Selenium driver
-            self._init_selenium_driver()
+            # Determine subdomain based on sport
+            if sport.lower() in ["cross_country", "xc", "cross country"]:
+                url = f"https://xc.tfrrs.org/athletes/{player_id}.html"
+            else:
+                url = f"{self.base_url}/athletes/{player_id}.html"
 
-            # Navigate to athlete page
-            athlete_url = f"{self.base_url}/athletes/{player_id}.html"
-            logger.debug(f"Fetching URL: {athlete_url}")
-            self.driver.get(athlete_url)
+            response = requests.get(url, timeout=self.timeout)
 
-            # Wait for page to load
-            time.sleep(2)
-
-            # Get page source and parse with BeautifulSoup
-            soup = BeautifulSoup(self.driver.page_source, "html.parser")
-
-            # Check if page is valid
-            page_error = self._check_for_page_errors(soup)
-            if page_error:
-                logger.error(f"Invalid athlete page for {player_id}: {page_error}")
+            if not self.validate_response(response):
                 return FetchResult(
-                    success=False,
-                    error=page_error,
-                    source=self.name,
+                    success=False, error="Invalid response from TFRRS", source=self.name
                 )
 
-            # Parse athlete data
-            athlete_data = self._parse_athlete_data(soup, player_id, sport)
-
-            if not athlete_data:
-                logger.warning(f"No data found for athlete {player_id}")
+            data = self._parse_athlete_data(response, sport)
+            if data:
+                return FetchResult(success=True, data=data, source=self.name)
+            else:
                 return FetchResult(
-                    success=False,
-                    error="No athlete data found",
-                    source=self.name,
+                    success=False, error="Failed to parse athlete data", source=self.name
                 )
-
-            logger.info(f"Successfully fetched stats for athlete {player_id}")
-            return FetchResult(success=True, data=athlete_data, source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
@@ -114,90 +88,126 @@ class TFRRFetcher(BaseFetcher):
 
         Returns:
             FetchResult with team statistics and roster
-
-        Example data format:
-        {
-            "team_code": "PA_college_m_Haverford",
-            "team_name": "Haverford College",
-            "sport": "track",
-            "season": "Indoor 2026",
-            "athletes": [
-                {
-                    "name": "John Doe",
-                    "year": "JR",
-                    "events": {
-                        "60m": "7.25",
-                        "200m": "23.45",
-                        ...
-                    }
-                }
-            ],
-            "event_categories": ["60m", "200m", ...]
-        }
         """
         try:
-            logger.info(f"Fetching TFRR team stats for team {team_code} in {sport}")
+            logger.info(f"Fetching TFRR team stats for {team_id} in {sport}")
 
-            # Initialize Selenium driver
-            self._init_selenium_driver()
+            # Determine subdomain based on sport
+            if sport.lower() in ["cross_country", "xc", "cross country"]:
+                url = f"https://xc.tfrrs.org/teams/{team_id}.html"
+            else:
+                url = f"{self.base_url}/teams/{team_id}.html"
 
-            # Navigate to team page
-            team_url = f"{self.base_url}/teams/{team_code}.html"
-            logger.debug(f"Fetching URL: {team_url}")
-            self.driver.get(team_url)
+            response = requests.get(url, timeout=self.timeout)
 
-            # Wait for page to load
-            time.sleep(3)
-
-            # Get page source and parse with BeautifulSoup
-            soup = BeautifulSoup(self.driver.page_source, "html.parser")
-
-            # Check if page is valid
-            page_error = self._check_for_page_errors(soup)
-            if page_error:
-                logger.error(f"Invalid team page for {team_code}: {page_error}")
+            if not self.validate_response(response):
                 return FetchResult(
-                    success=False,
-                    error=page_error,
-                    source=self.name,
+                    success=False, error="Invalid response from TFRRS", source=self.name
                 )
 
-            # Extract team name and season
-            team_name = self._get_team_name(soup)
-            season = self._get_season_from_page(soup)
-
-            # Parse the roster and PRs
-            athletes_data, event_categories = self._parse_team_roster(soup, sport)
-
-            if not athletes_data:
-                logger.warning(f"No athlete data found for team {team_code}")
+            data = self._parse_team_data(response, sport)
+            if data:
+                return FetchResult(success=True, data=data, source=self.name)
+            else:
                 return FetchResult(
-                    success=False,
-                    error="No athlete data available yet (season may not have started)",
-                    source=self.name,
+                    success=False, error="Failed to parse team data", source=self.name
                 )
-
-            # Build result data
-            data = {
-                "team_code": team_code,
-                "team_name": team_name,
-                "sport": sport,
-                "season": season,
-                "athletes": athletes_data,
-                "event_categories": event_categories,
-            }
-
-            logger.info(
-                f"Successfully fetched stats for {len(athletes_data)} athletes from team {team_code}"
-            )
-
-            return FetchResult(success=True, data=data, source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
 
-        finally:
-            self._close_driver()
+    def _parse_team_data(self, response, sport: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse TFRR team data from response.
+
+        Args:
+            response: HTTP response
+            sport: Sport type
+
+        Returns:
+            Team data dictionary with roster and stats
+        """
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            # Extract team name
+            name_elem = soup.find("h3") or soup.find("h2")
+            team_name = name_elem.text.strip() if name_elem else "Unknown"
+
+            # Extract conference/division info
+            conference = ""
+            conf_elem = soup.find(text=re.compile("Conference|Division"))
+            if conf_elem:
+                conference = conf_elem.find_parent().text.strip()
+
+            # Extract roster
+            roster = self._extract_roster(soup)
+
+            # Extract team rankings if available
+            rankings = self._extract_team_rankings(soup)
+
+            team_data = {
+                "team_id": self._extract_team_id(response.url),
+                "name": team_name,
+                "sport": sport,
+                "conference": conference,
+                "roster": roster,
+                "rankings": rankings,
+                "profile_url": response.url,
+            }
+
+            logger.info(f"Successfully parsed team data for {team_name}")
+            return team_data
+
+        except Exception as e:
+            logger.error(f"Error parsing team data: {e}")
+            return None
+
+    def _extract_team_id(self, url: str) -> str:
+        """Extract team ID from URL."""
+        match = re.search(r"/teams/(\w+)", url)
+        return match.group(1) if match else ""
+
+    def _extract_roster(self, soup: BeautifulSoup) -> List[Dict[str, str]]:
+        """Extract team roster from page."""
+        roster = []
+        try:
+            # Look for roster table
+            roster_table = soup.find("table", class_=re.compile("roster|athletes"))
+
+            if roster_table:
+                rows = roster_table.find_all("tr")
+                for row in rows[1:]:  # Skip header
+                    cols = row.find_all("td")
+                    if len(cols) >= 2:
+                        athlete_link = row.find("a", href=re.compile(r"/athletes/"))
+                        if athlete_link:
+                            athlete = {
+                                "name": athlete_link.text.strip(),
+                                "athlete_id": self._extract_athlete_id(
+                                    athlete_link["href"]
+                                ),
+                                "year": cols[1].text.strip() if len(cols) > 1 else "",
+                            }
+                            roster.append(athlete)
+
+        except Exception as e:
+            logger.warning(f"Error extracting roster: {e}")
+
+        return roster
+
+    def _extract_team_rankings(self, soup: BeautifulSoup) -> Dict[str, str]:
+        """Extract team ranking information."""
+        rankings = {}
+        try:
+            ranking_elem = soup.find(class_=re.compile("rank|rating"))
+            if ranking_elem:
+                rankings["current_rank"] = ranking_elem.text.strip()
+
+        except Exception as e:
+            logger.warning(f"Error extracting rankings: {e}")
+
+        return rankings
 
     def search_player(self, name: str, sport: str) -> FetchResult:
         """
@@ -213,13 +223,75 @@ class TFRRFetcher(BaseFetcher):
         try:
             logger.info(f"Searching TFRR for athlete {name} in {sport}")
 
-            # TFRR search is complex and requires form submission
-            # For now, we'll implement a basic version
-            logger.warning("TFRR search_player not yet fully implemented")
-            return FetchResult(success=False, error="Search not yet implemented", source=self.name)
+            # TFRRS search URL pattern
+            # Note: TFRRS doesn't have a direct search API, so we construct a search URL
+            search_url = f"{self.base_url}/search.html"
+            params = {"q": name, "type": "athlete"}
+
+            response = requests.get(search_url, params=params, timeout=self.timeout)
+
+            if not self.validate_response(response):
+                return FetchResult(
+                    success=False, error="Invalid search response", source=self.name
+                )
+
+            athletes = self._parse_search_results(response, sport)
+
+            if athletes is not None:
+                return FetchResult(
+                    success=True,
+                    data={"athletes": athletes, "count": len(athletes)},
+                    source=self.name,
+                )
+            else:
+                return FetchResult(
+                    success=False, error="Failed to parse search results", source=self.name
+                )
 
         except Exception as e:
             return self.handle_error(e, "searching for athlete")
+
+    def _parse_search_results(
+        self, response, sport: str
+    ) -> Optional[List[Dict[str, str]]]:
+        """
+        Parse search results page.
+
+        Args:
+            response: HTTP response from search
+            sport: Sport filter
+
+        Returns:
+            List of athlete dictionaries with id, name, team
+        """
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
+            athletes = []
+
+            # Look for athlete links in search results
+            # TFRRS typically shows results in a list or table format
+            athlete_links = soup.find_all("a", href=re.compile(r"/athletes/\d+"))
+
+            for link in athlete_links:
+                athlete_id = self._extract_athlete_id(link["href"])
+                name = link.text.strip()
+
+                # Try to find associated team info
+                parent = link.find_parent("tr") or link.find_parent("div")
+                team = ""
+                if parent:
+                    team_elem = parent.find(class_=re.compile("team|school"))
+                    if team_elem:
+                        team = team_elem.text.strip()
+
+                athletes.append({"athlete_id": athlete_id, "name": name, "team": team})
+
+            logger.info(f"Found {len(athletes)} athletes matching search")
+            return athletes
+
+        except Exception as e:
+            logger.error(f"Error parsing search results: {e}")
+            return None
 
     def fetch_event_results(self, athlete_id: str, event_name: str) -> FetchResult:
         """
@@ -233,143 +305,119 @@ class TFRRFetcher(BaseFetcher):
             FetchResult with event-specific results and PRs
         """
         try:
-            logger.info(f"Fetching TFRR event results for athlete {athlete_id}, event {event_name}")
+            logger.info(
+                f"Fetching TFRR event results for athlete {athlete_id}, event {event_name}"
+            )
 
-            # This would require navigating to athlete page and filtering by event
-            # For simplicity, we'll use fetch_player_stats and filter
-            result = self.fetch_player_stats(athlete_id, "track")
+            # Fetch the athlete's full profile first
+            url = f"{self.base_url}/athletes/{athlete_id}.html"
+            response = requests.get(url, timeout=self.timeout)
 
-            if not result.success:
-                return result
+            if not self.validate_response(response):
+                return FetchResult(
+                    success=False, error="Invalid response from TFRRS", source=self.name
+                )
 
-            # Filter for specific event
-            athlete_data = result.data
-            if "events" in athlete_data and event_name in athlete_data["events"]:
-                filtered_data = {
-                    "athlete_id": athlete_id,
-                    "name": athlete_data.get("name", ""),
-                    "event": event_name,
-                    "result": athlete_data["events"][event_name]
-                }
-                return FetchResult(success=True, data=filtered_data, source=self.name)
+            # Parse and filter for specific event
+            event_data = self._parse_event_specific_data(response, event_name)
+
+            if event_data:
+                return FetchResult(success=True, data=event_data, source=self.name)
             else:
                 return FetchResult(
                     success=False,
-                    error=f"Event {event_name} not found for athlete",
-                    source=self.name
+                    error=f"No results found for event: {event_name}",
+                    source=self.name,
                 )
 
         except Exception as e:
             return self.handle_error(e, "fetching event results")
 
-    def _init_selenium_driver(self):
-        """Initialize Chrome WebDriver with headless options for scraping."""
-        logger.debug("Initializing Selenium WebDriver")
-
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument(
-            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        )
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-
-        service = Service(ChromeDriverManager().install())
-        self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.set_page_load_timeout(15)
-
-        logger.debug("WebDriver initialized successfully")
-
-    def _close_driver(self):
-        """Close and clean up the Selenium WebDriver."""
-        if self.driver:
-            try:
-                self.driver.quit()
-                logger.debug("WebDriver closed successfully")
-            except Exception as e:
-                logger.warning(f"Error closing WebDriver: {e}")
-            finally:
-                self.driver = None
-
-    def _check_for_page_errors(self, soup: BeautifulSoup) -> Optional[str]:
+    def _parse_event_specific_data(
+        self, response, event_name: str
+    ) -> Optional[Dict[str, Any]]:
         """
-        Check if the page is an error page or invalid page.
+        Parse event-specific data from athlete profile.
 
         Args:
-            soup: BeautifulSoup object of the page
+            response: HTTP response
+            event_name: Event to filter for
 
         Returns:
-            Error message if page is invalid, None if page is valid
+            Dictionary with event-specific results and PR
         """
-        page_text = soup.get_text().lower()
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
 
-        # Check for common error indicators
-        if "page not found" in page_text or "404" in page_text:
-            return "Invalid ID - page not found"
+            # Find PR for this event
+            event_pr = None
+            pr_tables = soup.find_all("table", class_=re.compile("bests|records"))
 
-        if "no results found" in page_text:
-            return "Invalid ID - no results found"
+            for table in pr_tables:
+                rows = table.find_all("tr")
+                for row in rows:
+                    cols = row.find_all("td")
+                    if len(cols) >= 2:
+                        event = cols[0].text.strip()
+                        if event_name.lower() in event.lower() or event.lower() in event_name.lower():
+                            event_pr = {
+                                "event": event,
+                                "mark": cols[1].text.strip(),
+                                "date": cols[2].text.strip() if len(cols) > 2 else "",
+                                "meet": cols[3].text.strip() if len(cols) > 3 else "",
+                            }
+                            break
 
-        # Check if page has expected TFRR content
-        has_tfrr_context = False
+            # Find all results for this event
+            event_results = []
+            result_tables = soup.find_all("table", class_=re.compile("results|performances"))
 
-        # Look for TFRR-specific elements
-        if soup.find("div", class_="custom-table-container") or \
-           soup.find("table", class_="bests") or \
-           soup.find("h3", string=re.compile("Personal Records", re.I)) or \
-           soup.find("div", id="meet-results"):
-            has_tfrr_context = True
+            for table in result_tables:
+                rows = table.find_all("tr")
+                for row in rows[1:]:  # Skip header
+                    cols = row.find_all("td")
+                    if len(cols) >= 3:
+                        event_col = None
+                        # Find which column has the event name
+                        for i, col in enumerate(cols):
+                            if event_name.lower() in col.text.strip().lower():
+                                event_col = i
+                                break
 
-        if not has_tfrr_context:
-            # Check for any table (might have data in different format)
-            if soup.find("table"):
-                has_tfrr_context = True
+                        if event_col is not None:
+                            result = {
+                                "date": cols[0].text.strip() if len(cols) > 0 else "",
+                                "meet": cols[1].text.strip() if len(cols) > 1 else "",
+                                "event": cols[event_col].text.strip(),
+                                "mark": (
+                                    cols[event_col + 1].text.strip()
+                                    if len(cols) > event_col + 1
+                                    else ""
+                                ),
+                                "place": (
+                                    cols[event_col + 2].text.strip()
+                                    if len(cols) > event_col + 2
+                                    else ""
+                                ),
+                            }
+                            event_results.append(result)
 
-        if not has_tfrr_context:
-            return "Invalid page - does not contain expected TFRR data"
+            if event_pr or event_results:
+                return {
+                    "athlete_id": self._extract_athlete_id(response.url),
+                    "event": event_name,
+                    "personal_record": event_pr,
+                    "results": event_results,
+                    "total_results": len(event_results),
+                }
 
-        return None
+            return None
 
-    def _get_team_name(self, soup: BeautifulSoup) -> str:
-        """Extract team name from page."""
-        # Try to find team name in header
-        header = soup.find("h1") or soup.find("h2")
-        if header:
-            return header.text.strip()
+        except Exception as e:
+            logger.error(f"Error parsing event-specific data: {e}")
+            return None
 
-        # Fallback
-        return "Haverford College"
-
-    def _get_season_from_page(self, soup: BeautifulSoup) -> str:
-        """
-        Extract the season from the page.
-
-        Args:
-            soup: BeautifulSoup object of the page
-
-        Returns:
-            Season string (e.g., "Indoor 2026") or "Unknown"
-        """
-        # Try to find season in page title or headers
-        title = soup.find("title")
-        if title and title.text:
-            # TFRR pages often have format like "Haverford College - Indoor 2026"
-            match = re.search(r"(Indoor|Outdoor|Cross Country)\s+(\d{4})", title.text)
-            if match:
-                return f"{match.group(1)} {match.group(2)}"
-
-        # Try to find in headers
-        for element in soup.find_all(["h1", "h2", "h3", "span"]):
-            if element.text:
-                match = re.search(r"(Indoor|Outdoor|Cross Country)\s+(\d{4})", element.text)
-                if match:
-                    return f"{match.group(1)} {match.group(2)}"
-
-        logger.warning("Could not extract season from page")
-        return "Unknown"
-
-    def _parse_athlete_data(self, soup: BeautifulSoup, athlete_id: str, sport: str) -> Dict[str, Any]:
+    def _parse_athlete_data(self, response, sport: str) -> Optional[Dict[str, Any]]:
         """
         Parse TFRR athlete data from response.
 
@@ -378,221 +426,127 @@ class TFRRFetcher(BaseFetcher):
         the best mark/time.
 
         Args:
-            soup: BeautifulSoup object
-            athlete_id: Athlete ID
-            sport: Sport type
+            response: HTTP response
+            sport: Sport type for context
 
         Returns:
             Standardized athlete data dictionary with PRs
         """
-        athlete_data = {
-            "athlete_id": athlete_id,
-            "name": "",
-            "year": "",
-            "sport": sport,
-            "events": {}
-        }
+        try:
+            soup = BeautifulSoup(response.content, "html.parser")
 
-        # Extract athlete name
-        name_elem = soup.find("h3") or soup.find("h2") or soup.find("h1")
-        if name_elem:
-            athlete_data["name"] = name_elem.text.strip()
+            # Extract athlete name
+            name_elem = soup.find("h3")
+            name = name_elem.text.strip() if name_elem else "Unknown"
 
-        # Parse PR tables - TFRR has one table per event
-        # Look for tables with event names in the header (like "60 Meters", "Long Jump", etc.)
-        all_tables = soup.find_all("table")
+            # Extract school/team
+            team_elem = soup.find("div", class_="team-name") or soup.find("h4")
+            team = team_elem.text.strip() if team_elem else "Unknown"
 
-        for table in all_tables:
-            # Get the header row
-            header_row = table.find("tr")
-            if not header_row:
-                continue
+            # Extract personal records (PRs)
+            prs = self._extract_personal_records(soup)
 
-            # Get header cells
-            header_cells = header_row.find_all(["th", "td"])
-            if not header_cells:
-                continue
+            # Extract recent results
+            recent_results = self._extract_recent_results(soup)
 
-            # Check if this looks like an event PR table
-            # Event tables have format: "Event Name (Indoor)" or "Event Name (Outdoor)"
-            first_header = header_cells[0].get_text(strip=True)
+            # Extract athlete bio info
+            bio_info = self._extract_bio_info(soup)
 
-            # Look for event patterns like "60 Meters", "Long Jump", etc.
-            # These tables have the event name in the header and PR in first data row
-            if any(keyword in first_header.lower() for keyword in ['meters', 'jump', 'throw', 'hurdles', 'vault', 'run']):
-                # This looks like an event PR table
-                event_name = re.sub(r'\s*\(Indoor\).*|\s*\(Outdoor\).*|Top↑', '', first_header).strip()
+            athlete_data = {
+                "athlete_id": self._extract_athlete_id(response.url),
+                "name": name,
+                "team": team,
+                "sport": sport,
+                "personal_records": prs,
+                "recent_results": recent_results,
+                "bio": bio_info,
+                "profile_url": response.url,
+            }
 
-                # Get the first data row (contains the PR)
-                data_rows = table.find_all("tr")[1:]  # Skip header
-                if data_rows:
-                    first_data_row = data_rows[0]
-                    data_cells = first_data_row.find_all(["td", "th"])
+            logger.info(f"Successfully parsed athlete data for {name}")
+            return athlete_data
 
-                    if data_cells:
-                        # The PR is in the first cell
-                        pr_value = data_cells[0].get_text(strip=True)
+        except Exception as e:
+            logger.error(f"Error parsing athlete data: {e}")
+            return None
 
-                        # Clean up the PR value (remove extra text like meet names)
-                        # TFRR format is often like "7.59" or "6.52m21' 4.75"" or "14.25m46' 9""
-                        # Keep just the primary measurement
-                        # Skip if it's just a year (like "2025") - these are year-by-year tables
-                        if pr_value and pr_value != "NM" and pr_value != "NMNM" and not re.match(r'^\d{4}$', pr_value):
-                            athlete_data["events"][event_name] = pr_value
+    def _extract_athlete_id(self, url: str) -> str:
+        """Extract athlete ID from URL."""
+        match = re.search(r"/athletes/(\w+)", url)
+        return match.group(1) if match else ""
 
-        return athlete_data if athlete_data["name"] or athlete_data["events"] else None
+    def _extract_personal_records(self, soup: BeautifulSoup) -> Dict[str, Any]:
+        """Extract personal records from athlete profile."""
+        prs = {}
+        try:
+            # Look for PR tables - TFRRS typically has tables with class 'bests' or similar
+            pr_tables = soup.find_all("table", class_=re.compile("bests|records"))
 
-    def _parse_team_roster(
-        self, soup: BeautifulSoup, sport: str
-    ) -> tuple[List[Dict[str, Any]], List[str]]:
-        """
-        Parse the team roster and PRs from TFRR page.
-
-        This method extracts athlete links from the roster page, then visits
-        each athlete's individual page to scrape their Personal Records (PRs).
-
-        Args:
-            soup: BeautifulSoup object of the page
-            sport: Sport type
-
-        Returns:
-            Tuple of (athletes_data, event_categories)
-        """
-        athletes_data = []
-        event_categories = set()
-
-        # Find the main roster table
-        tables = soup.find_all("table")
-
-        if not tables:
-            logger.warning("No tables found on page")
-            return athletes_data, list(event_categories)
-
-        # Find the roster table (has athlete names/links)
-        roster_table = None
-        max_rows = 0
-
-        for table in tables:
-            rows = table.find_all("tr")
-            if len(rows) > max_rows and len(rows) > 2:
-                # Check if it looks like an athlete roster
-                header_row = rows[0]
-                header_text = header_row.get_text().lower()
-                if "name" in header_text or "athlete" in header_text:
-                    roster_table = table
-                    max_rows = len(rows)
-
-        if not roster_table:
-            # Just use the first substantial table
-            for table in tables:
+            for table in pr_tables:
                 rows = table.find_all("tr")
-                if len(rows) > 2:
-                    roster_table = table
-                    break
+                for row in rows[1:]:  # Skip header row
+                    cols = row.find_all("td")
+                    if len(cols) >= 2:
+                        event = cols[0].text.strip()
+                        mark = cols[1].text.strip()
+                        prs[event] = mark
 
-        if not roster_table:
-            logger.warning("No suitable roster table found")
-            return athletes_data, list(event_categories)
+            # Also check for divs with PR data
+            if not prs:
+                pr_divs = soup.find_all("div", class_=re.compile("pr-|best-"))
+                for div in pr_divs:
+                    event_elem = div.find(class_=re.compile("event"))
+                    mark_elem = div.find(class_=re.compile("mark|time"))
+                    if event_elem and mark_elem:
+                        prs[event_elem.text.strip()] = mark_elem.text.strip()
 
-        # Extract athlete links and basic info from roster
-        athlete_links = []
-        data_rows = roster_table.find_all("tr")[1:]  # Skip header
+        except Exception as e:
+            logger.warning(f"Error extracting PRs: {e}")
 
-        for row in data_rows:
-            cells = row.find_all(["td", "th"])
-            if len(cells) < 2:
-                continue
+        return prs
 
-            # Find athlete link and year
-            athlete_name = ""
-            athlete_year = ""
-            athlete_href = None
+    def _extract_recent_results(self, soup: BeautifulSoup) -> List[Dict[str, Any]]:
+        """Extract recent competition results."""
+        results = []
+        try:
+            # Look for results tables
+            result_tables = soup.find_all("table", class_=re.compile("results|performances"))
 
-            for i, cell in enumerate(cells):
-                # Look for athlete link (usually in first column)
-                athlete_link = cell.find("a", href=lambda x: x and "/athletes/" in x)
-                if athlete_link:
-                    athlete_name = athlete_link.text.strip()
-                    athlete_href = athlete_link.get("href")
+            for table in result_tables[:1]:  # Just get the first/main results table
+                rows = table.find_all("tr")
+                for row in rows[1:6]:  # Get up to 5 recent results
+                    cols = row.find_all("td")
+                    if len(cols) >= 3:
+                        result = {
+                            "date": cols[0].text.strip() if len(cols) > 0 else "",
+                            "meet": cols[1].text.strip() if len(cols) > 1 else "",
+                            "event": cols[2].text.strip() if len(cols) > 2 else "",
+                            "mark": cols[3].text.strip() if len(cols) > 3 else "",
+                            "place": cols[4].text.strip() if len(cols) > 4 else "",
+                        }
+                        results.append(result)
 
-                # Try to find year (usually in second column)
-                cell_text = cell.text.strip()
-                if re.match(r"(FR|SO|JR|SR)(-\d)?", cell_text):
-                    athlete_year = cell_text
+        except Exception as e:
+            logger.warning(f"Error extracting recent results: {e}")
 
-            if athlete_name and athlete_href:
-                athlete_links.append({
-                    "name": athlete_name,
-                    "year": athlete_year,
-                    "href": athlete_href
-                })
+        return results
 
-        logger.info(f"Found {len(athlete_links)} athlete links on roster page")
+    def _extract_bio_info(self, soup: BeautifulSoup) -> Dict[str, str]:
+        """Extract biographical information."""
+        bio = {}
+        try:
+            # Look for bio panel or info section
+            bio_section = soup.find("div", class_=re.compile("bio|info|profile-info"))
+            if bio_section:
+                # Extract common fields
+                for field in ["year", "class", "eligibility", "hometown", "high_school"]:
+                    elem = bio_section.find(text=re.compile(field, re.IGNORECASE))
+                    if elem:
+                        parent = elem.find_parent()
+                        if parent:
+                            bio[field] = parent.text.strip()
 
-        # Visit each athlete's page to get their PRs
-        for idx, athlete_info in enumerate(athlete_links, 1):
-            try:
-                logger.info(f"Fetching PRs for athlete {idx}/{len(athlete_links)}: {athlete_info['name']}")
+        except Exception as e:
+            logger.warning(f"Error extracting bio info: {e}")
 
-                # Navigate to athlete page with retry logic
-                athlete_url = f"{self.base_url}{athlete_info['href']}"
-
-                try:
-                    self.driver.set_page_load_timeout(10)  # Shorter timeout per page
-                    self.driver.get(athlete_url)
-                    time.sleep(0.5)  # Brief pause
-                except Exception as timeout_error:
-                    logger.warning(f"Timeout loading page for {athlete_info['name']}, skipping")
-                    athletes_data.append({
-                        "name": athlete_info["name"],
-                        "year": athlete_info["year"],
-                        "events": {}
-                    })
-                    continue
-
-                # Parse athlete page
-                athlete_soup = BeautifulSoup(self.driver.page_source, "html.parser")
-
-                # Extract athlete ID from URL
-                athlete_id = athlete_info['href'].split('/')[-1].replace('.html', '')
-
-                # Parse PRs from athlete page
-                athlete_data = self._parse_athlete_data(athlete_soup, athlete_id, sport)
-
-                if athlete_data:
-                    # Use roster info for name/year (more reliable)
-                    athlete_data["name"] = athlete_info["name"]
-                    athlete_data["year"] = athlete_info["year"]
-
-                    # Track all event categories
-                    for event in athlete_data.get("events", {}).keys():
-                        event_categories.add(event)
-
-                    athletes_data.append(athlete_data)
-
-                    # Log progress
-                    if len(athlete_data.get("events", {})) > 0:
-                        logger.info(f"  ✓ Found {len(athlete_data['events'])} PRs")
-                else:
-                    # Still add athlete even if no PRs found
-                    athletes_data.append({
-                        "name": athlete_info["name"],
-                        "year": athlete_info["year"],
-                        "events": {}
-                    })
-                    logger.info(f"  - No PRs found")
-
-            except Exception as e:
-                logger.warning(f"Error fetching PRs for {athlete_info['name']}: {e}")
-                # Add athlete with no events rather than skipping
-                athletes_data.append({
-                    "name": athlete_info["name"],
-                    "year": athlete_info["year"],
-                    "events": {}
-                })
-
-        logger.info(
-            f"Successfully parsed {len(athletes_data)} athletes with {len(event_categories)} event categories"
-        )
-
-        return athletes_data, sorted(list(event_categories))
+        return bio
