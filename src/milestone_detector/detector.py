@@ -14,6 +14,30 @@ from ..player_database import PlayerDatabase, PlayerStats
 logger = logging.getLogger(__name__)
 
 
+def normalize_sport_name(sport: str) -> str:
+    """
+    Normalize sport names to base sport (remove gender prefix).
+
+    Examples:
+        mens_basketball -> basketball
+        womens_basketball -> basketball
+        mens_soccer -> soccer
+        field_hockey -> field_hockey (no change)
+
+    Args:
+        sport: Sport name (possibly with mens_/womens_ prefix)
+
+    Returns:
+        Normalized sport name
+    """
+    # Remove mens_ or womens_ prefix
+    sport_lower = sport.lower()
+    for prefix in ['mens_', 'womens_', "men's_", "women's_"]:
+        if sport_lower.startswith(prefix):
+            return sport_lower[len(prefix):]
+    return sport_lower
+
+
 def generate_milestone_thresholds(max_value: int = 3000) -> List[int]:
     """
     Generate standard milestone thresholds: 10, 25, 50, 75, 100, 150, 200, 250, 300,
@@ -115,8 +139,12 @@ class MilestoneDetector:
 
         close_milestones = []
 
-        # Get milestones for this player's sport
-        relevant_milestones = [m for m in self.milestones if m.sport == player_stats.player.sport]
+        # Get milestones for this player's sport (normalize sport names)
+        player_sport_normalized = normalize_sport_name(player_stats.player.sport)
+        relevant_milestones = [
+            m for m in self.milestones
+            if normalize_sport_name(m.sport) == player_sport_normalized
+        ]
 
         for milestone in relevant_milestones:
             proximity = self._calculate_proximity(player_stats, milestone)
@@ -143,7 +171,16 @@ class MilestoneDetector:
         logger.info(f"Checking milestones for all players in sport: {sport or 'all'}")
 
         results = {}
-        players = self.database.get_all_players(sport=sport)
+
+        # If sport filter provided, get players for that sport
+        # Note: sport parameter might already be normalized (e.g., "basketball")
+        # but database has mens_basketball/womens_basketball
+        if sport:
+            # Get all players and filter by normalized sport name
+            all_players = self.database.get_all_players()
+            players = [p for p in all_players if normalize_sport_name(p.sport) == normalize_sport_name(sport)]
+        else:
+            players = self.database.get_all_players()
 
         for player in players:
             close_milestones = self.check_player_milestones(player.player_id, proximity_threshold)
