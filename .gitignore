@@ -72,9 +72,16 @@ data/*.csv
 data/*.json
 data/cache/
 
+# CSV exports (optional - uncomment to ignore CSV files)
+# csv_exports/*.csv
+
+# Output directory
+output/*.html
+
 # Test output directories
 test_csv_output/
 ncaa_stats_output/
+tfrr_stats_output/
 
 # Temporary files
 *.tmp
