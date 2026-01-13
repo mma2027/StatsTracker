@@ -318,13 +318,38 @@ def main():
 
         logger.info(f"Found {len(proximities_list)} milestone proximity alerts")
 
-        # Send notification if there are games OR proximities
-        if games_today or proximities_list:
+        # Check for PR breakthroughs
+        logger.info("Checking for PR breakthroughs...")
+        pr_breakthroughs = []
+
+        try:
+            from src.pr_tracker import PRTracker
+            from src.website_fetcher.tfrr_fetcher import TFRRFetcher
+
+            # Initialize PR tracker
+            tfrr_fetcher = TFRRFetcher()
+            pr_tracker = PRTracker(tfrr_fetcher)
+
+            # Check for yesterday's PR breakthroughs
+            pr_breakthroughs = pr_tracker.check_yesterday_breakthroughs()
+
+            if pr_breakthroughs:
+                logger.info(f"Found {len(pr_breakthroughs)} PR breakthroughs")
+            else:
+                logger.info("No PR breakthroughs detected")
+
+        except Exception as e:
+            logger.error(f"Error checking PR breakthroughs: {e}")
+            # Continue even if PR checking fails
+
+        # Send notification if there are games OR proximities OR PR breakthroughs
+        if games_today or proximities_list or pr_breakthroughs:
             logger.info("Sending notification email...")
             success = notifier.send_milestone_alert(
                 proximities=proximities_list,
                 games=games_today,
-                date_for=today
+                date_for=today,
+                pr_breakthroughs=pr_breakthroughs
             )
 
             if success:
@@ -332,7 +357,7 @@ def main():
             else:
                 logger.error("Failed to send notification")
         else:
-            logger.info("No games or milestone alerts today - skipping notification")
+            logger.info("No games, milestone alerts, or PR breakthroughs today - skipping notification")
 
         logger.info("StatsTracker completed successfully")
 
