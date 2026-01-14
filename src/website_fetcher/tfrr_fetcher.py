@@ -90,7 +90,7 @@ class TFRRFetcher(BaseFetcher):
 
         # Add exponential backoff if we've had consecutive errors
         if self.consecutive_errors > 0:
-            backoff = min(2 ** self.consecutive_errors, 60)  # Max 60 seconds
+            backoff = min(2**self.consecutive_errors, 60)  # Max 60 seconds
             jitter = random.uniform(0, backoff * 0.3)  # Add 0-30% jitter
             total_delay = base_delay + backoff + jitter
             logger.info(f"Exponential backoff: {total_delay:.1f}s ({self.consecutive_errors} consecutive errors)")
@@ -827,7 +827,7 @@ class TFRRFetcher(BaseFetcher):
         prefs = {
             "profile.default_content_setting_values.notifications": 2,
             "credentials_enable_service": False,
-            "profile.password_manager_enabled": False
+            "profile.password_manager_enabled": False,
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
@@ -839,8 +839,10 @@ class TFRRFetcher(BaseFetcher):
         self.driver.set_page_load_timeout(timeout)
 
         # Execute CDP commands to further mask automation
-        self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": """
+        self.driver.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {
+                "source": """
                 Object.defineProperty(navigator, 'webdriver', {
                     get: () => undefined
                 });
@@ -851,7 +853,8 @@ class TFRRFetcher(BaseFetcher):
                     get: () => ['en-US', 'en']
                 });
             """
-        })
+            },
+        )
 
         logger.debug("WebDriver initialized successfully with anti-detection measures")
 
