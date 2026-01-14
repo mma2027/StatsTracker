@@ -4,7 +4,7 @@ Player Database Implementation
 Handles all database operations for player statistics.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import logging
 import sqlite3
@@ -326,8 +326,8 @@ class PlayerDatabase:
             conn.close()
 
             # Aggregate stats
-            career_stats = {}
-            season_stats = {}
+            career_stats: Dict[str, Any] = {}
+            season_stats: Dict[str, Dict[str, Any]] = {}
 
             for row in rows:
                 stat_name, stat_value, stat_season = row

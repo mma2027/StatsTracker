@@ -130,6 +130,7 @@ class NCAAFetcher(BaseFetcher):
 
             # Initialize Selenium driver
             self._init_selenium_driver()
+            assert self.driver is not None, "Driver should be initialized"
 
             # Navigate to player page
             player_url = f"{self.base_url}/players/{player_id}"
@@ -208,6 +209,7 @@ class NCAAFetcher(BaseFetcher):
 
             # Initialize Selenium driver
             self._init_selenium_driver()
+            assert self.driver is not None, "Driver should be initialized"
 
             # Navigate to team stats page
             stats_url = f"{self.base_url}/teams/{team_id}/season_to_date_stats"
@@ -302,6 +304,7 @@ class NCAAFetcher(BaseFetcher):
 
             # Initialize Selenium driver
             self._init_selenium_driver()
+            assert self.driver is not None, "Driver should be initialized"
 
             # Navigate to team roster page
             roster_url = f"{self.base_url}/teams/{team_id}/roster"
@@ -428,6 +431,7 @@ class NCAAFetcher(BaseFetcher):
 
             # Initialize Selenium driver
             self._init_selenium_driver()
+            assert self.driver is not None, "Driver should be initialized"
 
             # Navigate to school page
             school_url = f"{self.base_url}/team/{school_id}"

@@ -38,11 +38,11 @@ class EmailNotifier:
                 - sender_password: Sender email password/app password
                 - recipients: List of recipient email addresses
         """
-        self.smtp_server = email_config.get("smtp_server")
-        self.smtp_port = email_config.get("smtp_port", 587)
-        self.sender_email = email_config.get("sender_email")
-        self.sender_password = email_config.get("sender_password")
-        self.recipients = email_config.get("recipients", [])
+        self.smtp_server: str = email_config.get("smtp_server", "")
+        self.smtp_port: int = email_config.get("smtp_port", 587)
+        self.sender_email: str = email_config.get("sender_email", "")
+        self.sender_password: str = email_config.get("sender_password", "")
+        self.recipients: List[str] = email_config.get("recipients", [])
 
         logger.info(f"EmailNotifier initialized for {len(self.recipients)} recipients")
 

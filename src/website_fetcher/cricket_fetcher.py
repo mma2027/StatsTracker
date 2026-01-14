@@ -215,6 +215,7 @@ class CricketFetcher(BaseFetcher):
 
             # Setup driver
             self._setup_driver()
+            assert self.driver is not None, "Driver should be initialized"
 
             # Fetch each type of statistics
             batting_df = self._fetch_batting_stats()

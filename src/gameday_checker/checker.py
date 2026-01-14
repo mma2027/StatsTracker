@@ -108,6 +108,10 @@ class GamedayChecker:
         """
         import requests
 
+        if not self.schedule_url:
+            logger.error("No schedule URL configured")
+            return []
+
         all_games = []
         target_date_str = check_date.strftime("%Y-%m-%d")
         logger.info(f"Fetching games for {target_date_str} from calendar endpoint")
@@ -314,6 +318,15 @@ class GamedayChecker:
         import requests
         import json
         import re
+
+        if not self.schedule_url:
+            logger.error("No schedule URL configured")
+            return {
+                "error": "No schedule URL configured",
+                "total_games": 0,
+                "date_range": None,
+                "sample_dates": [],
+            }
 
         try:
             # Use current date's season for validation

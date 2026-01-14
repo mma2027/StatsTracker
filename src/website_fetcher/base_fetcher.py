@@ -6,7 +6,7 @@ This ensures consistent interface across different data sources.
 """
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
 from datetime import datetime
 import logging
@@ -31,12 +31,8 @@ class FetchResult:
     success: bool
     data: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
-    timestamp: datetime = None
+    timestamp: datetime = field(default_factory=datetime.now)
     source: str = ""
-
-    def __post_init__(self):
-        if self.timestamp is None:
-            self.timestamp = datetime.now()
 
 
 class BaseFetcher(ABC):

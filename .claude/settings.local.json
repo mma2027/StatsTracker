@@ -13,7 +13,9 @@
       "Bash(PYTHONPATH=. PYTHONIOENCODING=utf-8 python:*)",
       "Bash(git add:*)",
       "Bash(dir \"C:\\\\Users\\\\carte\\\\StatsTracker\\\\data\")",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(flake8:*)",
+      "Bash(mypy:*)"
     ]
   }
 }
