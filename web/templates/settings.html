@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ Settings</h1>
+    <p>Configure StatsTracker email notifications, milestones, and automation</p>
+</div>
+
+{% if error %}
+<div class="error-message">
+    <p>Error loading settings: {{ error }}</p>
+</div>
+{% endif %}
+
+<div id="save-status" class="status-message" style="display: none;"></div>
+
+<form id="settings-form">
+    <!-- Email Settings -->
+    <section class="settings-section collapsible-section" style="background: white; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 class="section-header" onclick="toggleSection(this)" style="margin: 0; padding: 20px 25px; border-bottom: 2px solid #0066cc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>📧 Email Settings</span>
+            <span class="toggle-icon" style="font-size: 20px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h2>
+        <div class="section-content" style="padding: 25px; display: none;">
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">SMTP Server</label>
+            <input type="text"
+                   name="email_smtp_server"
+                   value="{{ config.email.smtp_server }}"
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Gmail: smtp.gmail.com | Outlook: smtp.office365.com</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">SMTP Port</label>
+            <input type="number"
+                   name="email_smtp_port"
+                   value="{{ config.email.smtp_port }}"
+                   style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Usually 587 for TLS or 465 for SSL</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">Sender Email</label>
+            <input type="email"
+                   name="email_sender_email"
+                   value="{{ config.email.sender_email }}"
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">Recipients</label>
+            <input type="text"
+                   name="email_recipients"
+                   value="{{ config.email.recipients | join(', ') }}"
+                   placeholder="email1@example.com, email2@example.com"
+                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Separate multiple emails with commas</p>
+        </div>
+
+        <div class="warning-box" style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin-top: 20px;">
+            ⚠️ <strong>Note:</strong> Email password is stored in config.yaml file and cannot be edited here for security reasons. Edit the file directly if needed.
+        </div>
+        </div>
+    </section>
+
+    <!-- Notification Settings -->
+    <section class="settings-section collapsible-section" style="background: white; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 class="section-header" onclick="toggleSection(this)" style="margin: 0; padding: 20px 25px; border-bottom: 2px solid #0066cc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>🔔 Notification Settings</span>
+            <span class="toggle-icon" style="font-size: 20px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h2>
+        <div class="section-content" style="padding: 25px; display: none;">
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">
+                <input type="checkbox"
+                       name="notifications_enabled"
+                       {% if config.notifications.enabled %}checked{% endif %}
+                       style="margin-right: 8px;">
+                Enable Email Notifications
+            </label>
+            <p style="color: #666; font-size: 12px; margin-top: 5px; margin-left: 28px;">Send daily emails at 8 AM with game schedules and milestone alerts</p>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">Default Milestone Proximity Threshold</label>
+            <input type="number"
+                   name="notifications_proximity_threshold"
+                   value="{{ config.notifications.proximity_threshold }}"
+                   min="1"
+                   max="100"
+                   style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">Default alert threshold for all stats. Alert when player is within X units of a milestone (e.g., 10 = alert at 990/1000 points)</p>
+            <p style="color: #0066cc; font-size: 12px; margin-top: 5px;"><strong>Note:</strong> You can set custom proximity for each stat individually in the Milestone Configuration section below.</p>
+        </div>
+        </div>
+    </section>
+
+    <!-- Gameday Checker Settings -->
+    <section class="settings-section collapsible-section" style="background: white; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 class="section-header" onclick="toggleSection(this)" style="margin: 0; padding: 20px 25px; border-bottom: 2px solid #0066cc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>🏀 Gameday Checker Settings</span>
+            <span class="toggle-icon" style="font-size: 20px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h2>
+        <div class="section-content" style="padding: 25px; display: none;">
+
+        <div class="form-group" style="margin-bottom: 20px;">
+            <label style="display: block; font-weight: bold; margin-bottom: 8px;">Check Days Ahead</label>
+            <input type="number"
+                   name="gameday_check_days_ahead"
+                   value="{{ config.gameday.check_days_ahead }}"
+                   min="1"
+                   max="30"
+                   style="width: 150px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+            <p style="color: #666; font-size: 12px; margin-top: 5px;">How many days to look ahead for upcoming games (default: 7)</p>
+        </div>
+        </div>
+    </section>
+
+    <!-- Database Info (Read-only) -->
+    <section class="settings-section collapsible-section" style="background: white; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 class="section-header" onclick="toggleSection(this)" style="margin: 0; padding: 20px 25px; border-bottom: 2px solid #0066cc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>💾 Database Information</span>
+            <span class="toggle-icon" style="font-size: 20px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h2>
+        <div class="section-content" style="padding: 25px; display: none;">
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px;">
+            <p style="margin: 5px 0;"><strong>Type:</strong> {{ config.database.type }}</p>
+            <p style="margin: 5px 0;"><strong>Path:</strong> {{ config.database.path }}</p>
+            <p style="color: #666; font-size: 12px; margin-top: 10px;">Database settings are read-only and configured in config.yaml</p>
+        </div>
+        </div>
+    </section>
+
+    <!-- Milestone Configuration -->
+    <section class="settings-section collapsible-section" style="background: white; border-radius: 10px; margin-bottom: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 class="section-header" onclick="toggleSection(this)" style="margin: 0; padding: 20px 25px; border-bottom: 2px solid #0066cc; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>🎯 Milestone Configuration</span>
+            <span class="toggle-icon" style="font-size: 20px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+        </h2>
+        <div class="section-content" style="padding: 25px; display: none;">
+
+        <p style="color: #666; margin-bottom: 20px;">Configure milestone thresholds for each sport. Enter comma-separated values (e.g., "1000, 1500, 2000")</p>
+
+        <div id="milestones-container">
+            {% for sport, stats in config.milestones.items() %}
+            <div class="sport-milestone-section collapsible-sport" style="background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;" data-sport="{{ sport }}">
+                <h3 class="sport-header" onclick="toggleSport(this)" style="margin: 0; padding: 15px 20px; color: #0066cc; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+                    <span>{{ sport | replace('_', ' ') | title }}</span>
+                    <span class="sport-toggle-icon" style="font-size: 18px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+                </h3>
+                <div class="sport-content" style="padding: 20px; display: none;">
+
+                <div class="milestone-stats">
+                    {% for stat_name, thresholds in stats.items() %}
+                    <div class="milestone-stat-row" style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ddd;" data-stat="{{ stat_name }}">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                            <label style="flex: 0 0 150px; font-weight: bold; color: #0066cc;">{{ stat_name }}:</label>
+                            <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                <label style="font-size: 13px; color: #666;">Alert within:</label>
+                                <input type="number"
+                                       class="proximity-threshold"
+                                       value="{{ config.milestone_proximity.get(sport, {}).get(stat_name, config.notifications.proximity_threshold) if config.get('milestone_proximity') else config.notifications.proximity_threshold }}"
+                                       min="1"
+                                       max="100"
+                                       style="width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                <span style="font-size: 13px; color: #666;">units</span>
+                            </div>
+                            <button type="button"
+                                    class="btn-remove-stat"
+                                    onclick="removeStat(this)"
+                                    style="background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                🗑️ Remove
+                            </button>
+                        </div>
+                        <div class="thresholds-list" style="padding-left: 15px;">
+                            {% for threshold in thresholds %}
+                            <div class="threshold-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                <input type="number"
+                                       class="threshold-value"
+                                       value="{{ threshold }}"
+                                       min="0"
+                                       style="width: 120px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                                <button type="button"
+                                        onclick="this.parentElement.remove()"
+                                        style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                                    ✖
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="button"
+                                onclick="addThreshold(this)"
+                                style="margin-top: 8px; margin-left: 15px; background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            ➕ Add Threshold
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 6px;">
+                    <p style="margin: 0 0 10px 0; font-weight: bold; color: #0066cc;">Add New Stat to {{ sport | replace('_', ' ') | title }}:</p>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        {% if available_stats.get(sport) %}
+                        <select class="new-stat-name"
+                                style="flex: 0 0 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                            <option value="">-- Select Stat --</option>
+                            {% for stat in available_stats[sport] %}
+                            <option value="{{ stat }}">{{ stat }}</option>
+                            {% endfor %}
+                        </select>
+                        {% else %}
+                        <input type="text"
+                               class="new-stat-name"
+                               placeholder="Stat name (e.g., PTS, G)"
+                               style="flex: 0 0 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        {% endif %}
+                        <input type="text"
+                               class="new-stat-thresholds"
+                               placeholder="Thresholds (e.g., 100, 200, 300)"
+                               style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                        <button type="button"
+                                class="btn-add-stat"
+                                onclick="addStat(this)"
+                                style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            ➕ Add Stat
+                        </button>
+                    </div>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button type="button"
+                    onclick="addSport()"
+                    style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                ➕ Add New Sport
+            </button>
+        </div>
+        </div>
+    </section>
+
+    <!-- Save Button -->
+    <div style="text-align: center; padding: 20px;">
+        <button type="submit" class="btn btn-primary btn-lg" style="padding: 15px 40px; font-size: 18px;">
+            💾 Save Settings
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSection(header) {
+    const section = header.closest('.collapsible-section');
+    const content = section.querySelector('.section-content');
+    const icon = header.querySelector('.toggle-icon');
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+function toggleSport(header) {
+    const sportSection = header.closest('.collapsible-sport');
+    const content = sportSection.querySelector('.sport-content');
+    const icon = header.querySelector('.sport-toggle-icon');
+
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+function removeStat(button) {
+    const row = button.closest('.milestone-stat-row');
+    row.remove();
+}
+
+function addThreshold(button) {
+    const statRow = button.closest('.milestone-stat-row');
+    const thresholdsList = statRow.querySelector('.thresholds-list');
+
+    const newThreshold = document.createElement('div');
+    newThreshold.className = 'threshold-item';
+    newThreshold.style.cssText = 'display: flex; align-items: center; gap: 10px; margin-bottom: 8px;';
+    newThreshold.innerHTML = `
+        <input type="number"
+               class="threshold-value"
+               value="0"
+               min="0"
+               style="width: 120px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+        <button type="button"
+                onclick="this.parentElement.remove()"
+                style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+            ✖
+        </button>
+    `;
+    thresholdsList.appendChild(newThreshold);
+
+    // Focus on the new input
+    newThreshold.querySelector('input').focus();
+}
+
+function addStat(button) {
+    const sportSection = button.closest('.sport-milestone-section');
+    const sport = sportSection.dataset.sport;
+    const statNameInput = sportSection.querySelector('.new-stat-name');
+    const statThresholdsInput = sportSection.querySelector('.new-stat-thresholds');
+
+    const statName = statNameInput.tagName === 'SELECT' ? statNameInput.value : statNameInput.value.trim();
+    const thresholdsStr = statThresholdsInput.value.trim();
+
+    if (!statName || !thresholdsStr) {
+        alert('Please select/enter stat name and thresholds');
+        return;
+    }
+
+    // Parse thresholds
+    const thresholds = thresholdsStr.split(',').map(t => t.trim()).filter(t => t);
+
+    // Build threshold items HTML
+    let thresholdItems = '';
+    thresholds.forEach(threshold => {
+        thresholdItems += `
+            <div class="threshold-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <input type="number"
+                       class="threshold-value"
+                       value="${threshold}"
+                       min="0"
+                       style="width: 120px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <button type="button"
+                        onclick="this.parentElement.remove()"
+                        style="background: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                    ✖
+                </button>
+            </div>
+        `;
+    });
+
+    // Get default proximity threshold
+    const defaultProximity = document.querySelector('[name="notifications_proximity_threshold"]').value || 10;
+
+    // Create new row
+    const statsContainer = sportSection.querySelector('.milestone-stats');
+    const newRow = document.createElement('div');
+    newRow.className = 'milestone-stat-row';
+    newRow.style.cssText = 'background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ddd;';
+    newRow.dataset.stat = statName;
+    newRow.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+            <label style="flex: 0 0 150px; font-weight: bold; color: #0066cc;">${statName}:</label>
+            <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                <label style="font-size: 13px; color: #666;">Alert within:</label>
+                <input type="number"
+                       class="proximity-threshold"
+                       value="${defaultProximity}"
+                       min="1"
+                       max="100"
+                       style="width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <span style="font-size: 13px; color: #666;">units</span>
+            </div>
+            <button type="button"
+                    class="btn-remove-stat"
+                    onclick="removeStat(this)"
+                    style="background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                🗑️ Remove
+            </button>
+        </div>
+        <div class="thresholds-list" style="padding-left: 15px;">
+            ${thresholdItems}
+        </div>
+        <button type="button"
+                onclick="addThreshold(this)"
+                style="margin-top: 8px; margin-left: 15px; background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+            ➕ Add Threshold
+        </button>
+    `;
+    statsContainer.appendChild(newRow);
+
+    // Clear inputs
+    if (statNameInput.tagName === 'SELECT') {
+        statNameInput.selectedIndex = 0;
+    } else {
+        statNameInput.value = '';
+    }
+    statThresholdsInput.value = '';
+}
+
+function addSport() {
+    const sportName = prompt('Enter sport name (e.g., mens_basketball, womens_soccer):');
+    if (!sportName || !sportName.trim()) return;
+
+    const sport = sportName.trim().toLowerCase().replace(/\s+/g, '_');
+    const container = document.getElementById('milestones-container');
+
+    const sportSection = document.createElement('div');
+    sportSection.className = 'sport-milestone-section collapsible-sport';
+    sportSection.style.cssText = 'background: #f8f9fa; border-radius: 8px; margin-bottom: 20px;';
+    sportSection.dataset.sport = sport;
+    sportSection.innerHTML = `
+        <h3 class="sport-header" onclick="toggleSport(this)" style="margin: 0; padding: 15px 20px; color: #0066cc; border-bottom: 1px solid #ddd; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <span>${sport.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button type="button"
+                        onclick="event.stopPropagation(); this.closest('.sport-milestone-section').remove()"
+                        style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                    🗑️ Remove Sport
+                </button>
+                <span class="sport-toggle-icon" style="font-size: 18px; transition: transform 0.3s; transform: rotate(-90deg);">▼</span>
+            </div>
+        </h3>
+        <div class="sport-content" style="padding: 20px; display: none;">
+            <div class="milestone-stats"></div>
+            <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 6px;">
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: #0066cc;">Add New Stat to ${sport.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</p>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text"
+                           class="new-stat-name"
+                           placeholder="Stat name (e.g., PTS, G, A)"
+                           style="flex: 0 0 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <input type="text"
+                           class="new-stat-thresholds"
+                           placeholder="Thresholds (e.g., 100, 200, 300)"
+                           style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <button type="button"
+                            class="btn-add-stat"
+                            onclick="addStat(this)"
+                            style="background: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                        ➕ Add Stat
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(sportSection);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('settings-form');
+    const saveStatus = document.getElementById('save-status');
+
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        // Collect milestone data and proximity thresholds
+        const milestones = {};
+        const proximityThresholds = {};
+
+        document.querySelectorAll('.sport-milestone-section').forEach(function(sportSection) {
+            const sport = sportSection.dataset.sport;
+            milestones[sport] = {};
+            proximityThresholds[sport] = {};
+
+            sportSection.querySelectorAll('.milestone-stat-row').forEach(function(statRow) {
+                const statName = statRow.dataset.stat;
+                const thresholdInputs = statRow.querySelectorAll('.threshold-value');
+                const proximityInput = statRow.querySelector('.proximity-threshold');
+
+                const thresholds = [];
+                thresholdInputs.forEach(function(input) {
+                    const value = parseInt(input.value);
+                    if (!isNaN(value) && value > 0) {
+                        thresholds.push(value);
+                    }
+                });
+
+                if (thresholds.length > 0) {
+                    milestones[sport][statName] = thresholds;
+                }
+
+                // Collect proximity threshold for this stat
+                if (proximityInput) {
+                    const proximityValue = parseInt(proximityInput.value);
+                    if (!isNaN(proximityValue) && proximityValue > 0) {
+                        proximityThresholds[sport][statName] = proximityValue;
+                    }
+                }
+            });
+        });
+
+        // Collect form data
+        const formData = {
+            email: {
+                smtp_server: document.querySelector('[name="email_smtp_server"]').value,
+                smtp_port: document.querySelector('[name="email_smtp_port"]').value,
+                sender_email: document.querySelector('[name="email_sender_email"]').value,
+                recipients: document.querySelector('[name="email_recipients"]').value
+            },
+            notifications: {
+                enabled: document.querySelector('[name="notifications_enabled"]').checked,
+                proximity_threshold: document.querySelector('[name="notifications_proximity_threshold"]').value
+            },
+            gameday: {
+                check_days_ahead: document.querySelector('[name="gameday_check_days_ahead"]').value
+            },
+            milestones: milestones,
+            milestone_proximity: proximityThresholds
+        };
+
+        // Show saving status
+        saveStatus.style.display = 'block';
+        saveStatus.className = 'status-message info-message';
+        saveStatus.textContent = '💾 Saving settings...';
+
+        // Send to API
+        fetch('/api/save-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                saveStatus.className = 'status-message success-message';
+                saveStatus.textContent = '✓ Settings saved successfully!';
+
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    saveStatus.style.display = 'none';
+                }, 3000);
+            } else {
+                saveStatus.className = 'status-message error-message';
+                saveStatus.textContent = '✗ Error: ' + (data.error || 'Unknown error');
+            }
+        })
+        .catch(error => {
+            saveStatus.className = 'status-message error-message';
+            saveStatus.textContent = '✗ Error saving settings: ' + error.message;
+        });
+    });
+});
+</script>
+{% endblock %}
