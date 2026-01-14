@@ -96,9 +96,7 @@ class MilestoneDetector:
             proximity = self._calculate_proximity(player_stats, milestone)
 
             # Get stat-specific proximity threshold
-            stat_threshold = self._get_proximity_threshold(
-                milestone.sport, milestone.stat_name, proximity_threshold
-            )
+            stat_threshold = self._get_proximity_threshold(milestone.sport, milestone.stat_name, proximity_threshold)
 
             # Only include if close AND not already passed
             if (
