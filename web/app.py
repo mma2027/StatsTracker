@@ -18,6 +18,7 @@ import json
 from queue import Queue, Empty
 from threading import Thread
 import yaml
+import pandas as pd
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -722,26 +723,89 @@ def api_update_stats():
 
 @app.route("/api/update-cricket-stats", methods=["POST"])
 def api_update_cricket_stats():
-    """API endpoint to fetch cricket stats and export to CSV."""
+    """API endpoint to fetch cricket stats, store in database, and export to CSV."""
     try:
         logger.info("Fetching cricket stats via API...")
 
-        from src.website_fetcher.cricket_fetcher import CricketFetcher
+        from src.website_fetcher.cricket_playwright_fetcher import CricketPlaywrightFetcher
 
-        # Initialize cricket fetcher
-        fetcher = CricketFetcher(timeout=30, headless=True)
+        # Load config and database
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
+        season = "2024-25"
 
-        # Export to CSV (this also fetches the stats)
+        # Initialize cricket fetcher with Playwright
+        fetcher = CricketPlaywrightFetcher(timeout=30, headless=True)
+
+        # Fetch stats (returns DataFrame)
+        result = fetcher.fetch_all_stats()
+
+        if not result.get("success", False):
+            return jsonify({"success": False, "error": result.get("error", "Failed to fetch stats")}), 500
+
+        df = result["data"]
+        logger.info(f"Fetched {len(df)} cricket players")
+
+        # Store in database
+        players_added = 0
+        players_updated = 0
+        stats_added = 0
+
+        for _, row in df.iterrows():
+            player_name = row.get("Player")
+            if not player_name:
+                continue
+
+            player_id = generate_player_id(player_name, "cricket")
+
+            # Check if player exists
+            existing_player = database.get_player(player_id)
+            if not existing_player:
+                player = Player(
+                    player_id=player_id,
+                    name=player_name,
+                    sport="cricket",
+                    team="Haverford",
+                    position=None,
+                    year=None,
+                    active=True,
+                )
+                database.add_player(player)
+                players_added += 1
+            else:
+                database.update_player(existing_player)
+                players_updated += 1
+
+            # Add stats to database (all columns except Player)
+            for col in df.columns:
+                if col != "Player" and pd.notna(row[col]):
+                    stat_entry = StatEntry(
+                        player_id=player_id,
+                        stat_name=col,
+                        stat_value=str(row[col]),
+                        season=season,
+                        date_recorded=datetime.now(),
+                    )
+                    database.add_stat(stat_entry)
+                    stats_added += 1
+
+        logger.info(f"Cricket: {players_added} added, {players_updated} updated, {stats_added} stats")
+
+        # Export to CSV
         output_path = str(CSV_EXPORTS_DIR / "haverford_cricket_stats.csv")
-        success = fetcher.export_to_csv(output_path)
+        csv_success = fetcher.export_to_csv(output_path)
 
-        if success:
+        if csv_success:
             logger.info(f"Cricket stats exported to {output_path}")
             return jsonify(
                 {
                     "success": True,
                     "message": "Cricket stats updated successfully",
                     "csv_path": output_path,
+                    "players_added": players_added,
+                    "players_updated": players_updated,
+                    "stats_added": stats_added,
                     "timestamp": datetime.now().isoformat(),
                 }
             )
