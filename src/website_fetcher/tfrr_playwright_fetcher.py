@@ -99,14 +99,16 @@ class TFRRPlaywrightFetcher(BaseFetcher):
         )
 
         # Add script to remove webdriver property
-        await self.context.add_init_script("""
+        await self.context.add_init_script(
+            """
             Object.defineProperty(navigator, 'webdriver', {
                 get: () => undefined
             });
             Object.defineProperty(navigator, 'plugins', {
                 get: () => [1, 2, 3, 4, 5]
             });
-        """)
+        """
+        )
 
         logger.info("Playwright browser initialized successfully")
 
@@ -139,10 +141,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
             backoff = min(2**self.consecutive_errors, 60)  # Max 60 seconds
             jitter = random.uniform(0, backoff * 0.3)  # Add 0-30% jitter
             total_delay = base_delay + backoff + jitter
-            logger.info(
-                f"Exponential backoff: {total_delay:.1f}s "
-                f"({self.consecutive_errors} consecutive errors)"
-            )
+            logger.info(f"Exponential backoff: {total_delay:.1f}s " f"({self.consecutive_errors} consecutive errors)")
         else:
             total_delay = base_delay
 
@@ -157,15 +156,10 @@ class TFRRPlaywrightFetcher(BaseFetcher):
         # Every 8-12 requests, take a longer break
         if self.request_count % random.randint(8, 12) == 0:
             extended_delay = random.uniform(20.0, 40.0)
-            logger.info(
-                f"Taking extended break: {extended_delay:.1f}s "
-                f"after {self.request_count} requests"
-            )
+            logger.info(f"Taking extended break: {extended_delay:.1f}s " f"after {self.request_count} requests")
             await asyncio.sleep(extended_delay)
 
-    async def _fetch_page_with_retry(
-        self, url: str, max_retries: int = 3
-    ) -> Optional[str]:
+    async def _fetch_page_with_retry(self, url: str, max_retries: int = 3) -> Optional[str]:
         """
         Fetch a page with retry logic and rate limit handling.
 
@@ -256,9 +250,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
         logger.error(f"Failed to fetch {url} after {max_retries} attempts")
         return None
 
-    async def _fetch_team_roster_async(
-        self, team_code: str, sport: str
-    ) -> Optional[Dict[str, Any]]:
+    async def _fetch_team_roster_async(self, team_code: str, sport: str) -> Optional[Dict[str, Any]]:
         """
         Fetch team roster from TFRR asynchronously.
 
@@ -302,18 +294,14 @@ class TFRRPlaywrightFetcher(BaseFetcher):
                 "profile_url": url,
             }
 
-            logger.info(
-                f"Successfully fetched team roster for {team_name}: {len(roster)} athletes"
-            )
+            logger.info(f"Successfully fetched team roster for {team_name}: {len(roster)} athletes")
             return team_data
 
         except Exception as e:
             logger.error(f"Error fetching team roster: {e}")
             return None
 
-    async def _fetch_athlete_prs_async(
-        self, athlete_id: str, sport: str
-    ) -> Optional[Dict[str, Any]]:
+    async def _fetch_athlete_prs_async(self, athlete_id: str, sport: str) -> Optional[Dict[str, Any]]:
         """
         Fetch athlete's personal records from TFRR asynchronously.
 
@@ -380,9 +368,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
                 roster_section = roster_header.find_parent()
                 if roster_section:
                     # Find all athlete links
-                    athlete_links = roster_section.find_all(
-                        "a", href=re.compile(r"/athletes/\d+/")
-                    )
+                    athlete_links = roster_section.find_all("a", href=re.compile(r"/athletes/\d+/"))
                     seen_ids = set()
 
                     for link in athlete_links:
@@ -391,28 +377,30 @@ class TFRRPlaywrightFetcher(BaseFetcher):
 
                         if athlete_id and name and athlete_id not in seen_ids:
                             seen_ids.add(athlete_id)
-                            roster.append({
-                                "name": name,
-                                "athlete_id": athlete_id,
-                                "year": "",
-                            })
+                            roster.append(
+                                {
+                                    "name": name,
+                                    "athlete_id": athlete_id,
+                                    "year": "",
+                                }
+                            )
 
             # Fallback: Look for any athlete links with Haverford in URL
             if not roster:
-                all_athlete_links = soup.find_all(
-                    "a", href=re.compile(r"/athletes/\d+/Haverford/")
-                )
+                all_athlete_links = soup.find_all("a", href=re.compile(r"/athletes/\d+/Haverford/"))
                 seen_ids = set()
 
                 for link in all_athlete_links:
                     athlete_id = self._extract_athlete_id(link["href"])
                     if athlete_id and athlete_id not in seen_ids:
                         seen_ids.add(athlete_id)
-                        roster.append({
-                            "name": link.text.strip(),
-                            "athlete_id": athlete_id,
-                            "year": "",
-                        })
+                        roster.append(
+                            {
+                                "name": link.text.strip(),
+                                "athlete_id": athlete_id,
+                                "year": "",
+                            }
+                        )
 
             logger.info(f"Extracted {len(roster)} athletes from roster")
 
@@ -470,6 +458,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
         Returns:
             FetchResult with team data and roster
         """
+
         async def _fetch_and_cleanup():
             """Wrapper to fetch data and cleanup browser in same async context."""
             try:
@@ -486,16 +475,12 @@ class TFRRPlaywrightFetcher(BaseFetcher):
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
-                return FetchResult(
-                    success=False, error="Failed to fetch team data", source=self.name
-                )
+                return FetchResult(success=False, error="Failed to fetch team data", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
 
-    async def _fetch_team_with_prs(
-        self, team_code: str, sport: str
-    ) -> Optional[Dict[str, Any]]:
+    async def _fetch_team_with_prs(self, team_code: str, sport: str) -> Optional[Dict[str, Any]]:
         """
         Fetch team roster and PRs for all athletes.
 
@@ -536,21 +521,20 @@ class TFRRPlaywrightFetcher(BaseFetcher):
                     athletes_with_prs.append(athlete_data)
                 else:
                     # Keep athlete in list even if PR fetch fails
-                    athletes_with_prs.append({
-                        "athlete_id": athlete_id,
-                        "name": athlete["name"],
-                        "team": team_data.get("name", "Unknown"),
-                        "sport": sport,
-                        "personal_records": {},
-                    })
+                    athletes_with_prs.append(
+                        {
+                            "athlete_id": athlete_id,
+                            "name": athlete["name"],
+                            "team": team_data.get("name", "Unknown"),
+                            "sport": sport,
+                            "personal_records": {},
+                        }
+                    )
 
             # Update roster with PR data
             team_data["roster"] = athletes_with_prs
 
-            logger.info(
-                f"Successfully fetched team data with PRs for "
-                f"{len(athletes_with_prs)} athletes"
-            )
+            logger.info(f"Successfully fetched team data with PRs for " f"{len(athletes_with_prs)} athletes")
             return team_data
 
         except Exception as e:
@@ -568,6 +552,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
         Returns:
             FetchResult with athlete data and PRs
         """
+
         async def _fetch_and_cleanup():
             """Wrapper to fetch data and cleanup browser in same async context."""
             try:
@@ -583,9 +568,7 @@ class TFRRPlaywrightFetcher(BaseFetcher):
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
-                return FetchResult(
-                    success=False, error="Failed to fetch player data", source=self.name
-                )
+                return FetchResult(success=False, error="Failed to fetch player data", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching player stats")
