@@ -54,6 +54,22 @@ fetchers:
   tfrr:
     base_url: "https://www.tfrrs.org"
     timeout: 30
+  clublocker:
+    base_url: "https://clublocker.com"
+    timeout: 30
+    # ClubLocker team IDs for squash teams
+    # Format: team_key: team_id
+    # Season info can be encoded in the key (e.g., squash_mens_2024_25)
+    teams:
+      squash_mens_2024_25: 40879    # Men's squash 2024-25 season
+      squash_mens_2025_26: 44989    # Men's squash 2025-26 season
+      squash_womens_2024_25: 40967  # Women's squash 2024-25 season
+      squash_womens_2025_26: 45078  # Women's squash 2025-26 season
+    selenium:
+      headless: true
+      timeout: 10
+      page_load_timeout: 15
+      wait_for_render: 8  # Seconds to wait for Angular app to render
   # Add more fetcher configurations as needed
 
 # Milestone Configuration
