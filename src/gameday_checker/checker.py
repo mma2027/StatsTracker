@@ -5,7 +5,7 @@ This module checks for games scheduled on specific dates.
 """
 
 from datetime import datetime, date
-from typing import List, Optional
+from typing import Any, List, Optional
 import logging
 
 from .models import Game, Team
@@ -335,7 +335,7 @@ class GamedayChecker:
             sport_url = f"{self.schedule_url.rstrip('/')}/sports/{test_sport}/schedule"
             response = requests.get(sport_url, params={"season": season_param}, timeout=10)
 
-            diagnostics = {
+            diagnostics: dict[str, Any] = {
                 "url": f"{sport_url}?season={season_param}",
                 "status_code": response.status_code,
                 "page_length": len(response.text),

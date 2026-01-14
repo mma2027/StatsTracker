@@ -35,7 +35,6 @@ class TFRRFetcher(BaseFetcher):
 
     def __init__(self, base_url: str = "https://www.tfrrs.org", timeout: int = 30):
         super().__init__(base_url, timeout)
-        self.driver = None
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
         """
@@ -70,9 +69,6 @@ class TFRRFetcher(BaseFetcher):
 
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
-
-        finally:
-            self._close_driver()
 
     def fetch_team_stats(self, team_code: str, sport: str) -> FetchResult:
         """
@@ -130,7 +126,9 @@ class TFRRFetcher(BaseFetcher):
             conference = ""
             conf_elem = soup.find(text=re.compile("Conference|Division"))
             if conf_elem:
-                conference = conf_elem.find_parent().text.strip()
+                parent = conf_elem.find_parent()
+                if parent:
+                    conference = parent.text.strip()
 
             # Extract roster
             roster = self._extract_roster(soup)
@@ -174,9 +172,10 @@ class TFRRFetcher(BaseFetcher):
                     if len(cols) >= 2:
                         athlete_link = row.find("a", href=re.compile(r"/athletes/"))
                         if athlete_link:
+                            href = athlete_link.get("href", "")
                             athlete = {
                                 "name": athlete_link.text.strip(),
-                                "athlete_id": self._extract_athlete_id(athlete_link["href"]),
+                                "athlete_id": self._extract_athlete_id(href) if isinstance(href, str) else "",
                                 "year": cols[1].text.strip() if len(cols) > 1 else "",
                             }
                             roster.append(athlete)
@@ -257,7 +256,8 @@ class TFRRFetcher(BaseFetcher):
             athlete_links = soup.find_all("a", href=re.compile(r"/athletes/\d+"))
 
             for link in athlete_links:
-                athlete_id = self._extract_athlete_id(link["href"])
+                href = link.get("href", "")
+                athlete_id = self._extract_athlete_id(href) if isinstance(href, str) else ""
                 name = link.text.strip()
 
                 # Try to find associated team info

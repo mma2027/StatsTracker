@@ -108,15 +108,21 @@ class CricketFetcher(BaseFetcher):
             # Fetch all stats
             all_stats = self.fetch_all_stats()
 
-            if not all_stats["success"]:
+            if not all_stats.success:
                 return FetchResult(
                     success=False,
-                    error=all_stats.get("error", "Failed to fetch stats"),
+                    error=all_stats.error or "Failed to fetch stats",
                     source=self.name,
                 )
 
             # Filter for specific player
-            df = all_stats["data"]
+            df = all_stats.data.get("merged_stats") if all_stats.data else None
+            if df is None:
+                return FetchResult(
+                    success=False,
+                    error="No data available",
+                    source=self.name,
+                )
             player_data = df[df["Player"].str.contains(player_id, case=False, na=False)]
 
             if player_data.empty:
@@ -173,14 +179,20 @@ class CricketFetcher(BaseFetcher):
 
             all_stats = self.fetch_all_stats()
 
-            if not all_stats["success"]:
+            if not all_stats.success:
                 return FetchResult(
                     success=False,
-                    error=all_stats.get("error", "Failed to fetch stats"),
+                    error=all_stats.error or "Failed to fetch stats",
                     source=self.name,
                 )
 
-            df = all_stats["data"]
+            df = all_stats.data.get("merged_stats") if all_stats.data else None
+            if df is None:
+                return FetchResult(
+                    success=False,
+                    error="No data available",
+                    source=self.name,
+                )
             matches = df[df["Player"].str.contains(name, case=False, na=False)]
 
             if matches.empty:
@@ -203,12 +215,12 @@ class CricketFetcher(BaseFetcher):
         finally:
             self._close_driver()
 
-    def fetch_all_stats(self) -> Dict[str, Any]:
+    def fetch_all_stats(self) -> FetchResult:
         """
         Fetch and merge all cricket statistics (batting, bowling, fielding).
 
         Returns:
-            Dictionary with 'success', 'data' (DataFrame), and optional 'error'
+            FetchResult with merged cricket statistics
         """
         try:
             logger.info("Fetching all cricket statistics from cricclubs.com using Selenium")
@@ -232,10 +244,11 @@ class CricketFetcher(BaseFetcher):
                 successful_fetches.append("fielding")
 
             if not successful_fetches:
-                return {
-                    "success": False,
-                    "error": "Failed to fetch any stat types",
-                }
+                return FetchResult(
+                    success=False,
+                    error="Failed to fetch any stat types",
+                    source=self.name,
+                )
 
             logger.info(f"Successfully fetched: {', '.join(successful_fetches)}")
 
@@ -255,17 +268,18 @@ class CricketFetcher(BaseFetcher):
 
             logger.info(f"Successfully fetched and merged stats for {len(merged_df)} players")
 
-            return {"success": True, "data": merged_df}
+            return FetchResult(success=True, data={"merged_stats": merged_df}, source=self.name)
 
         except Exception as e:
             logger.error(f"Error fetching all stats: {e}")
-            return {"success": False, "error": str(e)}
+            return FetchResult(success=False, error=str(e), source=self.name)
         finally:
             self._close_driver()
 
     def _fetch_batting_stats(self) -> Optional[pd.DataFrame]:
         """Fetch batting statistics using Selenium."""
         try:
+            assert self.driver is not None, "Driver must be initialized before fetching stats"
             url = get_url("batting")
             logger.info(f"Fetching batting stats from {url}")
 
@@ -298,6 +312,7 @@ class CricketFetcher(BaseFetcher):
     def _fetch_bowling_stats(self) -> Optional[pd.DataFrame]:
         """Fetch bowling statistics using Selenium."""
         try:
+            assert self.driver is not None, "Driver must be initialized before fetching stats"
             url = get_url("bowling")
             logger.info(f"Fetching bowling stats from {url}")
 
@@ -329,6 +344,7 @@ class CricketFetcher(BaseFetcher):
     def _fetch_fielding_stats(self) -> Optional[pd.DataFrame]:
         """Fetch fielding statistics using Selenium."""
         try:
+            assert self.driver is not None, "Driver must be initialized before fetching stats"
             url = get_url("fielding")
             logger.info(f"Fetching fielding stats from {url}")
 
@@ -540,11 +556,14 @@ class CricketFetcher(BaseFetcher):
             # Fetch all stats
             result = self.fetch_all_stats()
 
-            if not result["success"]:
-                logger.error(f"Failed to fetch stats: {result.get('error')}")
+            if not result.success:
+                logger.error(f"Failed to fetch stats: {result.error}")
                 return False
 
-            df = result["data"]
+            df = result.data.get("merged_stats") if result.data else None
+            if df is None:
+                logger.error("No data available")
+                return False
 
             if df.empty:
                 logger.warning("No data to export")

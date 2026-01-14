@@ -4,7 +4,7 @@ NCAA Website Fetcher
 Fetches statistics from NCAA.org or stats.ncaa.org
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Optional
 import logging
 import time
 
@@ -501,7 +501,7 @@ class NCAAFetcher(BaseFetcher):
         """
         # This is where you would parse the HTML/JSON response
         # and convert it to the standard format
-        pass
+        return {}
 
     def _init_selenium_driver(self):
         """Initialize Chrome WebDriver with headless options for scraping."""
@@ -533,7 +533,7 @@ class NCAAFetcher(BaseFetcher):
             finally:
                 self.driver = None
 
-    def _check_for_page_errors(self, soup: BeautifulSoup) -> str:
+    def _check_for_page_errors(self, soup: BeautifulSoup) -> Optional[str]:
         """
         Check if the page is an error page or invalid team page.
 
@@ -786,8 +786,8 @@ class NCAAFetcher(BaseFetcher):
             - players_data: List of dictionaries with player name and stats
             - stat_categories: List of stat column names
         """
-        players_data = []
-        stat_categories = []
+        players_data: list[Dict[str, Any]] = []
+        stat_categories: list[str] = []
 
         # Find the main statistics table
         # NCAA typically uses tables with specific classes or the first table on the page
@@ -837,7 +837,7 @@ class NCAAFetcher(BaseFetcher):
                 continue
 
             # Build player data dict
-            player_data = {"name": "", "stats": {}}
+            player_data: Dict[str, Any] = {"name": "", "stats": {}}
 
             for i, cell in enumerate(cells):
                 if i >= len(headers):
