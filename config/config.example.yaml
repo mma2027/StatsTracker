@@ -101,37 +101,52 @@ milestones:
   # ---------------------------------------------------------------------------
   mens_basketball:
     PTS:  # Career Points
+      - 250
+      - 500
+      - 750
       - 1000
       - 1500
       - 2000
+      - 2500
+      - 3000
     "Tot Reb":  # Total Rebounds (quotes needed because of space)
+      - 100
+      - 250
       - 500
       - 750
       - 1000
     AST:  # Assists
+      - 150
       - 300
       - 500
       - 750
     STL:  # Steals
-      - 100
-      - 150
-      - 200
-    BLK:  # Blocks
       - 75
-      - 125
-      - 175
-    FGM:  # Field Goals Made
-      - 400
-      - 600
-      - 800
-    3FG:  # Three-Pointers Made
+      - 150
+      - 225
+      - 300
+    BLK:  # Blocks
+      - 50
       - 100
       - 150
       - 200
-    FT:  # Free Throws Made
-      - 200
-      - 350
+    FGM:  # Field Goals Made
+      - 250
       - 500
+      - 750
+      - 1000
+    3FG:  # Three-Pointers Made
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+    FT:  # Free Throws Made
+      - 150
+      - 300
+      - 450
+      - 600
 
   # ---------------------------------------------------------------------------
   # WOMEN'S BASKETBALL
@@ -139,37 +154,52 @@ milestones:
   # ---------------------------------------------------------------------------
   womens_basketball:
     PTS:  # Career Points
+      - 250
+      - 500
+      - 750
       - 1000
       - 1500
       - 2000
+      - 2500
+      - 3000
     "Tot Reb":  # Total Rebounds (quotes needed because of space)
+      - 100
+      - 250
       - 500
       - 750
       - 1000
     AST:  # Assists
+      - 150
       - 300
       - 500
       - 750
     STL:  # Steals
-      - 100
-      - 150
-      - 200
-    BLK:  # Blocks
       - 75
-      - 125
-      - 175
-    FGM:  # Field Goals Made
-      - 400
-      - 600
-      - 800
-    3FG:  # Three-Pointers Made
+      - 150
+      - 225
+      - 300
+    BLK:  # Blocks
+      - 50
       - 100
       - 150
       - 200
-    FT:  # Free Throws Made
-      - 200
-      - 350
+    FGM:  # Field Goals Made
+      - 250
       - 500
+      - 750
+      - 1000
+    3FG:  # Three-Pointers Made
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+    FT:  # Free Throws Made
+      - 150
+      - 300
+      - 450
+      - 600
 
   # ---------------------------------------------------------------------------
   # MEN'S SOCCER
@@ -177,25 +207,30 @@ milestones:
   # ---------------------------------------------------------------------------
   mens_soccer:
     Goals:  # Career Goals
+      - 10
       - 20
-      - 30
-      - 40
-    Assists:  # Career Assists
-      - 15
-      - 25
       - 35
+      - 50
+    Assists:  # Career Assists
+      - 10
+      - 20
+      - 35
+      - 50
     ShAtt:  # Shot Attempts
-      - 75
-      - 125
-      - 175
+      - 50
+      - 100
+      - 150
+      - 200
     SoG:  # Shots on Goal
-      - 40
-      - 70
+      - 25
+      - 50
+      - 75
       - 100
     GWG:  # Game-Winning Goals
+      - 3
       - 5
+      - 8
       - 10
-      - 15
 
   # ---------------------------------------------------------------------------
   # WOMEN'S SOCCER
@@ -203,24 +238,29 @@ milestones:
   # ---------------------------------------------------------------------------
   womens_soccer:
     Goals:  # Career Goals
+      - 10
       - 20
-      - 30
-      - 40
-    Assists:  # Career Assists
-      - 15
-      - 25
       - 35
+      - 50
+    Assists:  # Career Assists
+      - 10
+      - 20
+      - 35
+      - 50
     Points:  # Career Points
-      - 40
-      - 60
-      - 80
-    ShAtt:  # Shot Attempts
+      - 25
+      - 50
       - 75
-      - 125
-      - 175
+      - 100
+    ShAtt:  # Shot Attempts
+      - 50
+      - 100
+      - 150
+      - 200
     SoG:  # Shots on Goal
-      - 40
-      - 70
+      - 25
+      - 50
+      - 75
       - 100
 
   # ---------------------------------------------------------------------------
@@ -229,25 +269,30 @@ milestones:
   # ---------------------------------------------------------------------------
   field_hockey:
     Goals:  # Career Goals
-      - 20
-      - 35
-      - 50
-    AST:  # Career Assists (note: different from soccer - uses AST not Assists)
       - 15
       - 30
       - 45
-    PTS:  # Career Points
-      - 40
-      - 70
-      - 100
-    ShAtt:  # Shot Attempts
-      - 50
-      - 90
-      - 130
-    DSv:  # Defensive Saves (for defenders/goalies)
+      - 60
+    AST:  # Career Assists (note: different from soccer - uses AST not Assists)
+      - 12
       - 25
-      - 50
-      - 75
+      - 40
+      - 55
+    PTS:  # Career Points
+      - 30
+      - 60
+      - 90
+      - 120
+    ShAtt:  # Shot Attempts
+      - 40
+      - 80
+      - 120
+      - 160
+    DSv:  # Defensive Saves (for defenders/goalies)
+      - 20
+      - 40
+      - 60
+      - 80
 
   # ---------------------------------------------------------------------------
   # MEN'S LACROSSE
@@ -255,33 +300,44 @@ milestones:
   # ---------------------------------------------------------------------------
   mens_lacrosse:
     Goals:  # Career Goals
+      - 25
       - 50
+      - 75
       - 100
       - 150
     Assists:  # Career Assists
+      - 20
       - 40
+      - 60
       - 80
       - 120
     Points:  # Career Points
+      - 50
       - 100
-      - 175
-      - 250
+      - 150
+      - 200
+      - 300
     GB:  # Career Ground Balls
+      - 50
       - 100
+      - 150
       - 200
       - 300
     "FO Won":  # Faceoffs Won (quotes needed because of space)
       - 100
       - 200
       - 300
+      - 400
     Shots:  # Shot Attempts
-      - 150
-      - 250
-      - 350
-    SOG:  # Shots on Goal
       - 100
-      - 175
-      - 250
+      - 200
+      - 300
+      - 400
+    SOG:  # Shots on Goal
+      - 75
+      - 150
+      - 225
+      - 300
 
   # ---------------------------------------------------------------------------
   # WOMEN'S LACROSSE
@@ -289,36 +345,48 @@ milestones:
   # ---------------------------------------------------------------------------
   womens_lacrosse:
     Goals:  # Career Goals
+      - 25
       - 50
+      - 75
       - 100
       - 150
     Assists:  # Career Assists
+      - 20
       - 40
+      - 60
       - 80
       - 120
     Points:  # Career Points
+      - 50
       - 100
-      - 175
-      - 250
+      - 150
+      - 200
+      - 300
     "Ground Balls":  # Career Ground Balls (quotes needed because of space)
+      - 50
       - 100
+      - 150
       - 200
       - 300
     "Draw Controls":  # Career Draw Controls (quotes needed because of space)
+      - 50
+      - 100
+      - 150
+      - 200
+    Shots:  # Shot Attempts
+      - 100
+      - 200
+      - 300
+      - 400
+    SOG:  # Shots on Goal
       - 75
       - 150
       - 225
-    Shots:  # Shot Attempts
-      - 150
-      - 250
-      - 350
-    SOG:  # Shots on Goal
-      - 100
-      - 175
-      - 250
+      - 300
     "Freepos Goals":  # Free Position Goals (quotes needed because of space)
-      - 20
-      - 40
+      - 15
+      - 30
+      - 45
       - 60
 
   # ---------------------------------------------------------------------------
@@ -328,41 +396,53 @@ milestones:
   # ---------------------------------------------------------------------------
   baseball:
     H:  # Career Hits
+      - 50
       - 100
       - 150
       - 200
     HR:  # Career Home Runs
+      - 5
       - 10
+      - 15
       - 20
       - 30
     RBI:  # Career RBI
-      - 75
-      - 125
-      - 175
+      - 50
+      - 100
+      - 150
+      - 200
     R:  # Career Runs
-      - 75
-      - 125
-      - 175
+      - 50
+      - 100
+      - 150
+      - 200
     "2B":  # Doubles (quotes needed because it starts with a number)
-      - 25
+      - 20
       - 40
-      - 55
+      - 60
+      - 80
     "3B":  # Triples (quotes needed because it starts with a number)
       - 5
       - 10
       - 15
+      - 20
     BB:  # Walks
-      - 50
-      - 85
+      - 40
+      - 80
       - 120
+      - 160
     SB:  # Stolen Bases
-      - 25
-      - 50
-      - 75
+      - 20
+      - 40
+      - 60
+      - 80
     TB:  # Total Bases
+      - 50
+      - 100
       - 150
+      - 200
       - 250
-      - 350
+      - 300
 
   # ---------------------------------------------------------------------------
   # SOFTBALL
@@ -371,41 +451,53 @@ milestones:
   # ---------------------------------------------------------------------------
   softball:
     H:  # Career Hits
+      - 50
       - 100
       - 150
       - 200
     HR:  # Career Home Runs
+      - 5
       - 10
+      - 15
       - 20
       - 30
     RBI:  # Career RBI
-      - 75
-      - 125
-      - 175
+      - 50
+      - 100
+      - 150
+      - 200
     R:  # Career Runs
-      - 75
-      - 125
-      - 175
+      - 50
+      - 100
+      - 150
+      - 200
     "2B":  # Doubles (quotes needed because it starts with a number)
-      - 25
+      - 20
       - 40
-      - 55
+      - 60
+      - 80
     "3B":  # Triples (quotes needed because it starts with a number)
       - 5
       - 10
       - 15
+      - 20
     BB:  # Walks
-      - 50
-      - 85
+      - 40
+      - 80
       - 120
+      - 160
     SB:  # Stolen Bases
-      - 25
-      - 50
-      - 75
+      - 20
+      - 40
+      - 60
+      - 80
     TB:  # Total Bases
+      - 50
+      - 100
       - 150
+      - 200
       - 250
-      - 350
+      - 300
 
   # ---------------------------------------------------------------------------
   # WOMEN'S VOLLEYBALL
@@ -413,37 +505,49 @@ milestones:
   # ---------------------------------------------------------------------------
   womens_volleyball:
     Kills:  # Career Kills
+      - 250
       - 500
+      - 750
       - 1000
       - 1500
     Assists:  # Career Assists
+      - 500
       - 1000
+      - 1500
       - 2000
       - 3000
     Aces:  # Career Aces
+      - 50
       - 100
-      - 175
-      - 250
+      - 150
+      - 200
     Digs:  # Career Digs
+      - 250
       - 500
+      - 750
       - 1000
       - 1500
     "Block Assists":  # Career Block Assists (quotes needed because of space)
-      - 100
-      - 200
+      - 75
+      - 150
+      - 225
       - 300
     "Block Solos":  # Career Block Solos (quotes needed because of space)
-      - 25
-      - 50
-      - 75
+      - 20
+      - 40
+      - 60
+      - 80
     PTS:  # Career Points
+      - 300
       - 600
+      - 900
       - 1200
       - 1800
     S:  # Service Attempts
+      - 250
       - 500
+      - 750
       - 1000
-      - 1500
 
 # =============================================================================
 # NOTIFICATION SETTINGS
