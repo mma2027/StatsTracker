@@ -34,5 +34,6 @@ colorlog>=6.7.0
 # Optional: Web scraping utilities
 selenium>=4.12.0  # For dynamic content if needed
 webdriver-manager>=4.0.0  # For automatic ChromeDriver management
+playwright>=1.40.0  # For advanced web scraping with better rate limit handling
 pandas>=2.0.0  # For data manipulation
 cloudscraper>=1.2.71  # For bypassing Cloudflare protection
