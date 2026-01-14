@@ -72,9 +72,36 @@
         </div>
     </section>
 
+    <!-- Cricket Stats Section -->
+    <section class="demo-section">
+        <h2>4. Update Cricket Stats</h2>
+        <p>Fetch cricket statistics from CricClubs for Haverford Cricket team and export to CSV.</p>
+
+        <div class="alert alert-warning">
+            <strong>⚠️ Note:</strong> This process may take 2-3 minutes to complete.
+            <ul>
+                <li>Fetches batting, bowling, and fielding statistics</li>
+                <li>Exports merged data to CSV file</li>
+                <li>Includes all Haverford cricket players</li>
+            </ul>
+        </div>
+
+        <button id="btn-update-cricket" class="btn btn-primary btn-lg">
+            🏏 Update Cricket Stats
+        </button>
+
+        <div id="cricket-status" class="status-message" style="display: none;"></div>
+
+        <!-- Results Display -->
+        <div id="cricket-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div id="cricket-info"></div>
+        </div>
+    </section>
+
     <!-- Gameday Simulator Section -->
     <section class="demo-section">
-        <h2>4. Simulate Gameday Checker</h2>
+        <h2>5. Simulate Gameday Checker</h2>
         <p>Check for games on a specific date and see what email would be sent.</p>
 
         <div class="form-group">
@@ -617,6 +644,79 @@ document.getElementById('btn-update-tfrr').addEventListener('click', async funct
         button.textContent = '🏃 Update TFRR Stats';
         button.disabled = false;
         progress.style.display = 'none';
+    }
+});
+
+// Update Cricket Stats Button
+document.getElementById('btn-update-cricket').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('cricket-status');
+    const results = document.getElementById('cricket-results');
+    const infoDiv = document.getElementById('cricket-info');
+
+    // Confirm before starting
+    if (!confirm('This will take 2-3 minutes to fetch cricket stats from CricClubs. Continue?')) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '⏳ Fetching Cricket Stats...';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Fetching cricket statistics from CricClubs...';
+    results.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/update-cricket-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            status.className = 'status-message status-success';
+            status.textContent = '✅ Cricket stats updated successfully!';
+
+            // Display results
+            infoDiv.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <strong>CSV File:</strong> <code>${data.csv_path.split('/').pop()}</code>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Location:</strong> <code>csv_exports/</code>
+                    </div>
+                    <div class="stat-item">
+                        <strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}
+                    </div>
+                </div>
+                <p style="margin-top: 1rem;">
+                    <strong>Data Includes:</strong>
+                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                        <li>Batting statistics (runs, average, strike rate, etc.)</li>
+                        <li>Bowling statistics (wickets, economy rate, average, etc.)</li>
+                        <li>Fielding statistics (catches, run-outs, stumpings)</li>
+                    </ul>
+                </p>
+            `;
+            results.style.display = 'block';
+
+            button.textContent = '✅ Cricket Stats Updated';
+
+            // Reset button after 5 seconds
+            setTimeout(() => {
+                button.textContent = '🏏 Update Cricket Stats';
+                button.disabled = false;
+            }, 5000);
+        } else {
+            throw new Error(data.error || 'Failed to update cricket stats');
+        }
+    } catch (error) {
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '🏏 Update Cricket Stats';
+        button.disabled = false;
     }
 });
 
