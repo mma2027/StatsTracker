@@ -20,6 +20,7 @@ import json
 import time
 from queue import Queue
 from threading import Thread
+import yaml
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -120,11 +121,170 @@ def csv_browser():
         # Convert to sorted list
         sports_list = sorted(sports_data.values(), key=lambda x: x['name'])
 
-        return render_template('csv_browser.html', sports=sports_list)
+        return render_template('csv_browser.html', sports=sports_list, total_players=len(players))
 
     except Exception as e:
         logger.error(f"Error loading sports from database: {e}")
-        return render_template('csv_browser.html', sports=[], error=str(e))
+        return render_template('csv_browser.html', sports=[], error=str(e), total_players=0)
+
+
+@app.route('/api/search-players')
+def api_search_players():
+    """API endpoint to search for players across all sports."""
+    try:
+        query = request.args.get('q', '').strip().lower()
+        if not query:
+            return jsonify({'results': []})
+
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get('database', {})
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get('path', 'data/stats.db')))
+
+        # Get all players
+        all_players = database.get_all_players()
+
+        # Filter players by name matching query
+        matching_players = []
+        for player in all_players:
+            if query in player.name.lower():
+                # Get player stats to show recent data
+                player_stats = database.get_player_stats(player.player_id)
+                last_updated = None
+                if player_stats and player_stats.recent_entries:
+                    latest_stat = max(player_stats.recent_entries, key=lambda s: s.date_recorded)
+                    last_updated = latest_stat.date_recorded.strftime('%Y-%m-%d %H:%M')
+
+                matching_players.append({
+                    'name': player.name,
+                    'sport': player.sport.replace('_', ' ').title(),
+                    'sport_key': player.sport,
+                    'last_updated': last_updated
+                })
+
+        # Sort by name
+        matching_players.sort(key=lambda x: x['name'])
+
+        return jsonify({
+            'results': matching_players,
+            'count': len(matching_players)
+        })
+
+    except Exception as e:
+        logger.error(f"Error searching players: {e}")
+        return jsonify({'error': str(e), 'results': []}), 500
+
+
+@app.route('/settings')
+def settings():
+    """Display and edit configuration settings."""
+    try:
+        # Load current config
+        with open(CONFIG_PATH, 'r') as f:
+            config = yaml.safe_load(f)
+
+        # Get available stats from database for each sport
+        db_config = config.get('database', {})
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get('path', 'data/stats.db')))
+
+        available_stats_by_sport = {}
+        all_players = database.get_all_players()
+
+        for player in all_players:
+            sport = player.sport
+            if sport not in available_stats_by_sport:
+                available_stats_by_sport[sport] = set()
+
+            # Get player stats to find all stat names
+            player_stats = database.get_player_stats(player.player_id)
+            if player_stats and player_stats.career_stats:
+                for stat_name in player_stats.career_stats.keys():
+                    available_stats_by_sport[sport].add(stat_name)
+
+        # Convert sets to sorted lists
+        for sport in available_stats_by_sport:
+            available_stats_by_sport[sport] = sorted(list(available_stats_by_sport[sport]))
+
+        return render_template('settings.html', config=config, available_stats=available_stats_by_sport)
+
+    except Exception as e:
+        logger.error(f"Error loading settings: {e}")
+        return render_template('settings.html', config={}, error=str(e), available_stats={})
+
+
+@app.route('/api/save-settings', methods=['POST'])
+def api_save_settings():
+    """API endpoint to save configuration settings."""
+    try:
+        data = request.get_json()
+
+        # Load current config
+        with open(CONFIG_PATH, 'r') as f:
+            config = yaml.safe_load(f)
+
+        # Update email settings
+        if 'email' in data:
+            config['email'] = config.get('email', {})
+            if 'recipients' in data['email']:
+                # Convert comma-separated string to list
+                recipients_str = data['email']['recipients']
+                config['email']['recipients'] = [r.strip() for r in recipients_str.split(',') if r.strip()]
+            if 'smtp_server' in data['email']:
+                config['email']['smtp_server'] = data['email']['smtp_server']
+            if 'smtp_port' in data['email']:
+                config['email']['smtp_port'] = int(data['email']['smtp_port'])
+            if 'sender_email' in data['email']:
+                config['email']['sender_email'] = data['email']['sender_email']
+
+        # Update notification settings
+        if 'notifications' in data:
+            config['notifications'] = config.get('notifications', {})
+            if 'enabled' in data['notifications']:
+                config['notifications']['enabled'] = data['notifications']['enabled']
+            if 'proximity_threshold' in data['notifications']:
+                config['notifications']['proximity_threshold'] = int(data['notifications']['proximity_threshold'])
+
+        # Update gameday settings
+        if 'gameday' in data:
+            config['gameday'] = config.get('gameday', {})
+            if 'check_days_ahead' in data['gameday']:
+                config['gameday']['check_days_ahead'] = int(data['gameday']['check_days_ahead'])
+
+        # Update milestone settings
+        if 'milestones' in data:
+            config['milestones'] = {}
+            for sport, stats in data['milestones'].items():
+                config['milestones'][sport] = {}
+                for stat_name, thresholds in stats.items():
+                    # Convert string of comma-separated values to list of integers
+                    if isinstance(thresholds, str):
+                        threshold_list = [int(t.strip()) for t in thresholds.split(',') if t.strip()]
+                        config['milestones'][sport][stat_name] = sorted(threshold_list)
+                    elif isinstance(thresholds, list):
+                        config['milestones'][sport][stat_name] = sorted([int(t) for t in thresholds])
+
+        # Update milestone proximity thresholds (per-sport, per-stat)
+        if 'milestone_proximity' in data:
+            config['milestone_proximity'] = {}
+            for sport, stats in data['milestone_proximity'].items():
+                config['milestone_proximity'][sport] = {}
+                for stat_name, proximity in stats.items():
+                    config['milestone_proximity'][sport][stat_name] = int(proximity)
+
+        # Save back to file
+        with open(CONFIG_PATH, 'w') as f:
+            yaml.dump(config, f, default_flow_style=False, sort_keys=False)
+
+        return jsonify({
+            'success': True,
+            'message': 'Settings saved successfully'
+        })
+
+    except Exception as e:
+        logger.error(f"Error saving settings: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @app.route('/view-sport/<sport_key>')

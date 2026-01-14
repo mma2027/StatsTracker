@@ -10,6 +10,7 @@ import logging
 from bs4 import BeautifulSoup
 import re
 import time
+import random
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -23,6 +24,17 @@ from .base_fetcher import BaseFetcher, FetchResult
 
 
 logger = logging.getLogger(__name__)
+
+# Pool of realistic user agents to rotate through
+USER_AGENTS = [
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:121.0) Gecko/20100101 Firefox/121.0",
+]
 
 
 # Haverford College TFRR team codes
@@ -45,15 +57,149 @@ class TFRRFetcher(BaseFetcher):
     def __init__(self, base_url: str = "https://www.tfrrs.org", timeout: int = 30):
         super().__init__(base_url, timeout)
         self.driver = None
+        self.session = requests.Session()  # Persistent session for cookies
+        self.request_count = 0  # Track number of requests
+        self.last_request_time = 0  # Track last request timestamp
+        self.consecutive_errors = 0  # Track consecutive errors for backoff
+
         # Browser headers to avoid 403 blocking
         self.headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": random.choice(USER_AGENTS),  # Random user agent
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
+            "DNT": "1",  # Do Not Track
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
         }
+
+    def _get_random_user_agent(self) -> str:
+        """Get a random user agent from the pool."""
+        return random.choice(USER_AGENTS)
+
+    def _smart_delay(self):
+        """
+        Implement smart delay between requests to avoid rate limiting.
+        Uses randomized delays with exponential backoff on errors.
+        """
+        # Base delay: 3-7 seconds (randomized)
+        base_delay = random.uniform(3.0, 7.0)
+
+        # Add exponential backoff if we've had consecutive errors
+        if self.consecutive_errors > 0:
+            backoff = min(2**self.consecutive_errors, 60)  # Max 60 seconds
+            jitter = random.uniform(0, backoff * 0.3)  # Add 0-30% jitter
+            total_delay = base_delay + backoff + jitter
+            logger.info(f"Exponential backoff: {total_delay:.1f}s ({self.consecutive_errors} consecutive errors)")
+        else:
+            total_delay = base_delay
+
+        # Ensure minimum time between requests
+        time_since_last = time.time() - self.last_request_time
+        if time_since_last < total_delay:
+            time.sleep(total_delay - time_since_last)
+
+        self.last_request_time = time.time()
+        self.request_count += 1
+
+        # Every 10-15 requests, take a longer break
+        if self.request_count % random.randint(10, 15) == 0:
+            extended_delay = random.uniform(15.0, 30.0)
+            logger.info(f"Taking extended break: {extended_delay:.1f}s after {self.request_count} requests")
+            time.sleep(extended_delay)
+
+    def _make_request_with_retry(self, url: str, max_retries: int = 3) -> Optional[requests.Response]:
+        """
+        Make HTTP request with exponential backoff retry logic.
+
+        Args:
+            url: URL to fetch
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            Response object if successful, None otherwise
+        """
+        for attempt in range(max_retries):
+            try:
+                # Rotate user agent on retries
+                if attempt > 0:
+                    self.headers["User-Agent"] = self._get_random_user_agent()
+                    logger.info(f"Retry attempt {attempt + 1}/{max_retries} with new user agent")
+
+                # Apply smart delay before request
+                if self.request_count > 0:  # Skip delay on first request
+                    self._smart_delay()
+
+                response = self.session.get(url, headers=self.headers, timeout=self.timeout)
+
+                # Check for rate limiting or blocking
+                if response.status_code == 403:
+                    logger.warning(f"403 Forbidden - likely rate limited or blocked (attempt {attempt + 1})")
+                    self.consecutive_errors += 1
+
+                    # Wait progressively longer on 403s
+                    if attempt < max_retries - 1:
+                        wait_time = min(2 ** (attempt + 3), 300)  # 8s, 16s, 32s... max 5 min
+                        jitter = random.uniform(0, wait_time * 0.2)
+                        total_wait = wait_time + jitter
+                        logger.info(f"Waiting {total_wait:.1f}s before retry...")
+                        time.sleep(total_wait)
+                    continue
+
+                elif response.status_code == 429:
+                    logger.warning(f"429 Too Many Requests - rate limited (attempt {attempt + 1})")
+                    self.consecutive_errors += 1
+
+                    # 429 means we're definitely rate limited - wait longer
+                    if attempt < max_retries - 1:
+                        wait_time = min(2 ** (attempt + 4), 900)  # 16s, 32s, 64s... max 15 min
+                        jitter = random.uniform(0, wait_time * 0.2)
+                        total_wait = wait_time + jitter
+                        logger.info(f"Rate limited - waiting {total_wait:.1f}s before retry...")
+                        time.sleep(total_wait)
+                    continue
+
+                elif response.status_code == 503:
+                    logger.warning(f"503 Service Unavailable (attempt {attempt + 1})")
+                    self.consecutive_errors += 1
+
+                    if attempt < max_retries - 1:
+                        wait_time = random.uniform(30, 60)
+                        logger.info(f"Service unavailable - waiting {wait_time:.1f}s...")
+                        time.sleep(wait_time)
+                    continue
+
+                # Success!
+                if response.status_code == 200:
+                    self.consecutive_errors = 0  # Reset error counter on success
+                    return response
+
+                # Other status codes
+                logger.warning(f"Unexpected status code {response.status_code}")
+                if attempt < max_retries - 1:
+                    time.sleep(random.uniform(5, 10))
+                    continue
+
+            except requests.exceptions.Timeout:
+                logger.warning(f"Request timeout (attempt {attempt + 1})")
+                self.consecutive_errors += 1
+                if attempt < max_retries - 1:
+                    time.sleep(random.uniform(5, 10))
+                    continue
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request exception: {e} (attempt {attempt + 1})")
+                self.consecutive_errors += 1
+                if attempt < max_retries - 1:
+                    time.sleep(random.uniform(5, 10))
+                    continue
+
+        # All retries exhausted
+        logger.error(f"Failed to fetch {url} after {max_retries} attempts")
+        return None
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
         """
@@ -75,19 +221,19 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/athletes/{player_id}.html"
 
-            # Try with requests first (faster)
-            response = requests.get(url, headers=self.headers, timeout=self.timeout)
+            # Try with requests first (faster) - uses smart retry logic
+            response = self._make_request_with_retry(url, max_retries=3)
 
-            if self.validate_response(response):
+            if response and self.validate_response(response):
                 data = self._parse_athlete_data_from_html(response.content, sport, url)
                 if data and data.get("personal_records"):
                     return FetchResult(success=True, data=data, source=self.name)
 
-            # Fallback to Selenium if needed
+            # Fallback to Selenium if needed (e.g., for JavaScript-heavy pages)
             logger.debug(f"Falling back to Selenium for athlete {player_id}")
             self._init_driver()
             self.driver.get(url)
-            time.sleep(2)  # Wait for content to load
+            time.sleep(random.uniform(2, 4))  # Random wait for content to load
             page_source = self.driver.page_source
 
             data = self._parse_athlete_data_from_html(page_source, sport, url)
@@ -122,19 +268,26 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/teams/{team_code}.html"
 
+            # Apply smart delay before Selenium request
+            if self.request_count > 0:
+                self._smart_delay()
+
             # Initialize Selenium driver for JavaScript-rendered content
             self._init_driver()
 
             # Load the page
             self.driver.get(url)
+            self.request_count += 1  # Count Selenium requests too
+            self.last_request_time = time.time()
 
-            # Wait longer for JavaScript to fully render
-            time.sleep(5)  # Give page time to fully load
+            # Wait longer for JavaScript to fully render with randomization
+            wait_time = random.uniform(4, 6)
+            time.sleep(wait_time)
 
             # Wait for roster section to appear
             try:
                 WebDriverWait(self.driver, 15).until(lambda driver: driver.find_element(By.TAG_NAME, "h3"))
-                time.sleep(2)  # Additional wait for dynamic content to stabilize
+                time.sleep(random.uniform(1.5, 2.5))  # Additional random wait
             except Exception as e:
                 logger.warning(f"Timeout waiting for page content: {e}")
 
@@ -143,11 +296,13 @@ class TFRRFetcher(BaseFetcher):
 
             data = self._parse_team_data_from_html(page_source, sport, url)
             if data:
+                self.consecutive_errors = 0  # Reset error counter on success
                 return FetchResult(success=True, data=data, source=self.name)
             else:
                 return FetchResult(success=False, error="Failed to parse team data", source=self.name)
 
         except Exception as e:
+            self.consecutive_errors += 1
             return self.handle_error(e, "fetching team stats")
 
         finally:
@@ -317,9 +472,11 @@ class TFRRFetcher(BaseFetcher):
             search_url = f"{self.base_url}/search.html"
             params = {"q": name, "type": "athlete"}
 
-            response = requests.get(search_url, headers=self.headers, params=params, timeout=self.timeout)
+            # Use smart retry logic
+            full_url = f"{search_url}?q={name}&type=athlete"
+            response = self._make_request_with_retry(full_url, max_retries=3)
 
-            if not self.validate_response(response):
+            if not response or not self.validate_response(response):
                 return FetchResult(success=False, error="Invalid search response", source=self.name)
 
             athletes = self._parse_search_results(response, sport)
@@ -390,11 +547,11 @@ class TFRRFetcher(BaseFetcher):
         try:
             logger.info(f"Fetching TFRR event results for athlete {athlete_id}, event {event_name}")
 
-            # Fetch the athlete's full profile first
+            # Fetch the athlete's full profile first with smart retry
             url = f"{self.base_url}/athletes/{athlete_id}.html"
-            response = requests.get(url, headers=self.headers, timeout=self.timeout)
+            response = self._make_request_with_retry(url, max_retries=3)
 
-            if not self.validate_response(response):
+            if not response or not self.validate_response(response):
                 return FetchResult(success=False, error="Invalid response from TFRRS", source=self.name)
 
             # Parse and filter for specific event
@@ -635,28 +792,71 @@ class TFRRFetcher(BaseFetcher):
         return bio
 
     def _init_driver(self):
-        """Initialize Selenium WebDriver for JavaScript-rendered pages."""
+        """Initialize Selenium WebDriver for JavaScript-rendered pages with anti-detection."""
         if self.driver is not None:
             return
 
         logger.debug("Initializing Selenium WebDriver for TFRR...")
 
         chrome_options = Options()
-        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--headless=new")  # Use new headless mode
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--window-size=1920,1080")
-        chrome_options.add_argument(
-            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
+
+        # Randomize window size slightly
+        width = random.randint(1900, 1920)
+        height = random.randint(1060, 1080)
+        chrome_options.add_argument(f"--window-size={width},{height}")
+
+        # Use random user agent from pool
+        user_agent = self._get_random_user_agent()
+        chrome_options.add_argument(f"--user-agent={user_agent}")
+
+        # Anti-detection measures
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        chrome_options.add_experimental_option("useAutomationExtension", False)
+
+        # Additional anti-bot measures
+        chrome_options.add_argument("--disable-web-security")
+        chrome_options.add_argument("--allow-running-insecure-content")
+        chrome_options.add_argument("--disable-features=IsolateOrigins,site-per-process")
+
+        # Set preferences to appear more human-like
+        prefs = {
+            "profile.default_content_setting_values.notifications": 2,
+            "credentials_enable_service": False,
+            "profile.password_manager_enabled": False,
+        }
+        chrome_options.add_experimental_option("prefs", prefs)
 
         service = Service(ChromeDriverManager().install())
         self.driver = webdriver.Chrome(service=service, options=chrome_options)
-        self.driver.set_page_load_timeout(15)
 
-        logger.debug("WebDriver initialized successfully")
+        # Randomize page load timeout
+        timeout = random.randint(15, 20)
+        self.driver.set_page_load_timeout(timeout)
+
+        # Execute CDP commands to further mask automation
+        self.driver.execute_cdp_cmd(
+            "Page.addScriptToEvaluateOnNewDocument",
+            {
+                "source": """
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['en-US', 'en']
+                });
+            """
+            },
+        )
+
+        logger.debug("WebDriver initialized successfully with anti-detection measures")
 
     def _close_driver(self):
         """Close and clean up the Selenium WebDriver."""

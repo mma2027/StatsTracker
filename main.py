@@ -18,12 +18,14 @@ import hashlib
 from datetime import date, datetime
 from pathlib import Path
 import yaml
+import pandas as pd
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.gameday_checker import GamedayChecker
 from src.website_fetcher import NCAAFetcher, SquashFetcher
+from src.website_fetcher.cricket_fetcher import CricketFetcher
 from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier
@@ -319,6 +321,121 @@ def update_squash_stats(
     }
 
 
+def update_cricket_stats(
+    db: PlayerDatabase,
+    cricket_config: dict,
+    season: str,
+    logger: logging.Logger
+) -> dict:
+    """
+    Fetch cricket stats and update database.
+
+    Args:
+        db: PlayerDatabase instance
+        cricket_config: Cricket fetcher configuration
+        season: Season string (e.g., '2025-26')
+        logger: Logger instance
+
+    Returns:
+        Dict with results (players_added, stats_added, errors)
+    """
+    logger.info("Processing Cricket")
+
+    try:
+        # Initialize cricket fetcher
+        cricket_fetcher = CricketFetcher(
+            timeout=cricket_config.get('timeout', 30),
+            headless=cricket_config.get('headless', True)
+        )
+
+        # Fetch all cricket stats
+        result = cricket_fetcher.fetch_all_stats()
+
+        if not result["success"]:
+            logger.error(f"Error fetching cricket stats: {result.get('error')}")
+            return {'error': result.get('error'), 'players_added': 0, 'stats_added': 0}
+
+        # Get DataFrame with all players
+        df = result["data"]
+        logger.info(f"Found {len(df)} cricket players")
+
+        players_added = 0
+        players_updated = 0
+        stats_added = 0
+        errors = []
+
+        # Process each player
+        for _, row in df.iterrows():
+            player_name = row['Player']
+
+            try:
+                # Generate player ID
+                player_id = generate_player_id(player_name, 'cricket')
+
+                # Check if player exists
+                existing_player = db.get_player(player_id)
+
+                if existing_player:
+                    players_updated += 1
+                else:
+                    # Add new player
+                    player = Player(
+                        player_id=player_id,
+                        name=player_name,
+                        sport='cricket',
+                        team='Haverford',
+                        position=None,
+                        year=None,
+                        active=True
+                    )
+                    db.add_player(player)
+                    players_added += 1
+
+                # Add stats for all columns except Player name
+                for col in df.columns:
+                    if col == 'Player':
+                        continue
+
+                    stat_value = row[col]
+
+                    # Skip empty or null values
+                    if pd.isna(stat_value) or stat_value == '' or stat_value == 0:
+                        continue
+
+                    stat_entry = StatEntry(
+                        player_id=player_id,
+                        stat_name=col,
+                        stat_value=str(stat_value),
+                        season=season,
+                        date_recorded=datetime.now()
+                    )
+                    db.add_stat(stat_entry)
+                    stats_added += 1
+
+            except Exception as e:
+                error_msg = f"Error processing player {player_name}: {e}"
+                logger.error(error_msg)
+                errors.append(error_msg)
+
+        logger.info(f"Added {players_added} new players, updated {players_updated} players")
+        logger.info(f"Added {stats_added} stat entries")
+
+        if errors:
+            logger.warning(f"{len(errors)} errors occurred")
+
+        return {
+            'success': True,
+            'players_added': players_added,
+            'players_updated': players_updated,
+            'stats_added': stats_added,
+            'errors': errors
+        }
+
+    except Exception as e:
+        logger.error(f"Critical error in cricket stats update: {e}", exc_info=True)
+        return {'error': str(e), 'players_added': 0, 'stats_added': 0}
+
+
 def main():
     """Main execution function"""
 
@@ -524,7 +641,7 @@ def update_stats(auto_mode: bool = False):
             "stats_added": 0,
         }
 
-        # Process each team
+        # Process each NCAA team
         for sport_key, team_id in ncaa_teams.items():
             result = update_team_stats(ncaa_fetcher, database, sport_key, str(team_id), season, logger)
 
@@ -585,6 +702,28 @@ def update_stats(auto_mode: bool = False):
                         total_results["stats_added"] += result.get("stats_added", 0)
             else:
                 logger.info("No squash teams configured in ClubLocker section")
+
+        # Process Cricket
+        # DISABLED: Cricket fetcher takes too long (2-3 minutes) and causes workflow delays
+        # To re-enable, uncomment this section
+        # cricket_config = fetcher_config.get('cricket', {})
+        # if cricket_config:
+        #     logger.info("")
+        #     logger.info("Fetching Cricket stats...")
+        #     cricket_result = update_cricket_stats(
+        #         database,
+        #         cricket_config,
+        #         season,
+        #         logger
+        #     )
+        #
+        #     if not cricket_result.get('error'):
+        #         total_results['teams_processed'] += 1
+        #         total_results['players_added'] += cricket_result.get('players_added', 0)
+        #         total_results['players_updated'] += cricket_result.get('players_updated', 0)
+        #         total_results['stats_added'] += cricket_result.get('stats_added', 0)
+        #     else:
+        #         total_results['teams_failed'] += 1
 
         # Final summary
         if not auto_mode:
