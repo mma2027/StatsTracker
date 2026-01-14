@@ -7,7 +7,12 @@
       "Bash(chmod:*)",
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(test:*)",
+      "Bash(PYTHONPATH=. python:*)",
+      "Bash(PYTHONPATH=. PYTHONIOENCODING=utf-8 python:*)",
+      "Bash(git add:*)",
+      "Bash(dir \"C:\\\\Users\\\\carte\\\\StatsTracker\\\\data\")"
     ]
   }
 }

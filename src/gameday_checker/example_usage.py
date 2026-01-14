@@ -37,9 +37,9 @@ def test_basic_functionality():
         print(f"Error: {e}")
 
     # Test 2: Check a specific date
-    print("\n--- Test 2: Get games for specific date (2026-03-05) ---")
+    print("\n--- Test 2: Get games for specific date (2026-01-14) ---")
     try:
-        test_date = date(2026, 3, 5)
+        test_date = date(2026, 1, 14)
         games = checker.get_games_for_date(test_date)
         print(f"Games on {test_date}: {len(games)}")
         for game in games:
