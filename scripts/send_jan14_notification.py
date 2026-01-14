@@ -19,7 +19,7 @@ from pathlib import Path
 import yaml
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.gameday_checker.models import Game, Team
 from src.player_database import PlayerDatabase
@@ -95,6 +95,29 @@ def main():
             print(f"   • {prox.player_name}: {prox.current_value}/{prox.milestone.threshold} {prox.milestone.stat_name} ({status})")
     print()
 
+    # Check for PR breakthroughs
+    print("🔍 Checking for PR breakthroughs...")
+    pr_breakthroughs = []
+
+    try:
+        from src.pr_tracker import PRTracker
+        from src.website_fetcher.tfrr_fetcher import TFRRFetcher
+
+        tfrr_fetcher = TFRRFetcher()
+        pr_tracker = PRTracker(tfrr_fetcher)
+        pr_breakthroughs = pr_tracker.check_yesterday_breakthroughs()
+
+        print(f"🎯 Found {len(pr_breakthroughs)} PR breakthroughs")
+        if pr_breakthroughs:
+            print("   Top breakthroughs:")
+            for bt in pr_breakthroughs[:3]:
+                print(f"   • {bt.athlete_name}: {bt.event} - {bt.old_pr} → {bt.new_pr} ({bt.improvement})")
+        print()
+    except Exception as e:
+        print(f"⚠️  PR tracking error (continuing anyway): {e}")
+        pr_breakthroughs = []
+        print()
+
     # Send email
     email_config = config.get('email', {})
     notifier = EmailNotifier(email_config)
@@ -118,6 +141,7 @@ def main():
     print(f"   From: {email_config.get('sender_email')}")
     print(f"   Games: {len(games)}")
     print(f"   Milestone alerts: {len(proximities_list[:10])}")
+    print(f"   PR breakthroughs: {len(pr_breakthroughs)}")
     print()
 
     # Confirm
@@ -133,7 +157,8 @@ def main():
     success = notifier.send_milestone_alert(
         proximities=proximities_list[:10],
         games=games,
-        date_for=check_date
+        date_for=check_date,
+        pr_breakthroughs=pr_breakthroughs
     )
 
     print()

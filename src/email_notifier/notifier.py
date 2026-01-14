@@ -14,6 +14,7 @@ import logging
 from .templates import EmailTemplate
 from ..milestone_detector import MilestoneProximity
 from ..gameday_checker import Game
+from ..pr_tracker import PRBreakthrough
 
 
 logger = logging.getLogger(__name__)
@@ -46,28 +47,29 @@ class EmailNotifier:
 
         logger.info(f"EmailNotifier initialized for {len(self.recipients)} recipients")
 
-    def send_milestone_alert(self, proximities: List[MilestoneProximity], games: List[Game], date_for: date) -> bool:
+    def send_milestone_alert(self, proximities: List[MilestoneProximity], games: List[Game], date_for: date, pr_breakthroughs: Optional[List[PRBreakthrough]] = None) -> bool:
         """
-        Send an email alert about milestones and games.
-
-        Now always sends email, even if both lists are empty (empty-day notification).
+        Send an email alert about milestones, games, and PR breakthroughs.
 
         Args:
             proximities: List of MilestoneProximity objects
             games: List of games scheduled for the date
             date_for: Date this notification is for
+            pr_breakthroughs: List of PR breakthrough objects (optional)
 
         Returns:
             True if email sent successfully, False otherwise
         """
         try:
-            logger.info(f"Sending milestone alert for {len(proximities)} proximities and {len(games)} games")
+            logger.info(
+                f"Sending alert: {len(proximities)} milestones, "
+                f"{len(games)} games, {len(pr_breakthroughs or [])} PR breakthroughs"
+            )
 
             # Generate email content
-            has_milestones = len(proximities) > 0
-            subject = EmailTemplate.generate_subject(date_for, len(games), has_milestones)
-            html_body = EmailTemplate.generate_milestone_email(proximities, games, date_for)
-            text_body = EmailTemplate.generate_text_version(proximities, games, date_for)
+            subject = EmailTemplate.generate_subject(date_for, len(games), len(pr_breakthroughs or []))
+            html_body = EmailTemplate.generate_milestone_email(proximities, games, date_for, pr_breakthroughs)
+            text_body = EmailTemplate.generate_text_version(proximities, games, date_for, pr_breakthroughs)
 
             # Send email
             return self._send_email(subject, html_body, text_body)
