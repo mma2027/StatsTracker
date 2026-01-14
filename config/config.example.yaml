@@ -1,31 +1,32 @@
-# StatsTracker Configuration Template
-# Copy this file to config.yaml and fill in your values
+# =============================================================================
+# StatsTracker Milestone Configuration
+# =============================================================================
+# This file controls when the system sends alerts about players approaching
+# career milestones. Edit this file to customize milestone thresholds and
+# alert settings for your athletics program.
+#
+# IMPORTANT: Be careful with spacing/indentation - YAML is sensitive to it!
+# =============================================================================
 
-# Email Configuration
+# Email Configuration (for sending milestone alerts)
 email:
   smtp_server: "smtp.gmail.com"
   smtp_port: 587
   sender_email: "your-email@example.com"
-  sender_password: "your-app-password"  # Use app-specific password
+  sender_password: "your-app-password"  # Use app-specific password for security
   recipients:
     - "recipient1@example.com"
     - "recipient2@example.com"
 
 # Database Configuration
 database:
-  type: "sqlite"  # sqlite or postgresql
-  path: "data/stats.db"  # For SQLite
-  # For PostgreSQL:
-  # host: "localhost"
-  # port: 5432
-  # database: "statstrack"
-  # username: "user"
-  # password: "password"
+  type: "sqlite"
+  path: "data/stats.db"
 
 # Gameday Checker Configuration
 gameday:
   haverford_schedule_url: "https://haverfordathletics.com/calendar"
-  check_days_ahead: 7  # How many days to check in advance
+  check_days_ahead: 7
   timezone: "America/New_York"
 
 # Website Fetcher Configuration
@@ -34,8 +35,6 @@ fetchers:
     base_url: "https://stats.ncaa.org"
     timeout: 30
     haverford_school_id: 276
-    # Haverford College NCAA team IDs for 2025-26 season
-    # Note: Team IDs change each academic year
     haverford_teams:
       mens_basketball: 611523
       womens_basketball: 611724
@@ -70,85 +69,517 @@ fetchers:
       timeout: 10
       page_load_timeout: 15
       wait_for_render: 8  # Seconds to wait for Angular app to render
-  # Add more fetcher configurations as needed
 
-# Milestone Configuration
-# Configure milestones for each sport using the full sport name from the database
-# Sport names: mens_basketball, womens_basketball, mens_soccer, womens_soccer,
-#              field_hockey, mens_lacrosse, womens_lacrosse, baseball, softball,
-#              womens_volleyball, mens_track, womens_track, mens_cross_country, womens_cross_country
+# =============================================================================
+# MILESTONE CONFIGURATION
+# =============================================================================
+# This section defines what milestones to track for each sport.
 #
-# Important: Use the EXACT stat names from NCAA stats (case-sensitive!)
-# To find stat names for a sport, run: python main.py --update-stats
-# Then check the database or CSV exports to see the exact stat names used
+# HOW TO EDIT:
+# 1. Find the sport you want to configure below
+# 2. Find the statistic (e.g., PTS for points, G for goals)
+# 3. Add or modify the milestone numbers in the list
 #
+# NOTES:
+# - Stat names must match EXACTLY what appears in NCAA stats (case-sensitive!)
+# - Use quotes around stat names that have spaces (e.g., "Tot Reb")
+# - List milestone numbers from smallest to largest
+# - To add a new milestone, just add another line with "- NUMBER"
+# - To remove a milestone, delete or comment out the line with "#"
+#
+# EXAMPLE:
+#   PTS:  # Points statistic
+#     - 500   # First milestone at 500 points
+#     - 1000  # Second milestone at 1,000 points
+#     - 1500  # Third milestone at 1,500 points
+# =============================================================================
+
 milestones:
-  # Basketball - Points, Rebounds, Assists
+  # ---------------------------------------------------------------------------
+  # MEN'S BASKETBALL
+  # Available stats: PTS, "Tot Reb", AST, STL, BLK, FGM, 3FG, FT, ORebs, DRebs
+  # ---------------------------------------------------------------------------
   mens_basketball:
     PTS:  # Career Points
+      - 250
+      - 500
+      - 750
       - 1000
       - 1500
       - 2000
-    "Tot Reb":  # Total Rebounds (note: quotes needed for spaces)
+      - 2500
+      - 3000
+    "Tot Reb":  # Total Rebounds (quotes needed because of space)
+      - 100
+      - 250
       - 500
       - 750
       - 1000
     AST:  # Assists
+      - 150
       - 300
       - 500
       - 750
+    STL:  # Steals
+      - 75
+      - 150
+      - 225
+      - 300
+    BLK:  # Blocks
+      - 50
+      - 100
+      - 150
+      - 200
+    FGM:  # Field Goals Made
+      - 250
+      - 500
+      - 750
+      - 1000
+    3FG:  # Three-Pointers Made
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+    FT:  # Free Throws Made
+      - 150
+      - 300
+      - 450
+      - 600
 
+  # ---------------------------------------------------------------------------
+  # WOMEN'S BASKETBALL
+  # Available stats: PTS, "Tot Reb", AST, STL, BLK, FGM, 3FG, FT, ORebs, DRebs
+  # ---------------------------------------------------------------------------
   womens_basketball:
-    PTS:
+    PTS:  # Career Points
+      - 250
+      - 500
+      - 750
       - 1000
       - 1500
       - 2000
-    "Tot Reb":
+      - 2500
+      - 3000
+    "Tot Reb":  # Total Rebounds (quotes needed because of space)
+      - 100
+      - 250
       - 500
       - 750
       - 1000
-    AST:
+    AST:  # Assists
+      - 150
       - 300
       - 500
       - 750
+    STL:  # Steals
+      - 75
+      - 150
+      - 225
+      - 300
+    BLK:  # Blocks
+      - 50
+      - 100
+      - 150
+      - 200
+    FGM:  # Field Goals Made
+      - 250
+      - 500
+      - 750
+      - 1000
+    3FG:  # Three-Pointers Made
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+    FT:  # Free Throws Made
+      - 150
+      - 300
+      - 450
+      - 600
 
-  # Soccer - Goals and Assists
+  # ---------------------------------------------------------------------------
+  # MEN'S SOCCER
+  # Available stats: Goals, Assists, ShAtt (shot attempts), SoG (shots on goal), GWG (game-winning goals)
+  # ---------------------------------------------------------------------------
   mens_soccer:
-    G:  # Goals
+    Goals:  # Career Goals
+      - 10
       - 20
-      - 30
-      - 40
-    A:  # Assists
-      - 15
-      - 25
       - 35
+      - 50
+    Assists:  # Career Assists
+      - 10
+      - 20
+      - 35
+      - 50
+    ShAtt:  # Shot Attempts
+      - 50
+      - 100
+      - 150
+      - 200
+    SoG:  # Shots on Goal
+      - 25
+      - 50
+      - 75
+      - 100
+    GWG:  # Game-Winning Goals
+      - 3
+      - 5
+      - 8
+      - 10
 
+  # ---------------------------------------------------------------------------
+  # WOMEN'S SOCCER
+  # Available stats: Goals, Assists, Points, ShAtt (shot attempts), SoG (shots on goal)
+  # ---------------------------------------------------------------------------
   womens_soccer:
-    G:
+    Goals:  # Career Goals
+      - 10
+      - 20
+      - 35
+      - 50
+    Assists:  # Career Assists
+      - 10
+      - 20
+      - 35
+      - 50
+    Points:  # Career Points
+      - 25
+      - 50
+      - 75
+      - 100
+    ShAtt:  # Shot Attempts
+      - 50
+      - 100
+      - 150
+      - 200
+    SoG:  # Shots on Goal
+      - 25
+      - 50
+      - 75
+      - 100
+
+  # ---------------------------------------------------------------------------
+  # FIELD HOCKEY
+  # Available stats: Goals, AST (assists), PTS (points), ShAtt (shot attempts), DSv (defensive saves)
+  # ---------------------------------------------------------------------------
+  field_hockey:
+    Goals:  # Career Goals
+      - 15
+      - 30
+      - 45
+      - 60
+    AST:  # Career Assists (note: different from soccer - uses AST not Assists)
+      - 12
+      - 25
+      - 40
+      - 55
+    PTS:  # Career Points
+      - 30
+      - 60
+      - 90
+      - 120
+    ShAtt:  # Shot Attempts
+      - 40
+      - 80
+      - 120
+      - 160
+    DSv:  # Defensive Saves (for defenders/goalies)
+      - 20
+      - 40
+      - 60
+      - 80
+
+  # ---------------------------------------------------------------------------
+  # MEN'S LACROSSE
+  # Available stats: Goals, Assists, Points, GB (ground balls), "FO Won" (faceoffs won), Shots, SOG (shots on goal)
+  # ---------------------------------------------------------------------------
+  mens_lacrosse:
+    Goals:  # Career Goals
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+    Assists:  # Career Assists
+      - 20
+      - 40
+      - 60
+      - 80
+      - 120
+    Points:  # Career Points
+      - 50
+      - 100
+      - 150
+      - 200
+      - 300
+    GB:  # Career Ground Balls
+      - 50
+      - 100
+      - 150
+      - 200
+      - 300
+    "FO Won":  # Faceoffs Won (quotes needed because of space)
+      - 100
+      - 200
+      - 300
+      - 400
+    Shots:  # Shot Attempts
+      - 100
+      - 200
+      - 300
+      - 400
+    SOG:  # Shots on Goal
+      - 75
+      - 150
+      - 225
+      - 300
+
+  # ---------------------------------------------------------------------------
+  # WOMEN'S LACROSSE
+  # Available stats: Goals, Assists, Points, "Ground Balls", "Draw Controls", Shots, SOG, "Freepos Goals"
+  # ---------------------------------------------------------------------------
+  womens_lacrosse:
+    Goals:  # Career Goals
+      - 25
+      - 50
+      - 75
+      - 100
+      - 150
+    Assists:  # Career Assists
+      - 20
+      - 40
+      - 60
+      - 80
+      - 120
+    Points:  # Career Points
+      - 50
+      - 100
+      - 150
+      - 200
+      - 300
+    "Ground Balls":  # Career Ground Balls (quotes needed because of space)
+      - 50
+      - 100
+      - 150
+      - 200
+      - 300
+    "Draw Controls":  # Career Draw Controls (quotes needed because of space)
+      - 50
+      - 100
+      - 150
+      - 200
+    Shots:  # Shot Attempts
+      - 100
+      - 200
+      - 300
+      - 400
+    SOG:  # Shots on Goal
+      - 75
+      - 150
+      - 225
+      - 300
+    "Freepos Goals":  # Free Position Goals (quotes needed because of space)
+      - 15
+      - 30
+      - 45
+      - 60
+
+  # ---------------------------------------------------------------------------
+  # BASEBALL
+  # Available stats: H (hits), HR (home runs), RBI (runs batted in), R (runs),
+  #                  2B (doubles), 3B (triples), BB (walks), SB (stolen bases), TB (total bases)
+  # ---------------------------------------------------------------------------
+  baseball:
+    H:  # Career Hits
+      - 50
+      - 100
+      - 150
+      - 200
+    HR:  # Career Home Runs
+      - 5
+      - 10
+      - 15
       - 20
       - 30
+    RBI:  # Career RBI
+      - 50
+      - 100
+      - 150
+      - 200
+    R:  # Career Runs
+      - 50
+      - 100
+      - 150
+      - 200
+    "2B":  # Doubles (quotes needed because it starts with a number)
+      - 20
       - 40
-    A:
+      - 60
+      - 80
+    "3B":  # Triples (quotes needed because it starts with a number)
+      - 5
+      - 10
       - 15
-      - 25
-      - 35
+      - 20
+    BB:  # Walks
+      - 40
+      - 80
+      - 120
+      - 160
+    SB:  # Stolen Bases
+      - 20
+      - 40
+      - 60
+      - 80
+    TB:  # Total Bases
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
 
-# Notification Settings
+  # ---------------------------------------------------------------------------
+  # SOFTBALL
+  # Available stats: H (hits), HR (home runs), RBI (runs batted in), R (runs),
+  #                  2B (doubles), 3B (triples), BB (walks), SB (stolen bases), TB (total bases)
+  # ---------------------------------------------------------------------------
+  softball:
+    H:  # Career Hits
+      - 50
+      - 100
+      - 150
+      - 200
+    HR:  # Career Home Runs
+      - 5
+      - 10
+      - 15
+      - 20
+      - 30
+    RBI:  # Career RBI
+      - 50
+      - 100
+      - 150
+      - 200
+    R:  # Career Runs
+      - 50
+      - 100
+      - 150
+      - 200
+    "2B":  # Doubles (quotes needed because it starts with a number)
+      - 20
+      - 40
+      - 60
+      - 80
+    "3B":  # Triples (quotes needed because it starts with a number)
+      - 5
+      - 10
+      - 15
+      - 20
+    BB:  # Walks
+      - 40
+      - 80
+      - 120
+      - 160
+    SB:  # Stolen Bases
+      - 20
+      - 40
+      - 60
+      - 80
+    TB:  # Total Bases
+      - 50
+      - 100
+      - 150
+      - 200
+      - 250
+      - 300
+
+  # ---------------------------------------------------------------------------
+  # WOMEN'S VOLLEYBALL
+  # Available stats: Kills, Assists, Aces, Digs, "Block Assists", "Block Solos", PTS (points), S (service attempts)
+  # ---------------------------------------------------------------------------
+  womens_volleyball:
+    Kills:  # Career Kills
+      - 250
+      - 500
+      - 750
+      - 1000
+      - 1500
+    Assists:  # Career Assists
+      - 500
+      - 1000
+      - 1500
+      - 2000
+      - 3000
+    Aces:  # Career Aces
+      - 50
+      - 100
+      - 150
+      - 200
+    Digs:  # Career Digs
+      - 250
+      - 500
+      - 750
+      - 1000
+      - 1500
+    "Block Assists":  # Career Block Assists (quotes needed because of space)
+      - 75
+      - 150
+      - 225
+      - 300
+    "Block Solos":  # Career Block Solos (quotes needed because of space)
+      - 20
+      - 40
+      - 60
+      - 80
+    PTS:  # Career Points
+      - 300
+      - 600
+      - 900
+      - 1200
+      - 1800
+    S:  # Service Attempts
+      - 250
+      - 500
+      - 750
+      - 1000
+
+# =============================================================================
+# NOTIFICATION SETTINGS
+# =============================================================================
+# These settings control HOW and WHEN the system sends milestone alerts
+# =============================================================================
 notifications:
-  enabled: true
-  proximity_threshold: 10  # Alert when within X units of milestone
-  send_time: "08:00"  # Time to send daily notifications
-  include_historical: false  # Include historical achievement data
-  auto_update_stats: false  # Auto-fetch stats before checking milestones
+  enabled: true  # Set to false to disable all notifications
 
-# Logging
+  # PROXIMITY THRESHOLD: How close should a player be before we alert?
+  # - If set to 10: Alert when player is within 10 of a milestone
+  #   Example: For 1000 point milestone, alert starts at 990 points
+  # - If set to 25: Alert when player is within 25 of a milestone
+  #   Example: For 1000 point milestone, alert starts at 975 points
+  # - Smaller number = fewer/more urgent alerts
+  # - Larger number = more frequent/earlier alerts
+  proximity_threshold: 10
+
+  send_time: "08:00"  # Time of day to send notifications (24-hour format)
+  include_historical: false  # Include past milestone achievements in reports
+  auto_update_stats: false  # Auto-fetch fresh stats before checking milestones
+
+# =============================================================================
+# LOGGING AND CACHE SETTINGS
+# (You probably don't need to change these)
+# =============================================================================
 logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "INFO"  # Options: DEBUG, INFO, WARNING, ERROR
   file: "logs/statstrack.log"
   console: true
 
-# Cache settings
 cache:
   enabled: true
-  ttl: 3600  # Time to live in seconds (1 hour)
+  ttl: 3600  # Cache lifetime in seconds (1 hour)
   directory: "data/cache"

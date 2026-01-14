@@ -468,7 +468,8 @@ def main():
 
         # 3. Milestone Detector
         milestone_config = config.get("milestones", {})
-        milestone_detector = MilestoneDetector(database, milestone_config)
+        proximity_config = config.get("milestone_proximity", {})
+        milestone_detector = MilestoneDetector(database, milestone_config, proximity_config)
 
         # 4. Email Notifier
         email_config = config.get("email", {})
