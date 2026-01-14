@@ -9,6 +9,15 @@ from typing import Dict, Any, List, Optional
 import logging
 from bs4 import BeautifulSoup
 import re
+import time
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
 
 from .base_fetcher import BaseFetcher, FetchResult
 
@@ -36,6 +45,15 @@ class TFRRFetcher(BaseFetcher):
     def __init__(self, base_url: str = "https://www.tfrrs.org", timeout: int = 30):
         super().__init__(base_url, timeout)
         self.driver = None
+        # Browser headers to avoid 403 blocking
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1'
+        }
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
         """
@@ -57,14 +75,22 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/athletes/{player_id}.html"
 
-            response = requests.get(url, timeout=self.timeout)
+            # Try with requests first (faster)
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
-            if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid response from TFRRS", source=self.name
-                )
+            if self.validate_response(response):
+                data = self._parse_athlete_data_from_html(response.content, sport, url)
+                if data and data.get('personal_records'):
+                    return FetchResult(success=True, data=data, source=self.name)
 
-            data = self._parse_athlete_data(response, sport)
+            # Fallback to Selenium if needed
+            logger.debug(f"Falling back to Selenium for athlete {player_id}")
+            self._init_driver()
+            self.driver.get(url)
+            time.sleep(2)  # Wait for content to load
+            page_source = self.driver.page_source
+
+            data = self._parse_athlete_data_from_html(page_source, sport, url)
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
@@ -98,14 +124,28 @@ class TFRRFetcher(BaseFetcher):
             else:
                 url = f"{self.base_url}/teams/{team_code}.html"
 
-            response = requests.get(url, timeout=self.timeout)
+            # Initialize Selenium driver for JavaScript-rendered content
+            self._init_driver()
 
-            if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid response from TFRRS", source=self.name
+            # Load the page
+            self.driver.get(url)
+
+            # Wait longer for JavaScript to fully render
+            time.sleep(5)  # Give page time to fully load
+
+            # Wait for roster section to appear
+            try:
+                WebDriverWait(self.driver, 15).until(
+                    lambda driver: driver.find_element(By.TAG_NAME, "h3")
                 )
+                time.sleep(2)  # Additional wait for dynamic content to stabilize
+            except Exception as e:
+                logger.warning(f"Timeout waiting for page content: {e}")
 
-            data = self._parse_team_data(response, sport)
+            # Get the page source after JavaScript execution
+            page_source = self.driver.page_source
+
+            data = self._parse_team_data_from_html(page_source, sport, url)
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
@@ -116,9 +156,12 @@ class TFRRFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
 
+        finally:
+            self._close_driver()
+
     def _parse_team_data(self, response, sport: str) -> Optional[Dict[str, Any]]:
         """
-        Parse TFRR team data from response.
+        Parse TFRR team data from response (for requests library).
 
         Args:
             response: HTTP response
@@ -127,8 +170,22 @@ class TFRRFetcher(BaseFetcher):
         Returns:
             Team data dictionary with roster and stats
         """
+        return self._parse_team_data_from_html(response.content, sport, response.url)
+
+    def _parse_team_data_from_html(self, html_content, sport: str, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse TFRR team data from HTML content.
+
+        Args:
+            html_content: HTML content (string or bytes)
+            sport: Sport type
+            url: Page URL
+
+        Returns:
+            Team data dictionary with roster and stats
+        """
         try:
-            soup = BeautifulSoup(response.content, "html.parser")
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Extract team name
             name_elem = soup.find("h3") or soup.find("h2")
@@ -147,16 +204,16 @@ class TFRRFetcher(BaseFetcher):
             rankings = self._extract_team_rankings(soup)
 
             team_data = {
-                "team_id": self._extract_team_id(response.url),
+                "team_id": self._extract_team_id(url),
                 "name": team_name,
                 "sport": sport,
                 "conference": conference,
                 "roster": roster,
                 "rankings": rankings,
-                "profile_url": response.url,
+                "profile_url": url,
             }
 
-            logger.info(f"Successfully parsed team data for {team_name}")
+            logger.info(f"Successfully parsed team data for {team_name}: {len(roster)} athletes")
             return team_data
 
         except Exception as e:
@@ -172,9 +229,34 @@ class TFRRFetcher(BaseFetcher):
         """Extract team roster from page."""
         roster = []
         try:
-            # Look for roster table
-            roster_table = soup.find("table", class_=re.compile("roster|athletes"))
+            # Method 1: Look for roster section with H3 header
+            roster_header = soup.find("h3", string=re.compile(r"ROSTER", re.IGNORECASE))
+            if roster_header:
+                # Find the parent container
+                roster_section = roster_header.find_parent()
+                if roster_section:
+                    # Find all athlete links in this section (including nested)
+                    athlete_links = roster_section.find_all("a", href=re.compile(r"/athletes/\d+/"))
+                    seen_ids = set()
+                    for link in athlete_links:
+                        athlete_id = self._extract_athlete_id(link["href"])
+                        name = link.text.strip()
+                        # Only add unique athletes (avoid duplicates)
+                        if athlete_id and name and athlete_id not in seen_ids:
+                            seen_ids.add(athlete_id)
+                            athlete = {
+                                "name": name,
+                                "athlete_id": athlete_id,
+                                "year": "",  # Year not always available in roster section
+                            }
+                            roster.append(athlete)
 
+                    if roster:
+                        logger.info(f"Extracted {len(roster)} athletes from roster section")
+                        return roster
+
+            # Method 2: Look for roster table (fallback)
+            roster_table = soup.find("table", class_=re.compile("roster|athletes"))
             if roster_table:
                 rows = roster_table.find_all("tr")
                 for row in rows[1:]:  # Skip header
@@ -190,6 +272,21 @@ class TFRRFetcher(BaseFetcher):
                                 "year": cols[1].text.strip() if len(cols) > 1 else "",
                             }
                             roster.append(athlete)
+
+            # Method 3: Find all athlete links on page (last resort)
+            if not roster:
+                all_athlete_links = soup.find_all("a", href=re.compile(r"/athletes/\d+/Haverford/"))
+                seen_ids = set()
+                for link in all_athlete_links:
+                    athlete_id = self._extract_athlete_id(link["href"])
+                    if athlete_id and athlete_id not in seen_ids:
+                        seen_ids.add(athlete_id)
+                        athlete = {
+                            "name": link.text.strip(),
+                            "athlete_id": athlete_id,
+                            "year": "",
+                        }
+                        roster.append(athlete)
 
         except Exception as e:
             logger.warning(f"Error extracting roster: {e}")
@@ -228,7 +325,7 @@ class TFRRFetcher(BaseFetcher):
             search_url = f"{self.base_url}/search.html"
             params = {"q": name, "type": "athlete"}
 
-            response = requests.get(search_url, params=params, timeout=self.timeout)
+            response = requests.get(search_url, headers=self.headers, params=params, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -311,7 +408,7 @@ class TFRRFetcher(BaseFetcher):
 
             # Fetch the athlete's full profile first
             url = f"{self.base_url}/athletes/{athlete_id}.html"
-            response = requests.get(url, timeout=self.timeout)
+            response = requests.get(url, headers=self.headers, timeout=self.timeout)
 
             if not self.validate_response(response):
                 return FetchResult(
@@ -419,11 +516,7 @@ class TFRRFetcher(BaseFetcher):
 
     def _parse_athlete_data(self, response, sport: str) -> Optional[Dict[str, Any]]:
         """
-        Parse TFRR athlete data from response.
-
-        TFRR athlete pages have PR tables where each event gets its own table.
-        The table header contains the event name, and the first data row contains
-        the best mark/time.
+        Parse TFRR athlete data from response (for requests library).
 
         Args:
             response: HTTP response
@@ -432,8 +525,26 @@ class TFRRFetcher(BaseFetcher):
         Returns:
             Standardized athlete data dictionary with PRs
         """
+        return self._parse_athlete_data_from_html(response.content, sport, response.url)
+
+    def _parse_athlete_data_from_html(self, html_content, sport: str, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse TFRR athlete data from HTML content.
+
+        TFRR athlete pages have PR tables where each event gets its own table.
+        The table header contains the event name, and the first data row contains
+        the best mark/time.
+
+        Args:
+            html_content: HTML content (string or bytes)
+            sport: Sport type for context
+            url: Page URL
+
+        Returns:
+            Standardized athlete data dictionary with PRs
+        """
         try:
-            soup = BeautifulSoup(response.content, "html.parser")
+            soup = BeautifulSoup(html_content, "html.parser")
 
             # Extract athlete name
             name_elem = soup.find("h3")
@@ -453,17 +564,17 @@ class TFRRFetcher(BaseFetcher):
             bio_info = self._extract_bio_info(soup)
 
             athlete_data = {
-                "athlete_id": self._extract_athlete_id(response.url),
+                "athlete_id": self._extract_athlete_id(url),
                 "name": name,
                 "team": team,
                 "sport": sport,
                 "personal_records": prs,
                 "recent_results": recent_results,
                 "bio": bio_info,
-                "profile_url": response.url,
+                "profile_url": url,
             }
 
-            logger.info(f"Successfully parsed athlete data for {name}")
+            logger.info(f"Successfully parsed athlete data for {name}: {len(prs)} PRs")
             return athlete_data
 
         except Exception as e:
@@ -550,3 +661,38 @@ class TFRRFetcher(BaseFetcher):
             logger.warning(f"Error extracting bio info: {e}")
 
         return bio
+
+    def _init_driver(self):
+        """Initialize Selenium WebDriver for JavaScript-rendered pages."""
+        if self.driver is not None:
+            return
+
+        logger.debug("Initializing Selenium WebDriver for TFRR...")
+
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--window-size=1920,1080")
+        chrome_options.add_argument(
+            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+
+        service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
+        self.driver.set_page_load_timeout(15)
+
+        logger.debug("WebDriver initialized successfully")
+
+    def _close_driver(self):
+        """Close and clean up the Selenium WebDriver."""
+        if self.driver:
+            try:
+                self.driver.quit()
+                logger.debug("WebDriver closed")
+            except Exception as e:
+                logger.warning(f"Error closing WebDriver: {e}")
+            finally:
+                self.driver = None

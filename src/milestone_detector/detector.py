@@ -93,7 +93,8 @@ class MilestoneDetector:
         for milestone in relevant_milestones:
             proximity = self._calculate_proximity(player_stats, milestone)
 
-            if proximity and self._is_close_to_milestone(proximity, proximity_threshold):
+            # Only include if close AND not already passed
+            if proximity and self._is_close_to_milestone(proximity, proximity_threshold) and not self._has_passed_milestone(proximity):
                 close_milestones.append(proximity)
 
         logger.info(f"Found {len(close_milestones)} close milestones for player {player_id}")
@@ -198,6 +199,18 @@ class MilestoneDetector:
             return True
 
         return False
+
+    def _has_passed_milestone(self, proximity: MilestoneProximity) -> bool:
+        """
+        Check if a player has already passed/achieved a milestone.
+
+        Args:
+            proximity: MilestoneProximity object
+
+        Returns:
+            True if milestone already achieved, False otherwise
+        """
+        return proximity.current_value >= proximity.milestone.threshold
 
     def _estimate_games_to_milestone(self, current_value: Any, threshold: Any, player_stats: PlayerStats) -> Optional[int]:
         """

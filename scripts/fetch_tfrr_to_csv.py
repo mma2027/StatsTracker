@@ -101,29 +101,72 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
         return {'success': False, 'error': result.error}
 
     team_data = result.data
-    athletes = team_data['athletes']
+    athletes = team_data.get('roster', team_data.get('athletes', []))
     print(f"  ✓ Found {len(athletes)} athletes\n")
 
-    # Save individual CSV for each athlete
-    print(f"[2/2] Saving individual athlete PR files...")
+    # Fetch individual athlete PRs
+    print(f"[2/2] Fetching PRs for each athlete...")
     successful_files = []
     failed_athletes = []
 
     for i, athlete in enumerate(athletes, 1):
         athlete_name = athlete['name']
-        num_events = len([v for v in athlete['events'].values() if v])  # Count non-empty PRs
+        athlete_id = athlete.get('athlete_id')
 
         print(f"  [{i}/{len(athletes)}] {athlete_name}... ", end='', flush=True)
 
-        if num_events == 0:
+        if not athlete_id:
+            print(f"⊘ (no athlete ID)")
+            failed_athletes.append({'name': athlete_name, 'error': 'No athlete ID'})
+            continue
+
+        # Add delay to avoid rate limiting
+        import time
+        if i > 1:  # Add delay after first request
+            time.sleep(3)  # 3 second delay between all requests
+
+        # Fetch individual athlete PRs
+        athlete_result = fetcher.fetch_player_stats(athlete_id, sport_type)
+
+        # If we fail to get data, it might be rate limiting - wait 15 min and retry
+        if not athlete_result.success or not athlete_result.data or not athlete_result.data.get('personal_records'):
+            # Check if this is after we've already had some successes (likely rate limit)
+            if len(successful_files) > 0 and i > 10:
+                print(f"⏸ (rate limited, waiting 15 min)... ", end='', flush=True)
+                time.sleep(900)  # 15 minutes = 900 seconds
+                print(f"retrying... ", end='', flush=True)
+
+                # Retry once after waiting
+                athlete_result = fetcher.fetch_player_stats(athlete_id, sport_type)
+
+        if not athlete_result or not athlete_result.success:
+            if athlete_result:
+                print(f"✗ (fetch failed: {athlete_result.error})")
+                failed_athletes.append({'name': athlete_name, 'error': athlete_result.error})
+            else:
+                print(f"✗ (no result)")
+                failed_athletes.append({'name': athlete_name, 'error': 'No result returned'})
+            continue
+
+        athlete_pr_data = athlete_result.data
+        prs = athlete_pr_data.get('personal_records', {})
+
+        if not prs:
             print(f"⊘ (no PRs)")
             continue
 
+        # Transform data for CSV
+        athlete_csv_data = {
+            'name': athlete_name,
+            'year': athlete.get('year', ''),
+            'events': prs
+        }
+
         try:
-            csv_path = save_athlete_prs_csv(athlete, sport_display, output_dir)
+            csv_path = save_athlete_prs_csv(athlete_csv_data, sport_display, output_dir)
 
             if csv_path:
-                print(f"✓ ({num_events} PRs)")
+                print(f"✓ ({len(prs)} PRs)")
                 successful_files.append(csv_path)
             else:
                 print(f"✗ (failed to save)")

@@ -137,13 +137,13 @@ class TestEmailTemplate:
         assert "Haverford Milestone Alert" in subject
 
     def test_generate_subject_no_games(self):
-        """Test subject generation without games"""
+        """Test subject generation without games (empty day)"""
         test_date = date(2024, 3, 15)
-        subject = EmailTemplate.generate_subject(test_date, 0)
+        subject = EmailTemplate.generate_subject(test_date, 0, has_milestones=False)
 
         assert "March 15, 2024" in subject
-        assert "games" not in subject.lower() or "0 games" in subject
-        assert "Haverford Milestone Alert" in subject
+        assert "No Games Today" in subject
+        assert "Haverford Daily Update" in subject
 
     def test_generate_subject_one_game(self):
         """Test subject generation with one game"""
@@ -222,7 +222,7 @@ class TestEmailTemplate:
         assert "No Milestone Alerts" in html
 
     def test_generate_html_empty_lists(self):
-        """Test HTML generation with empty lists"""
+        """Test HTML generation with empty lists (empty day)"""
         test_date = date(2024, 3, 15)
         html = EmailTemplate.generate_milestone_email([], [], test_date)
 
@@ -233,8 +233,8 @@ class TestEmailTemplate:
         # Should have no games section
         assert "Today's Games" not in html
 
-        # Should have no milestones message
-        assert "No Milestone Alerts" in html
+        # Should have empty-day message
+        assert "No Games or Milestone Alerts Today" in html
 
     def test_generate_html_multiple_milestones(
         self,
@@ -405,13 +405,13 @@ class TestEmailTemplate:
         assert "NO MILESTONE ALERTS" in text
 
     def test_generate_text_version_empty_lists(self):
-        """Test text generation with empty lists"""
+        """Test text generation with empty lists (empty day)"""
         test_date = date(2024, 3, 15)
         text = EmailTemplate.generate_text_version([], [], test_date)
 
         # Should have basic structure
         assert "HAVERFORD COLLEGE SPORTS MILESTONES" in text
-        assert "NO MILESTONE ALERTS" in text
+        assert "NO GAMES OR MILESTONE ALERTS TODAY" in text
 
     def test_generate_text_version_formatting(self, sample_milestone_close):
         """Test that text version has proper formatting"""
