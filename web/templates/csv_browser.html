@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
     <h1>📊 Stats Browser</h1>
-    <p>Browse player statistics from database</p>
+    <p>Browse player statistics from database ({{ total_players }} players total)</p>
 </div>
 
 {% if error %}
@@ -14,13 +14,35 @@
 </div>
 {% endif %}
 
+<!-- Global Player Search -->
+<div class="search-container" style="margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+    <h3 style="margin-top: 0; margin-bottom: 15px;">🔍 Search All Players</h3>
+    <input type="text"
+           id="player-search"
+           placeholder="Enter player name..."
+           style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #0066cc; border-radius: 8px; box-sizing: border-box;">
+    <div id="player-search-results" style="margin-top: 15px; display: none;">
+        <p id="player-search-count" style="color: #666; font-size: 14px; margin-bottom: 10px;"></p>
+        <div id="player-results-list" style="max-height: 400px; overflow-y: auto;"></div>
+    </div>
+</div>
+
 <div class="csv-sections">
     <section class="csv-section">
-        <h2>Team Statistics ({{ sports|length }} teams)</h2>
-        <p class="section-description">View player stats organized by sport</p>
+        <h2>Browse by Team/Sport ({{ sports|length }} teams)</h2>
+        <p class="section-description">View all players in a specific sport</p>
 
         {% if sports %}
-        <div class="file-list">
+        <!-- Team Filter Search Bar -->
+        <div class="search-container" style="margin-bottom: 20px;">
+            <input type="text"
+                   id="sport-search"
+                   placeholder="🔍 Filter teams/sports..."
+                   style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+            <p id="sport-search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+        </div>
+
+        <div class="file-list" id="sports-list">
             {% for sport in sports %}
             <div class="file-item">
                 <div class="file-info">
@@ -46,4 +68,104 @@
         {% endif %}
     </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global player search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const playerSearchInput = document.getElementById('player-search');
+    const playerSearchResults = document.getElementById('player-search-results');
+    const playerSearchCount = document.getElementById('player-search-count');
+    const playerResultsList = document.getElementById('player-results-list');
+
+    let searchTimeout;
+
+    playerSearchInput.addEventListener('input', function() {
+        const searchTerm = this.value.trim();
+
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+
+        if (searchTerm === '') {
+            playerSearchResults.style.display = 'none';
+            return;
+        }
+
+        // Debounce search - wait 300ms after user stops typing
+        searchTimeout = setTimeout(function() {
+            fetch(`/api/search-players?q=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.results && data.results.length > 0) {
+                        playerSearchResults.style.display = 'block';
+                        playerSearchCount.textContent = `Found ${data.count} player(s)`;
+
+                        // Build results HTML
+                        let html = '<div class="file-list">';
+                        data.results.forEach(function(player) {
+                            html += `
+                                <div class="file-item">
+                                    <div class="file-info">
+                                        <span class="file-name">${player.name}</span>
+                                        <span class="file-meta">
+                                            ${player.sport}
+                                            ${player.last_updated ? ' | Last updated: ' + player.last_updated : ''}
+                                        </span>
+                                    </div>
+                                    <div class="file-actions">
+                                        <a href="/view-sport/${player.sport_key}" class="btn btn-sm btn-primary">View ${player.sport} Stats</a>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        playerResultsList.innerHTML = html;
+                    } else {
+                        playerSearchResults.style.display = 'block';
+                        playerSearchCount.textContent = 'No players found';
+                        playerResultsList.innerHTML = '<p style="color: #666; padding: 10px;">Try a different search term</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    playerSearchResults.style.display = 'block';
+                    playerSearchCount.textContent = 'Error searching';
+                    playerResultsList.innerHTML = '<p style="color: #cc0000; padding: 10px;">Error performing search</p>';
+                });
+        }, 300);
+    });
+
+    // Sport/team filter functionality
+    const sportSearchInput = document.getElementById('sport-search');
+    const sportsList = document.getElementById('sports-list');
+    const sportSearchResults = document.getElementById('sport-search-results');
+    const fileItems = sportsList ? sportsList.querySelectorAll('.file-item') : [];
+
+    if (sportSearchInput && fileItems.length > 0) {
+        sportSearchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let visibleCount = 0;
+
+            fileItems.forEach(function(item) {
+                const sportName = item.querySelector('.file-name').textContent.toLowerCase();
+
+                if (sportName.includes(searchTerm)) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Update results text
+            if (searchTerm === '') {
+                sportSearchResults.textContent = '';
+            } else {
+                sportSearchResults.textContent = `Showing ${visibleCount} of ${fileItems.length} teams`;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

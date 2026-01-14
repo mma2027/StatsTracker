@@ -120,11 +120,57 @@ def csv_browser():
         # Convert to sorted list
         sports_list = sorted(sports_data.values(), key=lambda x: x['name'])
 
-        return render_template('csv_browser.html', sports=sports_list)
+        return render_template('csv_browser.html', sports=sports_list, total_players=len(players))
 
     except Exception as e:
         logger.error(f"Error loading sports from database: {e}")
-        return render_template('csv_browser.html', sports=[], error=str(e))
+        return render_template('csv_browser.html', sports=[], error=str(e), total_players=0)
+
+
+@app.route('/api/search-players')
+def api_search_players():
+    """API endpoint to search for players across all sports."""
+    try:
+        query = request.args.get('q', '').strip().lower()
+        if not query:
+            return jsonify({'results': []})
+
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get('database', {})
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get('path', 'data/stats.db')))
+
+        # Get all players
+        all_players = database.get_all_players()
+
+        # Filter players by name matching query
+        matching_players = []
+        for player in all_players:
+            if query in player.name.lower():
+                # Get player stats to show recent data
+                player_stats = database.get_player_stats(player.player_id)
+                last_updated = None
+                if player_stats and player_stats.recent_entries:
+                    latest_stat = max(player_stats.recent_entries, key=lambda s: s.date_recorded)
+                    last_updated = latest_stat.date_recorded.strftime('%Y-%m-%d %H:%M')
+
+                matching_players.append({
+                    'name': player.name,
+                    'sport': player.sport.replace('_', ' ').title(),
+                    'sport_key': player.sport,
+                    'last_updated': last_updated
+                })
+
+        # Sort by name
+        matching_players.sort(key=lambda x: x['name'])
+
+        return jsonify({
+            'results': matching_players,
+            'count': len(matching_players)
+        })
+
+    except Exception as e:
+        logger.error(f"Error searching players: {e}")
+        return jsonify({'error': str(e), 'results': []}), 500
 
 
 @app.route('/view-sport/<sport_key>')

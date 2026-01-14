@@ -8,6 +8,15 @@
     <a href="{{ url_for('csv_browser') }}" class="btn btn-secondary">← Back to Browser</a>
 </div>
 
+<!-- Search Bar -->
+<div class="search-container" style="margin-bottom: 20px;">
+    <input type="text"
+           id="player-search"
+           placeholder="🔍 Search players or stats..."
+           style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+    <p id="search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+</div>
+
 <div class="csv-viewer">
     <div class="table-container">
         <table class="data-table">
@@ -31,7 +40,46 @@
     </div>
 
     <div class="table-footer">
-        <p>Showing {{ rows|length }} rows</p>
+        <p id="table-footer-text">Showing {{ rows|length }} rows</p>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Search functionality for players and stats
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('player-search');
+    const searchResults = document.getElementById('search-results');
+    const tableBody = document.querySelector('.data-table tbody');
+    const tableRows = tableBody.querySelectorAll('tr');
+    const totalRows = tableRows.length;
+    const footerText = document.getElementById('table-footer-text');
+
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        let visibleCount = 0;
+
+        tableRows.forEach(function(row) {
+            const rowText = row.textContent.toLowerCase();
+
+            if (rowText.includes(searchTerm)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update results text
+        if (searchTerm === '') {
+            searchResults.textContent = '';
+            footerText.textContent = `Showing ${totalRows} rows`;
+        } else {
+            searchResults.textContent = `Found ${visibleCount} matching rows`;
+            footerText.textContent = `Showing ${visibleCount} of ${totalRows} rows`;
+        }
+    });
+});
+</script>
 {% endblock %}
