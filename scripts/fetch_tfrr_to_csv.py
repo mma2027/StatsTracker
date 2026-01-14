@@ -120,24 +120,8 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
             failed_athletes.append({'name': athlete_name, 'error': 'No athlete ID'})
             continue
 
-        # Add delay to avoid rate limiting
-        import time
-        if i > 1:  # Add delay after first request
-            time.sleep(3)  # 3 second delay between all requests
-
-        # Fetch individual athlete PRs
+        # Fetch individual athlete PRs (smart rate limiting is now built into the fetcher)
         athlete_result = fetcher.fetch_player_stats(athlete_id, sport_type)
-
-        # If we fail to get data, it might be rate limiting - wait 15 min and retry
-        if not athlete_result.success or not athlete_result.data or not athlete_result.data.get('personal_records'):
-            # Check if this is after we've already had some successes (likely rate limit)
-            if len(successful_files) > 0 and i > 10:
-                print(f"⏸ (rate limited, waiting 15 min)... ", end='', flush=True)
-                time.sleep(900)  # 15 minutes = 900 seconds
-                print(f"retrying... ", end='', flush=True)
-
-                # Retry once after waiting
-                athlete_result = fetcher.fetch_player_stats(athlete_id, sport_type)
 
         if not athlete_result or not athlete_result.success:
             if athlete_result:
