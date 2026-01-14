@@ -3,14 +3,14 @@ Test the gameday checker implementation
 """
 
 import sys
+import logging
 from pathlib import Path
+from datetime import date
 
 # Add parent directory to path to allow imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from gameday_checker.checker import GamedayChecker
-from datetime import date, timedelta
-import logging
 
 # Set up logging to see what's happening
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")

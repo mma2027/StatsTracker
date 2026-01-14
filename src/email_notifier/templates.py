@@ -239,7 +239,7 @@ class EmailTemplate:
         """
         date_str = date_for.strftime("%B %d, %Y")
 
-        text = f"HAVERFORD COLLEGE SPORTS MILESTONES\n"
+        text = "HAVERFORD COLLEGE SPORTS MILESTONES\n"
         text += f"Date: {date_str}\n"
         text += "=" * 60 + "\n\n"
 

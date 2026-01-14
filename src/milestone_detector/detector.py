@@ -32,9 +32,9 @@ def normalize_sport_name(sport: str) -> str:
     """
     # Remove mens_ or womens_ prefix
     sport_lower = sport.lower()
-    for prefix in ['mens_', 'womens_', "men's_", "women's_"]:
+    for prefix in ["mens_", "womens_", "men's_", "women's_"]:
         if sport_lower.startswith(prefix):
-            return sport_lower[len(prefix):]
+            return sport_lower[len(prefix) :]
     return sport_lower
 
 
@@ -141,10 +141,7 @@ class MilestoneDetector:
 
         # Get milestones for this player's sport (normalize sport names)
         player_sport_normalized = normalize_sport_name(player_stats.player.sport)
-        relevant_milestones = [
-            m for m in self.milestones
-            if normalize_sport_name(m.sport) == player_sport_normalized
-        ]
+        relevant_milestones = [m for m in self.milestones if normalize_sport_name(m.sport) == player_sport_normalized]
 
         for milestone in relevant_milestones:
             proximity = self._calculate_proximity(player_stats, milestone)

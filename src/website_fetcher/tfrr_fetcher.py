@@ -60,17 +60,13 @@ class TFRRFetcher(BaseFetcher):
             response = requests.get(url, timeout=self.timeout)
 
             if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid response from TFRRS", source=self.name
-                )
+                return FetchResult(success=False, error="Invalid response from TFRRS", source=self.name)
 
             data = self._parse_athlete_data(response, sport)
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
-                return FetchResult(
-                    success=False, error="Failed to parse athlete data", source=self.name
-                )
+                return FetchResult(success=False, error="Failed to parse athlete data", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching athlete stats")
@@ -101,17 +97,13 @@ class TFRRFetcher(BaseFetcher):
             response = requests.get(url, timeout=self.timeout)
 
             if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid response from TFRRS", source=self.name
-                )
+                return FetchResult(success=False, error="Invalid response from TFRRS", source=self.name)
 
             data = self._parse_team_data(response, sport)
             if data:
                 return FetchResult(success=True, data=data, source=self.name)
             else:
-                return FetchResult(
-                    success=False, error="Failed to parse team data", source=self.name
-                )
+                return FetchResult(success=False, error="Failed to parse team data", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "fetching team stats")
@@ -184,9 +176,7 @@ class TFRRFetcher(BaseFetcher):
                         if athlete_link:
                             athlete = {
                                 "name": athlete_link.text.strip(),
-                                "athlete_id": self._extract_athlete_id(
-                                    athlete_link["href"]
-                                ),
+                                "athlete_id": self._extract_athlete_id(athlete_link["href"]),
                                 "year": cols[1].text.strip() if len(cols) > 1 else "",
                             }
                             roster.append(athlete)
@@ -231,9 +221,7 @@ class TFRRFetcher(BaseFetcher):
             response = requests.get(search_url, params=params, timeout=self.timeout)
 
             if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid search response", source=self.name
-                )
+                return FetchResult(success=False, error="Invalid search response", source=self.name)
 
             athletes = self._parse_search_results(response, sport)
 
@@ -244,16 +232,12 @@ class TFRRFetcher(BaseFetcher):
                     source=self.name,
                 )
             else:
-                return FetchResult(
-                    success=False, error="Failed to parse search results", source=self.name
-                )
+                return FetchResult(success=False, error="Failed to parse search results", source=self.name)
 
         except Exception as e:
             return self.handle_error(e, "searching for athlete")
 
-    def _parse_search_results(
-        self, response, sport: str
-    ) -> Optional[List[Dict[str, str]]]:
+    def _parse_search_results(self, response, sport: str) -> Optional[List[Dict[str, str]]]:
         """
         Parse search results page.
 
@@ -305,18 +289,14 @@ class TFRRFetcher(BaseFetcher):
             FetchResult with event-specific results and PRs
         """
         try:
-            logger.info(
-                f"Fetching TFRR event results for athlete {athlete_id}, event {event_name}"
-            )
+            logger.info(f"Fetching TFRR event results for athlete {athlete_id}, event {event_name}")
 
             # Fetch the athlete's full profile first
             url = f"{self.base_url}/athletes/{athlete_id}.html"
             response = requests.get(url, timeout=self.timeout)
 
             if not self.validate_response(response):
-                return FetchResult(
-                    success=False, error="Invalid response from TFRRS", source=self.name
-                )
+                return FetchResult(success=False, error="Invalid response from TFRRS", source=self.name)
 
             # Parse and filter for specific event
             event_data = self._parse_event_specific_data(response, event_name)
@@ -333,9 +313,7 @@ class TFRRFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching event results")
 
-    def _parse_event_specific_data(
-        self, response, event_name: str
-    ) -> Optional[Dict[str, Any]]:
+    def _parse_event_specific_data(self, response, event_name: str) -> Optional[Dict[str, Any]]:
         """
         Parse event-specific data from athlete profile.
 
@@ -389,16 +367,8 @@ class TFRRFetcher(BaseFetcher):
                                 "date": cols[0].text.strip() if len(cols) > 0 else "",
                                 "meet": cols[1].text.strip() if len(cols) > 1 else "",
                                 "event": cols[event_col].text.strip(),
-                                "mark": (
-                                    cols[event_col + 1].text.strip()
-                                    if len(cols) > event_col + 1
-                                    else ""
-                                ),
-                                "place": (
-                                    cols[event_col + 2].text.strip()
-                                    if len(cols) > event_col + 2
-                                    else ""
-                                ),
+                                "mark": (cols[event_col + 1].text.strip() if len(cols) > event_col + 1 else ""),
+                                "place": (cols[event_col + 2].text.strip() if len(cols) > event_col + 2 else ""),
                             }
                             event_results.append(result)
 

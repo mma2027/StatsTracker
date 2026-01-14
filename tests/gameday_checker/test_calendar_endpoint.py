@@ -39,7 +39,7 @@ try:
             print(f"First item type: {type(data[0])}")
             if isinstance(data[0], dict):
                 print(f"First item keys: {list(data[0].keys())[:10]}")
-except:
+except (json.JSONDecodeError, ValueError):
     print("✗ Response is not JSON, likely HTML")
 
 # If HTML, check for embedded data
@@ -70,7 +70,7 @@ if "text/html" in response.headers.get("content-type", ""):
                         dates_found.add(date_str)
 
                 print(f"\n  Events object {events_found}: {len(games)} games")
-        except:
+        except (json.JSONDecodeError, KeyError):
             pass
 
     print(f"\nTotal events objects: {events_found}")
