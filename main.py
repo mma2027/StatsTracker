@@ -23,7 +23,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent))
 
 from src.gameday_checker import GamedayChecker
-from src.website_fetcher import NCAAFetcher, TFRRFetcher
+from src.website_fetcher import NCAAFetcher, TFRRFetcher, SquashFetcher
 from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier
@@ -197,6 +197,114 @@ def update_team_stats(
                 players_added += 1
 
             # Add stats
+            for stat_name, stat_value in player_data['stats'].items():
+                if stat_value == '' or stat_value is None:
+                    continue
+
+                stat_entry = StatEntry(
+                    player_id=player_id,
+                    stat_name=stat_name,
+                    stat_value=stat_value,
+                    season=season,
+                    date_recorded=datetime.now()
+                )
+                db.add_stat(stat_entry)
+                stats_added += 1
+
+        except Exception as e:
+            error_msg = f"Error processing {player_name}: {e}"
+            logger.error(error_msg)
+            errors.append(error_msg)
+
+    logger.info(f"Added {players_added} new players, updated {players_updated} players")
+    logger.info(f"Added {stats_added} stat entries")
+
+    if errors:
+        logger.warning(f"{len(errors)} errors occurred")
+
+    return {
+        'success': True,
+        'players_added': players_added,
+        'players_updated': players_updated,
+        'stats_added': stats_added,
+        'errors': errors
+    }
+
+
+def update_squash_stats(
+    fetcher: SquashFetcher,
+    db: PlayerDatabase,
+    sport_key: str,
+    team_id: str,
+    season: str,
+    logger: logging.Logger
+) -> dict:
+    """
+    Fetch squash stats for one team and update database.
+
+    Args:
+        fetcher: SquashFetcher instance
+        db: PlayerDatabase instance
+        sport_key: Sport key (e.g., 'squash_mens', 'squash_womens')
+        team_id: ClubLocker team ID
+        season: Season string (e.g., '2024-25', '2025-26')
+        logger: Logger instance
+
+    Returns:
+        Dict with results (players_added, stats_added, errors)
+    """
+    sport_display = sport_key.replace('_', ' ').title()
+    logger.info(f"Processing {sport_display} (ClubLocker ID: {team_id}, Season: {season})")
+
+    # Fetch stats from ClubLocker
+    result = fetcher.fetch_team_stats(team_id, "squash")
+
+    if not result.success:
+        logger.error(f"Error fetching {sport_display}: {result.error}")
+        return {'error': result.error, 'players_added': 0, 'stats_added': 0}
+
+    # Process players
+    data = result.data
+    players = data['players']
+    stat_categories = data['stat_categories']
+
+    logger.info(f"Found {len(players)} players with {len(stat_categories)} stat categories")
+
+    players_added = 0
+    players_updated = 0
+    stats_added = 0
+    errors = []
+
+    for player_data in players:
+        player_name = player_data['name']
+
+        try:
+            # Generate player ID (use generic 'squash' sport to merge men's and women's if needed)
+            # Or use sport_key to keep them separate
+            player_id = generate_player_id(player_name, sport_key)
+
+            # Check if player exists
+            existing_player = db.get_player(player_id)
+
+            if existing_player:
+                # Update player info if needed
+                db.update_player(existing_player)
+                players_updated += 1
+            else:
+                # Add new player
+                player = Player(
+                    player_id=player_id,
+                    name=player_name,
+                    sport=sport_key,
+                    team='Haverford',
+                    position='',
+                    year='',
+                    active=True
+                )
+                db.add_player(player)
+                players_added += 1
+
+            # Add stats (wins)
             for stat_name, stat_value in player_data['stats'].items():
                 if stat_value == '' or stat_value is None:
                     continue
@@ -471,6 +579,61 @@ def update_stats(auto_mode: bool = False):
                 total_results['players_added'] += result.get('players_added', 0)
                 total_results['players_updated'] += result.get('players_updated', 0)
                 total_results['stats_added'] += result.get('stats_added', 0)
+
+        # Process ClubLocker squash teams
+        clublocker_config = fetcher_config.get('clublocker', {})
+        if clublocker_config:
+            logger.info("")
+            logger.info("Processing ClubLocker squash teams...")
+
+            # Initialize SquashFetcher
+            squash_fetcher = SquashFetcher(
+                base_url=clublocker_config.get('base_url', 'https://clublocker.com'),
+                timeout=clublocker_config.get('timeout', 30)
+            )
+
+            # Get squash teams from config
+            # Format: {team_key: {season: team_id}}
+            # Example: squash_mens_2024_25: 40879, squash_mens_2025_26: 44989
+            squash_teams = clublocker_config.get('teams', {})
+
+            if squash_teams:
+                logger.info(f"Processing {len(squash_teams)} squash team entries")
+
+                for team_key, team_id in squash_teams.items():
+                    # Extract season from team_key if it contains season info
+                    # e.g., "squash_mens_2024_25" -> "2024-25"
+                    # or use the detected season from ClubLocker
+                    if '_2024_25' in team_key:
+                        team_season = '2024-25'
+                    elif '_2025_26' in team_key:
+                        team_season = '2025-26'
+                    else:
+                        # Fall back to current season
+                        team_season = season
+
+                    # Extract sport_key (remove season suffix if present)
+                    # e.g., "squash_mens_2024_25" -> "squash_mens"
+                    sport_key = team_key.replace('_2024_25', '').replace('_2025_26', '')
+
+                    result = update_squash_stats(
+                        squash_fetcher,
+                        database,
+                        sport_key,
+                        str(team_id),
+                        team_season,
+                        logger
+                    )
+
+                    if result.get('error'):
+                        total_results['teams_failed'] += 1
+                    else:
+                        total_results['teams_processed'] += 1
+                        total_results['players_added'] += result.get('players_added', 0)
+                        total_results['players_updated'] += result.get('players_updated', 0)
+                        total_results['stats_added'] += result.get('stats_added', 0)
+            else:
+                logger.info("No squash teams configured in ClubLocker section")
 
         # Final summary
         if not auto_mode:
