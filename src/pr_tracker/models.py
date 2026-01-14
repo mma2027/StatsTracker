@@ -39,8 +39,8 @@ class PRBreakthrough:
             import re
 
             # Remove units, keep only numbers
-            old_value = float(re.sub(r'[^\d.]', '', self.old_pr))
-            new_value = float(re.sub(r'[^\d.]', '', self.new_pr))
+            old_value = float(re.sub(r"[^\d.]", "", self.old_pr))
+            new_value = float(re.sub(r"[^\d.]", "", self.new_pr))
 
             if old_value == 0:
                 return None

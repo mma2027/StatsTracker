@@ -30,18 +30,28 @@ class PRTracker:
     """
 
     # Time-based events (lower is better)
-    TIME_EVENTS = ['m', 'h', 'hurdle', 'relay', 'walk', 'steeple']
+    TIME_EVENTS = ["m", "h", "hurdle", "relay", "walk", "steeple"]
 
     # Distance/height events (higher is better)
     DISTANCE_EVENTS = [
-        'jump', 'throw', 'put', 'javelin', 'shot', 'discus', 'hammer',
-        'lj', 'tj', 'hj', 'pv',  # Long Jump, Triple Jump, High Jump, Pole Vault
-        'sp', 'dt', 'jt', 'ht',  # Shot Put, Discus Throw, Javelin Throw, Hammer Throw
+        "jump",
+        "throw",
+        "put",
+        "javelin",
+        "shot",
+        "discus",
+        "hammer",
+        "lj",
+        "tj",
+        "hj",
+        "pv",  # Long Jump, Triple Jump, High Jump, Pole Vault
+        "sp",
+        "dt",
+        "jt",
+        "ht",  # Shot Put, Discus Throw, Javelin Throw, Hammer Throw
     ]
 
-    def __init__(self,
-                 tfrr_fetcher: TFRRFetcher,
-                 history_file: str = "data/pr_history.csv"):
+    def __init__(self, tfrr_fetcher: TFRRFetcher, history_file: str = "data/pr_history.csv"):
         """
         Initialize PR tracker
 
@@ -80,7 +90,7 @@ class PRTracker:
                 logger.warning(f"No team data returned for {team_code}")
                 return {}
 
-            roster = team_data.get('roster', [])
+            roster = team_data.get("roster", [])
 
             if not roster:
                 logger.warning(f"No roster found in team data for {team_code}")
@@ -90,8 +100,8 @@ class PRTracker:
 
             # Step 3: For each athlete, fetch their individual stats (including PRs)
             for athlete in roster:
-                athlete_id = athlete.get('athlete_id')
-                athlete_name = athlete.get('name')
+                athlete_id = athlete.get("athlete_id")
+                athlete_name = athlete.get("name")
 
                 if not athlete_id or not athlete_name:
                     continue
@@ -112,7 +122,7 @@ class PRTracker:
                         continue
 
                     # Extract personal records from player data
-                    personal_records = player_data.get('personal_records', {})
+                    personal_records = player_data.get("personal_records", {})
 
                     if not personal_records:
                         logger.debug(f"No PRs found for {athlete_name}")
@@ -120,8 +130,9 @@ class PRTracker:
 
                     # Filter valid PR data
                     valid_prs = {
-                        event: pr for event, pr in personal_records.items()
-                        if pr and str(pr).strip() and pr != '-' and pr != '—'
+                        event: pr
+                        for event, pr in personal_records.items()
+                        if pr and str(pr).strip() and pr != "-" and pr != "—"
                     }
 
                     if valid_prs:
@@ -153,18 +164,18 @@ class PRTracker:
             return {}
 
         try:
-            with open(self.history_file, 'r', encoding='utf-8') as f:
+            with open(self.history_file, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
 
                 for row in reader:
-                    athlete_name = row['athlete_name']
-                    event = row['event']
-                    pr_value = row['pr_value']
-                    date_str = row['date_recorded']
+                    athlete_name = row["athlete_name"]
+                    event = row["event"]
+                    pr_value = row["pr_value"]
+                    date_str = row["date_recorded"]
 
                     # Parse date
                     try:
-                        recorded_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        recorded_date = datetime.strptime(date_str, "%Y-%m-%d").date()
                     except ValueError:
                         recorded_date = None
 
@@ -172,10 +183,7 @@ class PRTracker:
                     if athlete_name not in historical_prs:
                         historical_prs[athlete_name] = {}
 
-                    historical_prs[athlete_name][event] = {
-                        "pr": pr_value,
-                        "date": recorded_date
-                    }
+                    historical_prs[athlete_name][event] = {"pr": pr_value, "date": recorded_date}
 
             logger.info(f"Loaded historical PRs for {len(historical_prs)} athletes")
             return historical_prs
@@ -184,10 +192,9 @@ class PRTracker:
             logger.error(f"Error loading historical PRs: {e}")
             return {}
 
-    def detect_breakthroughs(self,
-                           current_prs: Dict[str, Dict[str, str]],
-                           historical_prs: Dict[str, Dict[str, Any]],
-                           date_range_days: int = 1) -> List[PRBreakthrough]:
+    def detect_breakthroughs(
+        self, current_prs: Dict[str, Dict[str, str]], historical_prs: Dict[str, Dict[str, Any]], date_range_days: int = 1
+    ) -> List[PRBreakthrough]:
         """
         Detect PR breakthroughs
 
@@ -231,7 +238,7 @@ class PRTracker:
                             new_pr=new_pr,
                             improvement=improvement,
                             date=today,
-                            meet_name=None  # Can be obtained from TFRR recent_results
+                            meet_name=None,  # Can be obtained from TFRR recent_results
                         )
                         breakthroughs.append(breakthrough)
 
@@ -283,11 +290,11 @@ class PRTracker:
         time_str = time_str.strip().lower()
 
         # Remove unit
-        time_str = time_str.replace('s', '').strip()
+        time_str = time_str.replace("s", "").strip()
 
         # Handle minute:second format
-        if ':' in time_str:
-            parts = time_str.split(':')
+        if ":" in time_str:
+            parts = time_str.split(":")
             minutes = float(parts[0])
             seconds = float(parts[1])
             return minutes * 60 + seconds
@@ -306,12 +313,12 @@ class PRTracker:
         distance_str = distance_str.strip().lower()
 
         # Remove unit
-        distance_str = distance_str.replace('m', '').strip()
+        distance_str = distance_str.replace("m", "").strip()
 
         # Handle feet and inches format (if any)
         if "'" in distance_str or '"' in distance_str:
             # Simplified handling: extract numbers only
-            distance_str = re.sub(r'[^\d.]', '', distance_str)
+            distance_str = re.sub(r"[^\d.]", "", distance_str)
 
         return float(distance_str)
 
@@ -352,7 +359,7 @@ class PRTracker:
             ID string
         """
         # Simple implementation: remove spaces and convert to lowercase
-        return athlete_name.replace(' ', '_').lower()
+        return athlete_name.replace(" ", "_").lower()
 
     def save_current_prs(self, current_prs: Dict[str, Dict[str, str]]):
         """
@@ -365,11 +372,11 @@ class PRTracker:
             # Ensure directory exists
             Path(self.history_file).parent.mkdir(parents=True, exist_ok=True)
 
-            with open(self.history_file, 'w', newline='', encoding='utf-8') as f:
+            with open(self.history_file, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
 
                 # Write header
-                writer.writerow(['athlete_name', 'event', 'pr_value', 'date_recorded'])
+                writer.writerow(["athlete_name", "event", "pr_value", "date_recorded"])
 
                 # Write data
                 today_str = date.today().isoformat()
@@ -417,11 +424,7 @@ class PRTracker:
                 return []  # First run doesn't report breakthroughs
 
             # 3. Detect breakthroughs
-            breakthroughs = self.detect_breakthroughs(
-                all_current_prs,
-                historical_prs,
-                date_range_days=1
-            )
+            breakthroughs = self.detect_breakthroughs(all_current_prs, historical_prs, date_range_days=1)
 
             # 4. Update CSV history file
             if breakthroughs:

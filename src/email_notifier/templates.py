@@ -45,7 +45,12 @@ class EmailTemplate:
         return f"Haverford Sports Alert - {date_str}"
 
     @staticmethod
-    def generate_milestone_email(proximities: List[MilestoneProximity], games: List[Game], date_for: date, pr_breakthroughs: Optional[List[PRBreakthrough]] = None) -> str:
+    def generate_milestone_email(
+        proximities: List[MilestoneProximity],
+        games: List[Game],
+        date_for: date,
+        pr_breakthroughs: Optional[List[PRBreakthrough]] = None,
+    ) -> str:
         """
         Generate HTML email body for milestone notification.
 
@@ -261,7 +266,12 @@ class EmailTemplate:
         return html
 
     @staticmethod
-    def generate_text_version(proximities: List[MilestoneProximity], games: List[Game], date_for: date, pr_breakthroughs: Optional[List[PRBreakthrough]] = None) -> str:
+    def generate_text_version(
+        proximities: List[MilestoneProximity],
+        games: List[Game],
+        date_for: date,
+        pr_breakthroughs: Optional[List[PRBreakthrough]] = None,
+    ) -> str:
         """
         Generate plain text email body for milestone notification.
 

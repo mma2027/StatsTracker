@@ -37,12 +37,12 @@ class TFRRFetcher(BaseFetcher):
         super().__init__(base_url, timeout)
         # Set headers to mimic a browser request and avoid 403 errors
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1'
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
         }
 
     def fetch_player_stats(self, player_id: str, sport: str) -> FetchResult:
@@ -485,7 +485,7 @@ class TFRRFetcher(BaseFetcher):
                         # Examples: "22.75\n(0.1)" -> "22.75", "6.18m\n\n20' 3.5\"" -> "6.18m"
 
                         # First split by newline to isolate the metric value (always comes first)
-                        lines = mark_raw.split('\n')
+                        lines = mark_raw.split("\n")
                         if not lines:
                             continue
 
@@ -493,13 +493,13 @@ class TFRRFetcher(BaseFetcher):
                         mark = lines[0].strip()
 
                         # Remove wind speed indicators in parentheses: "22.75 (0.1)" -> "22.75"
-                        mark = re.sub(r'\s*\([+-]?\d+\.?\d*\)\s*', '', mark).strip()
+                        mark = re.sub(r"\s*\([+-]?\d+\.?\d*\)\s*", "", mark).strip()
 
                         # Remove any imperial measurements (feet/inches) if they leaked through
                         # Pattern: remove anything with feet (') or inches (")
-                        mark = re.sub(r"[\s]*\d+['\"][\s\d.\"']*", '', mark).strip()
+                        mark = re.sub(r"[\s]*\d+['\"][\s\d.\"']*", "", mark).strip()
 
-                        if mark and mark != '-' and mark != '—':
+                        if mark and mark != "-" and mark != "—":
                             prs[event] = mark
 
             # Also check for divs with PR data

@@ -47,7 +47,13 @@ class EmailNotifier:
 
         logger.info(f"EmailNotifier initialized for {len(self.recipients)} recipients")
 
-    def send_milestone_alert(self, proximities: List[MilestoneProximity], games: List[Game], date_for: date, pr_breakthroughs: Optional[List[PRBreakthrough]] = None) -> bool:
+    def send_milestone_alert(
+        self,
+        proximities: List[MilestoneProximity],
+        games: List[Game],
+        date_for: date,
+        pr_breakthroughs: Optional[List[PRBreakthrough]] = None,
+    ) -> bool:
         """
         Send an email alert about milestones, games, and PR breakthroughs.
 
