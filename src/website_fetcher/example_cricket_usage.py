@@ -15,10 +15,7 @@ from pathlib import Path
 from cricket_fetcher import CricketFetcher
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +54,7 @@ def main():
         # You can now work with the DataFrame
         # Example: Get top batsmen by runs
         if "Batting_Runs" in df.columns:
-            df["Batting_Runs"] = pd.to_numeric(df["Batting_Runs"], errors='coerce')
+            df["Batting_Runs"] = pd.to_numeric(df["Batting_Runs"], errors="coerce")
             top_batsmen = df.nlargest(5, "Batting_Runs")[["Player", "Batting_Runs"]]
             logger.info(f"\nTop 5 Batsmen:\n{top_batsmen}")
 
@@ -80,6 +77,7 @@ def main():
 if __name__ == "__main__":
     try:
         import pandas as pd
+
         main()
     except ImportError as e:
         logger.error(f"Missing required dependency: {e}")
@@ -88,4 +86,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Error running cricket fetcher: {e}")
         import traceback
+
         traceback.print_exc()

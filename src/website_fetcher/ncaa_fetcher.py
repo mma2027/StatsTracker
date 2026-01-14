@@ -172,9 +172,7 @@ class NCAAFetcher(BaseFetcher):
             player_data["player_id"] = player_id
             player_data["sport"] = sport
 
-            logger.info(
-                f"Successfully fetched {len(player_data['seasons'])} seasons for player {player_id}"
-            )
+            logger.info(f"Successfully fetched {len(player_data['seasons'])} seasons for player {player_id}")
 
             return FetchResult(success=True, data=player_data, source=self.name)
 
@@ -260,9 +258,7 @@ class NCAAFetcher(BaseFetcher):
                 "stat_categories": stat_categories,
             }
 
-            logger.info(
-                f"Successfully fetched stats for {len(players_data)} players from team {team_id}"
-            )
+            logger.info(f"Successfully fetched stats for {len(players_data)} players from team {team_id}")
 
             return FetchResult(success=True, data=data, source=self.name)
 
@@ -335,27 +331,25 @@ class NCAAFetcher(BaseFetcher):
 
             # Extract player links
             import re
+
             players = []
 
             # Find all links with /players/{player_id} pattern
-            all_links = soup.find_all('a', href=True)
-            player_links = [l for l in all_links if '/players/' in l.get('href', '')]
+            all_links = soup.find_all("a", href=True)
+            player_links = [l for l in all_links if "/players/" in l.get("href", "")]
 
             for link in player_links:
-                href = link.get('href')
+                href = link.get("href")
                 name = link.get_text().strip()
 
                 # Extract player ID from href (e.g., /players/9335071 → 9335071)
-                match = re.search(r'/players/(\d+)', href)
+                match = re.search(r"/players/(\d+)", href)
                 if match:
                     player_id = match.group(1)
 
                     # Skip generic links like "Players" or "Game By Game"
-                    if player_id and name and len(name) > 3 and not name.lower() in ['players', 'game by game']:
-                        players.append({
-                            "name": name,
-                            "player_id": player_id
-                        })
+                    if player_id and name and len(name) > 3 and not name.lower() in ["players", "game by game"]:
+                        players.append({"name": name, "player_id": player_id})
 
             if not players:
                 logger.warning(f"No players found on roster page for team {team_id}")
@@ -365,11 +359,7 @@ class NCAAFetcher(BaseFetcher):
                     source=self.name,
                 )
 
-            data = {
-                "team_id": team_id,
-                "sport": sport,
-                "players": players
-            }
+            data = {"team_id": team_id, "sport": sport, "players": players}
 
             logger.info(f"Successfully fetched roster with {len(players)} players")
 
@@ -472,28 +462,22 @@ class NCAAFetcher(BaseFetcher):
                 # Format is typically "2025-26 Men's Basketball (6-7)"
                 # We want just "Men's Basketball"
                 import re
+
                 # Remove season year pattern (YYYY-YY at start)
-                sport_name = re.sub(r'^\d{4}-\d{2}\s+', '', sport_name_raw)
+                sport_name = re.sub(r"^\d{4}-\d{2}\s+", "", sport_name_raw)
                 # Remove record pattern (X-X) or (X-X-X) at end
-                sport_name = re.sub(r'\s*\(\d+-\d+(-\d+)?\)\s*$', '', sport_name)
+                sport_name = re.sub(r"\s*\(\d+-\d+(-\d+)?\)\s*$", "", sport_name)
                 sport_name = sport_name.strip()
 
                 # Skip empty or invalid entries
                 if not sport_name or not team_id:
                     continue
 
-                teams.append({
-                    "sport": sport_name,
-                    "team_id": team_id,
-                    "url": f"{self.base_url}/teams/{team_id}"
-                })
+                teams.append({"sport": sport_name, "team_id": team_id, "url": f"{self.base_url}/teams/{team_id}"})
 
             logger.info(f"Found {len(teams)} Haverford teams")
 
-            data = {
-                "school_id": school_id,
-                "teams": teams
-            }
+            data = {"school_id": school_id, "teams": teams}
 
             return FetchResult(success=True, data=data, source=self.name)
 
@@ -578,10 +562,20 @@ class NCAAFetcher(BaseFetcher):
         for element in soup.find_all(["h1", "h2", "h3", "div"]):
             text = element.get_text().strip()
             # Check for sport names or "season to date" text
-            if any(keyword in text.lower() for keyword in [
-                "basketball", "soccer", "lacrosse", "baseball", "softball",
-                "field hockey", "volleyball", "season to date", "statistics"
-            ]):
+            if any(
+                keyword in text.lower()
+                for keyword in [
+                    "basketball",
+                    "soccer",
+                    "lacrosse",
+                    "baseball",
+                    "softball",
+                    "field hockey",
+                    "volleyball",
+                    "season to date",
+                    "statistics",
+                ]
+            ):
                 has_team_context = True
                 break
 
@@ -671,7 +665,7 @@ class NCAAFetcher(BaseFetcher):
         import re
 
         # Find all tables on the page
-        tables = soup.find_all('table')
+        tables = soup.find_all("table")
 
         if len(tables) < 2:
             logger.warning("Player page does not have career stats table (expected at least 2 tables)")
@@ -681,7 +675,7 @@ class NCAAFetcher(BaseFetcher):
         career_table = tables[1]
 
         # Extract headers
-        headers = career_table.find_all('th')
+        headers = career_table.find_all("th")
         if not headers:
             logger.warning("No headers found in career stats table")
             return {}
@@ -691,20 +685,20 @@ class NCAAFetcher(BaseFetcher):
 
         # Extract player name from page (usually in h1 or title)
         player_name = "Unknown"
-        h1_tag = soup.find('h1')
+        h1_tag = soup.find("h1")
         if h1_tag:
             player_name = h1_tag.get_text().strip()
 
         # Parse data rows
-        rows = career_table.find_all('tr')
-        data_rows = [r for r in rows if r.find_all('td')]
+        rows = career_table.find_all("tr")
+        data_rows = [r for r in rows if r.find_all("td")]
 
         seasons = []
         career_totals = None
         school_filter_lower = school_filter.lower()
 
         for row in data_rows:
-            cells = row.find_all('td')
+            cells = row.find_all("td")
             cell_values = [c.get_text().strip() for c in cells]
 
             if not cell_values:
@@ -741,7 +735,7 @@ class NCAAFetcher(BaseFetcher):
                 career_totals = {
                     "year": "Career",  # Label it as "Career" instead of "Totals"
                     "team": school_filter,  # Use school filter as team name
-                    "stats": stats
+                    "stats": stats,
                 }
                 logger.debug(f"Stored career_totals: G={stats.get('G', 'N/A')}, PTS={stats.get('PTS', 'N/A')}")
                 continue
@@ -755,7 +749,7 @@ class NCAAFetcher(BaseFetcher):
                 continue
 
             # Check if this looks like a valid season year (e.g., "2024-25")
-            if not re.match(r'\d{4}-\d{2}', year):
+            if not re.match(r"\d{4}-\d{2}", year):
                 logger.debug(f"Skipping row with invalid year format: {year}")
                 continue
 
@@ -765,11 +759,7 @@ class NCAAFetcher(BaseFetcher):
                 if i < len(cell_values):
                     stats[stat_name] = cell_values[i]
 
-            seasons.append({
-                "year": year,
-                "team": team,
-                "stats": stats
-            })
+            seasons.append({"year": year, "team": team, "stats": stats})
 
         # Add career totals as the last row if we found it
         if career_totals:
@@ -780,15 +770,9 @@ class NCAAFetcher(BaseFetcher):
 
         logger.info(f"Found {len(seasons)} {school_filter} seasons for {player_name}")
 
-        return {
-            "player_name": player_name,
-            "seasons": seasons,
-            "stat_categories": stat_categories
-        }
+        return {"player_name": player_name, "seasons": seasons, "stat_categories": stat_categories}
 
-    def _parse_stats_table(
-        self, soup: BeautifulSoup
-    ) -> tuple[List[Dict[str, Any]], List[str]]:
+    def _parse_stats_table(self, soup: BeautifulSoup) -> tuple[List[Dict[str, Any]], List[str]]:
         """
         Parse the statistics table from NCAA page.
 
@@ -874,8 +858,6 @@ class NCAAFetcher(BaseFetcher):
             if player_data["name"]:
                 players_data.append(player_data)
 
-        logger.debug(
-            f"Parsed {len(players_data)} players with {len(stat_categories)} stat categories"
-        )
+        logger.debug(f"Parsed {len(players_data)} players with {len(stat_categories)} stat categories")
 
         return players_data, stat_categories

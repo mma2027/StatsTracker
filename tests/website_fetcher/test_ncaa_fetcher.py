@@ -184,7 +184,18 @@ class TestNCAAFetcher:
         """Test successful team stats fetching."""
         # Setup mocks
         mock_driver = Mock()
-        mock_driver.page_source = "<html><body>Mock page</body></html>"
+        # Mock page source needs to contain sport keywords and a table to pass validation
+        mock_driver.page_source = """
+        <html>
+            <body>
+                <h1>Men's Basketball - Season to Date Statistics</h1>
+                <table>
+                    <tr><th>Player</th><th>GP</th></tr>
+                    <tr><td>Player 1</td><td>10</td></tr>
+                </table>
+            </body>
+        </html>
+        """
         self.fetcher.driver = mock_driver
 
         mock_get_season.return_value = "2025-26"

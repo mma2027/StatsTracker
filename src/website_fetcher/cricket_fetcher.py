@@ -69,9 +69,11 @@ class CricketFetcher(BaseFetcher):
 
         # Additional options to avoid detection
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        chrome_options.add_argument(
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        chrome_options.add_experimental_option('useAutomationExtension', False)
+        chrome_options.add_experimental_option("useAutomationExtension", False)
 
         try:
             self.driver = webdriver.Chrome(options=chrome_options)
@@ -275,8 +277,9 @@ class CricketFetcher(BaseFetcher):
 
             # Get page source and parse with BeautifulSoup
             from bs4 import BeautifulSoup
+
             page_source = self.driver.page_source
-            soup = BeautifulSoup(page_source, 'html.parser')
+            soup = BeautifulSoup(page_source, "html.parser")
 
             # Find the stats table
             df = self._parse_table_from_soup(soup, "batting")
@@ -308,8 +311,9 @@ class CricketFetcher(BaseFetcher):
 
             # Get page source and parse with BeautifulSoup
             from bs4 import BeautifulSoup
+
             page_source = self.driver.page_source
-            soup = BeautifulSoup(page_source, 'html.parser')
+            soup = BeautifulSoup(page_source, "html.parser")
 
             df = self._parse_table_from_soup(soup, "bowling")
 
@@ -340,8 +344,9 @@ class CricketFetcher(BaseFetcher):
 
             # Get page source and parse with BeautifulSoup
             from bs4 import BeautifulSoup
+
             page_source = self.driver.page_source
-            soup = BeautifulSoup(page_source, 'html.parser')
+            soup = BeautifulSoup(page_source, "html.parser")
 
             df = self._parse_table_from_soup(soup, "fielding")
 
@@ -423,14 +428,11 @@ class CricketFetcher(BaseFetcher):
                         while len(row) < len(headers):
                             row.append("")
 
-                    df = pd.DataFrame(data, columns=headers[:len(data[0])])
+                    df = pd.DataFrame(data, columns=headers[: len(data[0])])
 
                     # Prefix columns with stat type (except Player/Name column)
                     prefix = stat_type.capitalize()
-                    df.columns = [
-                        col if col.lower() in ["player", "name"] else f"{prefix}_{col}"
-                        for col in df.columns
-                    ]
+                    df.columns = [col if col.lower() in ["player", "name"] else f"{prefix}_{col}" for col in df.columns]
 
                     # Standardize player column name
                     for col in df.columns:

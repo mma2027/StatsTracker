@@ -114,7 +114,11 @@ class GamedayChecker:
 
         try:
             # Use calendar AJAX endpoint
-            url = f"{self.schedule_url.rstrip('/')}/services/responsive-calendar.ashx"
+            # Extract base domain from schedule_url (remove /calendar path if present)
+            base_url = (
+                self.schedule_url.rstrip("/").split("/calendar")[0] if self.schedule_url else "https://haverfordathletics.com"
+            )
+            url = f"{base_url}/services/responsive-calendar.ashx"
 
             # Format date as M/D/YYYY for API
             date_str = f"{check_date.month}/{check_date.day}/{check_date.year}"
@@ -125,7 +129,7 @@ class GamedayChecker:
             # Headers to mimic browser AJAX request
             headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-                "Referer": f"{self.schedule_url}/calendar",
+                "Referer": f"{base_url}/calendar",
                 "X-Requested-With": "XMLHttpRequest",
             }
 

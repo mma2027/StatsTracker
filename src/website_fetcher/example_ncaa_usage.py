@@ -44,10 +44,10 @@ def discover_team_ids():
     result = fetcher.get_haverford_teams()
 
     if result.success:
-        teams = result.data['teams']
+        teams = result.data["teams"]
         print(f"\n✓ Found {len(teams)} teams:\n")
 
-        for team in sorted(teams, key=lambda x: x['sport']):
+        for team in sorted(teams, key=lambda x: x["sport"]):
             print(f"  {team['sport']:<25} ID: {team['team_id']}")
 
         print("\nUse these IDs in your config file for the current season!")

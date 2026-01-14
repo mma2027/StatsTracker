@@ -1,401 +1,276 @@
-# Cron Job Setup for Daily 8 AM Automation
+# Cron Job Setup Guide
 
-This guide explains how to set up the StatsTracker system to run automatically every day at 8 AM using Unix cron.
+This guide explains how to set up a daily cron job to automatically run StatsTracker at 8 AM every day.
 
-## Overview
+## Quick Setup
 
-The daily automation workflow:
-1. Fetches latest stats from NCAA for all 10 teams (~5-10 minutes)
-2. Checks gameday schedule to find which teams have games today
-3. Only checks milestones for players on teams with games
-4. Always sends email (even on days with no games or milestones)
+### 1. Test the Wrapper Script
 
-## Prerequisites
-
-Before setting up the cron job:
-
-1. **Python 3.8+ installed** with all dependencies
-2. **Virtual environment set up** at `/Users/maxfieldma/CS/projects/StatsTracker/venv`
-3. **Configuration file** at `config/config.yaml` with valid email credentials
-4. **Database initialized** at `data/stats.db`
-5. **Wrapper script created** at `run_daily_check.sh` (already included)
-
-## Step 1: Verify Wrapper Script
-
-The `run_daily_check.sh` script handles environment setup for cron execution.
-
-Check that it's executable:
-```bash
-ls -la run_daily_check.sh
-```
-
-If not executable, make it so:
-```bash
-chmod +x run_daily_check.sh
-```
-
-## Step 2: Test Manual Execution
-
-Before setting up cron, test the wrapper script manually:
+First, verify that the wrapper script works correctly:
 
 ```bash
 cd /Users/maxfieldma/CS/projects/StatsTracker
 ./run_daily_check.sh
 ```
 
-**Expected output:**
-- Stats update starts
-- Gameday check completes
-- Milestone checks (if any games)
-- Email sent
-- Exit code 0
-
-**Check logs:**
+Check the log file to confirm it ran successfully:
 ```bash
-tail -f logs/statstrack.log
+tail -50 logs/cron_daily.log
 ```
 
-## Step 3: Edit Crontab
+### 2. Configure Cron Job
 
-Open your crontab for editing:
+Edit your crontab:
 ```bash
 crontab -e
 ```
 
-Add this line for daily 8 AM execution:
-```cron
-# StatsTracker - Daily 8 AM check (Monday-Sunday)
-0 8 * * * /Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh >> /Users/maxfieldma/CS/projects/StatsTracker/logs/cron_daily.log 2>&1
+Add this line to run StatsTracker daily at 8 AM:
+```bash
+0 8 * * * /Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh
 ```
 
-**Cron syntax breakdown:**
-- `0` = minute (0 = top of the hour)
-- `8` = hour (8 = 8 AM)
-- `*` = any day of month
-- `*` = any month
-- `*` = any day of week
-- `>> logs/cron_daily.log` = append output to log file
-- `2>&1` = redirect errors to same log file
+**Important:** Use the absolute path to the script, not a relative path.
 
-Save and exit (`:wq` in vim, `Ctrl+X` in nano).
-
-## Step 4: Verify Cron Job
+### 3. Verify Cron Configuration
 
 List your cron jobs to confirm it was added:
 ```bash
 crontab -l
 ```
 
-You should see the line you just added.
+## Testing
 
-## Step 5: Monitor First Run
+### Test with Frequent Execution
 
-For testing, you can temporarily set a more frequent schedule:
+For testing purposes, you can temporarily set the cron job to run every 5 minutes:
 
-```cron
-# TESTING ONLY - Every 5 minutes
-*/5 * * * * /Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh >> /Users/maxfieldma/CS/projects/StatsTracker/logs/cron_daily.log 2>&1
-```
-
-Wait 5 minutes, then check the log:
 ```bash
-tail -f logs/cron_daily.log
+# Edit crontab
+crontab -e
+
+# Add test schedule (every 5 minutes)
+*/5 * * * * /Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh
 ```
 
-**Once verified, change back to daily 8 AM schedule!**
+Wait 5 minutes, then check the logs:
+```bash
+tail -100 logs/cron_daily.log
+```
+
+**Remember to change it back to the daily schedule (0 8 * * *) after testing!**
+
+### Test Email Delivery
+
+To test email functionality separately:
+```bash
+cd /Users/maxfieldma/CS/projects/StatsTracker
+source venv/bin/activate
+python main.py --test-email
+```
+
+## Cron Schedule Format
+
+The cron format is: `minute hour day-of-month month day-of-week`
+
+Examples:
+- `0 8 * * *` - Daily at 8:00 AM
+- `30 7 * * *` - Daily at 7:30 AM
+- `0 8 * * 1-5` - Weekdays only at 8:00 AM
+- `0 8 * * 0,6` - Weekends only at 8:00 AM
+- `*/5 * * * *` - Every 5 minutes (for testing)
+
+## Monitoring
+
+### Check Recent Logs
+
+View the most recent log entries:
+```bash
+tail -50 /Users/maxfieldma/CS/projects/StatsTracker/logs/cron_daily.log
+```
+
+### Watch Logs in Real-Time
+
+Monitor the logs as they update:
+```bash
+tail -f /Users/maxfieldma/CS/projects/StatsTracker/logs/cron_daily.log
+```
+
+Press `Ctrl+C` to stop watching.
+
+### Check Application Logs
+
+The main application also writes to a separate log file:
+```bash
+tail -50 /Users/maxfieldma/CS/projects/StatsTracker/logs/statstrack.log
+```
+
+## Log Rotation
+
+To prevent log files from growing too large, set up log rotation.
+
+### Manual Log Rotation
+
+Rotate logs manually with a script:
+
+```bash
+cd /Users/maxfieldma/CS/projects/StatsTracker/logs
+mv cron_daily.log cron_daily.log.$(date +%Y%m%d)
+touch cron_daily.log
+gzip cron_daily.log.*
+
+# Delete logs older than 30 days
+find . -name "cron_daily.log.*.gz" -mtime +30 -delete
+```
 
 ## Troubleshooting
 
 ### Cron Not Running
 
-1. **Check cron service is running:**
+1. **Check if cron service is running:**
    ```bash
    # macOS
    sudo launchctl list | grep cron
-
-   # Linux
-   ps aux | grep cron
    ```
 
-2. **Check system logs:**
+2. **Check cron logs:**
    ```bash
    # macOS
    log show --predicate 'process == "cron"' --last 1h
-
-   # Linux
-   grep CRON /var/log/syslog
    ```
-
-3. **Verify script permissions:**
-   ```bash
-   ls -la run_daily_check.sh
-   ```
-   Should show `-rwxr-xr-x` (executable)
 
 ### Email Not Sending
 
-1. **Check email credentials in config.yaml:**
-   ```yaml
-   email:
-     smtp_server: "smtp.gmail.com"
-     smtp_port: 587
-     sender_email: "your-email@gmail.com"
-     sender_password: "app-specific-password"  # NOT your regular Gmail password
-   ```
-
-2. **For Gmail, use App-Specific Password:**
-   - Go to https://myaccount.google.com/apppasswords
-   - Generate app password for "Mail"
-   - Use that password in config.yaml
-
-3. **Test email manually:**
+1. **Verify email configuration:**
    ```bash
-   cd /Users/maxfieldma/CS/projects/StatsTracker
    python main.py --test-email
    ```
 
-4. **Check logs for errors:**
+2. **Check email credentials:**
+   - For Gmail, use an [App Password](https://support.google.com/accounts/answer/185833)
+   - Verify SMTP settings in `config/config.yaml`
+
+3. **Check logs for SMTP errors:**
    ```bash
-   grep -i "error\|fail" logs/cron_daily.log
    grep -i "smtp\|email" logs/statstrack.log
    ```
 
-### Database Errors
+### Stats Not Updating
 
-1. **Ensure data directory exists:**
+1. **Test stats update manually:**
    ```bash
-   mkdir -p data
+   python main.py --update-stats
    ```
 
-2. **Check database file permissions:**
+2. **Check for NCAA website issues:**
+   - The NCAA stats website may be temporarily unavailable
+   - Check logs for HTTP errors or timeouts
+
+3. **Verify database permissions:**
    ```bash
    ls -la data/stats.db
    ```
 
-3. **Verify database schema:**
-   ```bash
-   sqlite3 data/stats.db ".schema"
-   ```
+### Permission Errors
 
-4. **Check database for recent stats:**
-   ```bash
-   sqlite3 data/stats.db "SELECT COUNT(*) FROM stats WHERE date_recorded > datetime('now', '-1 day');"
-   ```
-
-### Python/Virtual Environment Issues
-
-1. **Verify Python path in wrapper script:**
-   ```bash
-   which python
-   # Should show path inside venv
-   ```
-
-2. **Check virtual environment exists:**
-   ```bash
-   ls -la venv/bin/python
-   ```
-
-3. **Manually activate venv and test:**
-   ```bash
-   source venv/bin/activate
-   python main.py
-   ```
-
-## Log Management
-
-### Create Log Rotation (Optional)
-
-Prevent logs from growing too large:
-
-**On macOS:**
-Create `/etc/newsyslog.d/statstrack.conf`:
-```
-# StatsTracker log rotation
-/Users/maxfieldma/CS/projects/StatsTracker/logs/*.log 644 7 * * J
-```
-
-**On Linux:**
-Create `/etc/logrotate.d/statstrack`:
-```
-/Users/maxfieldma/CS/projects/StatsTracker/logs/*.log {
-    daily
-    rotate 30
-    compress
-    delaycompress
-    missingok
-    notifempty
-}
-```
-
-### View Recent Logs
+If you see permission errors:
 
 ```bash
-# Last 50 lines of cron log
-tail -50 logs/cron_daily.log
+# Fix script permissions
+chmod +x run_daily_check.sh
 
-# Last 100 lines of main log
-tail -100 logs/statstrack.log
+# Fix log directory permissions
+chmod 755 logs
+chmod 644 logs/*.log 2>/dev/null || true
 
-# Search for errors
-grep -i error logs/*.log
-
-# Filter by date
-grep "$(date +%Y-%m-%d)" logs/cron_daily.log
+# Fix virtual environment permissions
+chmod -R 755 venv
 ```
 
-## Security Best Practices
+### Python Not Found
 
-1. **Never commit config.yaml** with real credentials
-   - Already in `.gitignore`
+If cron can't find Python:
 
-2. **Restrict file permissions:**
+1. Find Python path:
    ```bash
-   chmod 600 config/config.yaml
-   chmod 700 data/
+   which python3
    ```
 
-3. **Use app-specific passwords** for Gmail (not your main password)
-
-4. **Regular database backups:**
+2. Update `run_daily_check.sh` to use the full path:
    ```bash
-   cp data/stats.db data/stats_backup_$(date +%Y%m%d).db
+   /usr/local/bin/python3 "$SCRIPT_DIR/main.py"
    ```
 
-## Alternative Scheduling Methods
+### Environment Variables
 
-### Using launchd (macOS)
+Cron runs with a minimal environment. If you need specific environment variables, add them to `run_daily_check.sh`.
 
-Create `~/Library/LaunchAgents/com.haverford.statstracker.plist`:
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.haverford.statstracker</string>
-    <key>Program</key>
-    <string>/Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh</string>
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key>
-        <integer>8</integer>
-        <key>Minute</key>
-        <integer>0</integer>
-    </dict>
-    <key>StandardOutPath</key>
-    <string>/Users/maxfieldma/CS/projects/StatsTracker/logs/launchd.log</string>
-    <key>StandardErrorPath</key>
-    <string>/Users/maxfieldma/CS/projects/StatsTracker/logs/launchd_error.log</string>
-</dict>
-</plist>
-```
+## Security Considerations
 
-Load it:
-```bash
-launchctl load ~/Library/LaunchAgents/com.haverford.statstracker.plist
-```
+### Protect Email Credentials
 
-### Using systemd (Linux)
+- **Never commit `config/config.yaml` to git** (it's in `.gitignore`)
+- Use app-specific passwords, not main account passwords
+- Restrict file permissions:
+  ```bash
+  chmod 600 config/config.yaml
+  ```
 
-Create `/etc/systemd/system/statstracker.service`:
-```ini
-[Unit]
-Description=Haverford StatsTracker Daily Check
-After=network.target
-
-[Service]
-Type=oneshot
-User=maxfieldma
-WorkingDirectory=/Users/maxfieldma/CS/projects/StatsTracker
-ExecStart=/Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh
-```
-
-Create `/etc/systemd/system/statstracker.timer`:
-```ini
-[Unit]
-Description=Run StatsTracker Daily at 8 AM
-
-[Timer]
-OnCalendar=*-*-* 08:00:00
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-```
-
-Enable and start:
-```bash
-sudo systemctl enable statstracker.timer
-sudo systemctl start statstracker.timer
-```
-
-## Monitoring & Maintenance
-
-### Daily Checks
-
-1. **Verify email arrived** (check inbox at 8:05 AM daily)
-2. **Check logs for errors** once per week
-3. **Verify database growth** (should add ~1000-2000 stats daily)
-
-### Weekly Maintenance
+### Limit Cron Script Permissions
 
 ```bash
-# Check log file sizes
-du -sh logs/*
-
-# Check database size
-du -sh data/stats.db
-
-# Verify recent stats were added
-sqlite3 data/stats.db "SELECT COUNT(*), MAX(date_recorded) FROM stats;"
+chmod 750 run_daily_check.sh  # Only owner can execute
 ```
 
-### Monthly Tasks
+### Database Backup
 
-1. Review email alert accuracy
-2. Update milestone thresholds if needed (config.yaml)
-3. Backup database: `cp data/stats.db data/monthly_backup_$(date +%Y%m).db`
-4. Clean old log files (if not using log rotation)
+Consider backing up the database regularly:
 
-## Disabling Automation
+```bash
+# Add to crontab (daily at 2 AM)
+0 2 * * * cp /Users/maxfieldma/CS/projects/StatsTracker/data/stats.db /Users/maxfieldma/CS/projects/StatsTracker/data/stats.db.backup
+```
 
-To temporarily disable:
+## Performance
+
+### Expected Runtime
+
+- Stats update: 5-10 minutes (fetching 10 NCAA teams)
+- Milestone checks: 1-2 seconds
+- Email sending: 1-2 seconds
+- **Total: ~10-15 minutes**
+
+Running at 8 AM ensures completion before most people check email at 8:15-8:30 AM.
+
+### Rate Limiting
+
+If you encounter rate limiting from NCAA:
+- The script includes delays between requests (0.5s)
+- Consider increasing delays in `src/website_fetcher/ncaa_fetcher.py`
+- Run at off-peak hours (early morning is usually good)
+
+## Disable/Remove Cron Job
+
+### Temporarily Disable
+
+Comment out the line in crontab:
 ```bash
 crontab -e
-# Comment out the line with #
-# 0 8 * * * /path/to/run_daily_check.sh ...
+
+# Add # at the beginning of the line:
+# 0 8 * * * /Users/maxfieldma/CS/projects/StatsTracker/run_daily_check.sh
 ```
 
-To remove completely:
+### Permanently Remove
+
 ```bash
 crontab -e
-# Delete the entire line
+
+# Delete the entire line and save
 ```
 
-## Getting Help
+## Additional Resources
 
-If issues persist:
-
-1. Check logs: `logs/cron_daily.log` and `logs/statstrack.log`
-2. Run manually: `./run_daily_check.sh` to see errors directly
-3. Test components individually:
-   - Gameday: `python -c "from src.gameday_checker import GamedayChecker; g = GamedayChecker(); print(g.get_games_for_today())"`
-   - Email: `python main.py --test-email`
-   - Database: `sqlite3 data/stats.db "SELECT * FROM players LIMIT 5;"`
-
-## Success Checklist
-
-- [ ] Cron job added to crontab
-- [ ] Wrapper script is executable
-- [ ] Manual test run succeeds
-- [ ] First automated run completes successfully
-- [ ] Email received after first run
-- [ ] Logs show no errors
-- [ ] Database updates with new stats
-- [ ] System runs reliably for 7+ consecutive days
-
----
-
-**Last Updated:** January 13, 2026
-**Script Version:** 1.0
-**Project:** Haverford College StatsTracker
+- [Crontab Guru](https://crontab.guru/) - Cron schedule expression editor
+- [Gmail App Passwords](https://support.google.com/accounts/answer/185833)
+- [NCAA Stats Website](https://stats.ncaa.org/)

@@ -57,32 +57,65 @@ fetchers:
   # Add more fetcher configurations as needed
 
 # Milestone Configuration
+# Configure milestones for each sport using the full sport name from the database
+# Sport names: mens_basketball, womens_basketball, mens_soccer, womens_soccer,
+#              field_hockey, mens_lacrosse, womens_lacrosse, baseball, softball,
+#              womens_volleyball, mens_track, womens_track, mens_cross_country, womens_cross_country
+#
+# Important: Use the EXACT stat names from NCAA stats (case-sensitive!)
+# To find stat names for a sport, run: python main.py --update-stats
+# Then check the database or CSV exports to see the exact stat names used
+#
 milestones:
-  basketball:
-    points:
+  # Basketball - Points, Rebounds, Assists
+  mens_basketball:
+    PTS:  # Career Points
       - 1000
       - 1500
       - 2000
-    rebounds:
+    "Tot Reb":  # Total Rebounds (note: quotes needed for spaces)
       - 500
       - 750
       - 1000
-    assists:
+    AST:  # Assists
       - 300
       - 500
       - 750
-  track:
-    pr_improvement: 0.05  # 5% improvement threshold
-  soccer:
-    goals:
+
+  womens_basketball:
+    PTS:
+      - 1000
+      - 1500
+      - 2000
+    "Tot Reb":
+      - 500
+      - 750
+      - 1000
+    AST:
+      - 300
+      - 500
+      - 750
+
+  # Soccer - Goals and Assists
+  mens_soccer:
+    G:  # Goals
       - 20
       - 30
       - 40
-    assists:
+    A:  # Assists
       - 15
       - 25
       - 35
-  # Add milestones for other sports
+
+  womens_soccer:
+    G:
+      - 20
+      - 30
+      - 40
+    A:
+      - 15
+      - 25
+      - 35
 
 # Notification Settings
 notifications:

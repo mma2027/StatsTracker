@@ -53,7 +53,7 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
         print(f"\n2. Identifying player column...")
         player_col = None
         for col in batting_df.columns:
-            if col.lower() in ['player', 'name', 'player name']:
+            if col.lower() in ["player", "name", "player name"]:
                 player_col = col
                 break
 
@@ -73,22 +73,13 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
 
         # Add prefixes to columns (except Player)
         print(f"   - Adding 'Batting_' prefix...")
-        batting_df.columns = [
-            col if col == "Player" else f"Batting_{col}"
-            for col in batting_df.columns
-        ]
+        batting_df.columns = [col if col == "Player" else f"Batting_{col}" for col in batting_df.columns]
 
         print(f"   - Adding 'Bowling_' prefix...")
-        bowling_df.columns = [
-            col if col == "Player" else f"Bowling_{col}"
-            for col in bowling_df.columns
-        ]
+        bowling_df.columns = [col if col == "Player" else f"Bowling_{col}" for col in bowling_df.columns]
 
         print(f"   - Adding 'Fielding_' prefix...")
-        fielding_df.columns = [
-            col if col == "Player" else f"Fielding_{col}"
-            for col in fielding_df.columns
-        ]
+        fielding_df.columns = [col if col == "Player" else f"Fielding_{col}" for col in fielding_df.columns]
 
         # Merge dataframes
         print(f"\n4. Merging dataframes...")
@@ -102,15 +93,13 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
 
         # Filter for Haverford players (if team column exists)
         print(f"\n5. Filtering data...")
-        team_cols = [col for col in merged.columns if 'team' in col.lower()]
+        team_cols = [col for col in merged.columns if "team" in col.lower()]
         if team_cols:
             print(f"   Found team column(s): {team_cols}")
             for col in team_cols:
                 if merged[col].str.contains("Haverford", case=False, na=False).any():
                     original_len = len(merged)
-                    merged = merged[
-                        merged[col].str.contains("Haverford", case=False, na=False)
-                    ]
+                    merged = merged[merged[col].str.contains("Haverford", case=False, na=False)]
                     print(f"   ✅ Filtered to {len(merged)} Haverford players (removed {original_len - len(merged)})")
                     break
         else:
@@ -159,14 +148,13 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Merge manually downloaded cricket statistics CSV files"
-    )
+    parser = argparse.ArgumentParser(description="Merge manually downloaded cricket statistics CSV files")
     parser.add_argument(
         "--batting",
         "-b",
@@ -194,12 +182,7 @@ def main():
 
     args = parser.parse_args()
 
-    success = merge_cricket_data(
-        args.batting,
-        args.bowling,
-        args.fielding,
-        args.output
-    )
+    success = merge_cricket_data(args.batting, args.bowling, args.fielding, args.output)
 
     sys.exit(0 if success else 1)
 
