@@ -94,7 +94,11 @@ class MilestoneDetector:
             proximity = self._calculate_proximity(player_stats, milestone)
 
             # Only include if close AND not already passed
-            if proximity and self._is_close_to_milestone(proximity, proximity_threshold) and not self._has_passed_milestone(proximity):
+            if (
+                proximity
+                and self._is_close_to_milestone(proximity, proximity_threshold)
+                and not self._has_passed_milestone(proximity)
+            ):
                 close_milestones.append(proximity)
 
         logger.info(f"Found {len(close_milestones)} close milestones for player {player_id}")

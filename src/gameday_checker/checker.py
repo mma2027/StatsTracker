@@ -115,7 +115,9 @@ class GamedayChecker:
         try:
             # Use calendar AJAX endpoint
             # Extract base domain from schedule_url (remove /calendar path if present)
-            base_url = self.schedule_url.rstrip('/').split('/calendar')[0] if self.schedule_url else 'https://haverfordathletics.com'
+            base_url = (
+                self.schedule_url.rstrip("/").split("/calendar")[0] if self.schedule_url else "https://haverfordathletics.com"
+            )
             url = f"{base_url}/services/responsive-calendar.ashx"
 
             # Format date as M/D/YYYY for API
