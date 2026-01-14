@@ -58,9 +58,10 @@ fetchers:
 
 # Milestone Configuration
 # Milestones follow pattern: 10, 25, 50, 75, 100, 150, 200, 250, 300, then multiples of 100
+# Note: Use NCAA stat names (PTS, AST, Tot Reb) not generic names (points, assists, rebounds)
 milestones:
   basketball:
-    points:
+    PTS:
       - 10
       - 25
       - 50
@@ -87,7 +88,7 @@ milestones:
       - 1800
       - 1900
       - 2000
-    rebounds:
+    Tot Reb:
       - 10
       - 25
       - 50
@@ -104,7 +105,7 @@ milestones:
       - 800
       - 900
       - 1000
-    assists:
+    AST:
       - 10
       - 25
       - 50
@@ -120,7 +121,7 @@ milestones:
       - 700
       - 800
   soccer:
-    goals:
+    Goals:
       - 10
       - 25
       - 50
@@ -132,7 +133,7 @@ milestones:
       - 300
       - 400
       - 500
-    assists:
+    Assists:
       - 10
       - 25
       - 50
