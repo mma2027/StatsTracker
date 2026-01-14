@@ -15,7 +15,8 @@
       "Bash(dir \"C:\\\\Users\\\\carte\\\\StatsTracker\\\\data\")",
       "Bash(git pull:*)",
       "Bash(flake8:*)",
-      "Bash(mypy:*)"
+      "Bash(mypy:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
