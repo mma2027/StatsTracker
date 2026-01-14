@@ -2,15 +2,15 @@
 Unit and integration tests for gameday checker
 """
 
-import pytest
-from datetime import date
 import sys
 from pathlib import Path
+import pytest
+from datetime import date
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
+from gameday_checker.checker import GamedayChecker  # noqa: E402
 
 
 def test_find_march_5_2026_baseball_game():

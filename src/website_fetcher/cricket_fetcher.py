@@ -11,16 +11,14 @@ Outputs a single CSV file with all stats combined per player (Haverford players 
 """
 
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import TimeoutException
 import pandas as pd
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import logging
 from pathlib import Path
 import time
+from bs4 import BeautifulSoup
 
 from .base_fetcher import BaseFetcher, FetchResult
 from .cricket_urls import get_all_urls, get_url
@@ -70,7 +68,7 @@ class CricketFetcher(BaseFetcher):
         # Additional options to avoid detection
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
         chrome_options.add_argument(
-            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"  # noqa: E501
         )
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option("useAutomationExtension", False)
@@ -276,8 +274,6 @@ class CricketFetcher(BaseFetcher):
             time.sleep(8)
 
             # Get page source and parse with BeautifulSoup
-            from bs4 import BeautifulSoup
-
             page_source = self.driver.page_source
             soup = BeautifulSoup(page_source, "html.parser")
 
@@ -310,8 +306,6 @@ class CricketFetcher(BaseFetcher):
             time.sleep(8)
 
             # Get page source and parse with BeautifulSoup
-            from bs4 import BeautifulSoup
-
             page_source = self.driver.page_source
             soup = BeautifulSoup(page_source, "html.parser")
 
@@ -343,8 +337,6 @@ class CricketFetcher(BaseFetcher):
             time.sleep(8)
 
             # Get page source and parse with BeautifulSoup
-            from bs4 import BeautifulSoup
-
             page_source = self.driver.page_source
             soup = BeautifulSoup(page_source, "html.parser")
 
@@ -376,8 +368,6 @@ class CricketFetcher(BaseFetcher):
             DataFrame with statistics
         """
         try:
-            from bs4 import BeautifulSoup
-
             # Find all tables on the page
             tables = soup.find_all("table")
 

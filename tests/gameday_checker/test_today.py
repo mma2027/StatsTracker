@@ -3,13 +3,14 @@ Test gameday checker with today's date
 """
 
 import sys
+import logging
 from pathlib import Path
+from datetime import date
 
+# Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
-from datetime import date
-import logging
+from gameday_checker.checker import GamedayChecker  # noqa: E402
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")

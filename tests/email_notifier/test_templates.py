@@ -17,13 +17,14 @@ class TestEmailTemplate:
     def sample_milestone_close(self):
         """Create a milestone that's very close to completion"""
         from src.milestone_detector.models import MilestoneType
+
         milestone = Milestone(
             milestone_id="bball_1000pts",
             sport="basketball",
             stat_name="points",
             threshold=1000,
             milestone_type=MilestoneType.CAREER_TOTAL,
-            description="1000 career points"
+            description="1000 career points",
         )
         return MilestoneProximity(
             player_id="player001",
@@ -32,20 +33,21 @@ class TestEmailTemplate:
             current_value=985,
             distance=15,
             percentage=98.5,
-            estimated_games_to_milestone=2
+            estimated_games_to_milestone=2,
         )
 
     @pytest.fixture
     def sample_milestone_far(self):
         """Create a milestone that's further from completion"""
         from src.milestone_detector.models import MilestoneType
+
         milestone = Milestone(
             milestone_id="soccer_50goals",
             sport="soccer",
             stat_name="goals",
             threshold=50,
             milestone_type=MilestoneType.CAREER_TOTAL,
-            description="50 career goals"
+            description="50 career goals",
         )
         return MilestoneProximity(
             player_id="player002",
@@ -54,20 +56,21 @@ class TestEmailTemplate:
             current_value=40,
             distance=10,
             percentage=80.0,
-            estimated_games_to_milestone=None  # No estimate
+            estimated_games_to_milestone=None,  # No estimate
         )
 
     @pytest.fixture
     def sample_milestone_at_100(self):
         """Create a milestone at exactly 100% (edge case)"""
         from src.milestone_detector.models import MilestoneType
+
         milestone = Milestone(
             milestone_id="track_4min_mile",
             sport="track",
             stat_name="pr_time",
             threshold=240.0,
             milestone_type=MilestoneType.PERSONAL_RECORD,
-            description="Break 4:00 mile"
+            description="Break 4:00 mile",
         )
         return MilestoneProximity(
             player_id="player003",
@@ -76,56 +79,32 @@ class TestEmailTemplate:
             current_value=240.0,
             distance=0,
             percentage=100.0,
-            estimated_games_to_milestone=0
+            estimated_games_to_milestone=0,
         )
 
     @pytest.fixture
     def sample_home_game(self):
         """Create a home game"""
         from datetime import datetime
-        team = Team(
-            name="Men's Basketball",
-            sport="basketball"
-        )
-        return Game(
-            team=team,
-            opponent="State University",
-            date=datetime(2024, 3, 15),
-            location="home",
-            time="19:00"
-        )
+
+        team = Team(name="Men's Basketball", sport="basketball")
+        return Game(team=team, opponent="State University", date=datetime(2024, 3, 15), location="home", time="19:00")
 
     @pytest.fixture
     def sample_away_game(self):
         """Create an away game"""
         from datetime import datetime
-        team = Team(
-            name="Women's Soccer",
-            sport="soccer"
-        )
-        return Game(
-            team=team,
-            opponent="Rival College",
-            date=datetime(2024, 3, 20),
-            location="away",
-            time="15:30"
-        )
+
+        team = Team(name="Women's Soccer", sport="soccer")
+        return Game(team=team, opponent="Rival College", date=datetime(2024, 3, 20), location="away", time="15:30")
 
     @pytest.fixture
     def sample_game_no_time(self):
         """Create a game without a specified time"""
         from datetime import datetime
-        team = Team(
-            name="Track and Field",
-            sport="track"
-        )
-        return Game(
-            team=team,
-            opponent="Conference Meet",
-            date=datetime(2024, 4, 5),
-            location="home",
-            time=None
-        )
+
+        team = Team(name="Track and Field", sport="track")
+        return Game(team=team, opponent="Conference Meet", date=datetime(2024, 4, 5), location="home", time=None)
 
     def test_generate_subject_with_games(self):
         """Test subject generation with games"""
@@ -153,18 +132,10 @@ class TestEmailTemplate:
         assert "December 25, 2024" in subject
         assert "1 game" in subject
 
-    def test_generate_html_with_milestones_and_games(
-        self,
-        sample_milestone_close,
-        sample_home_game
-    ):
+    def test_generate_html_with_milestones_and_games(self, sample_milestone_close, sample_home_game):
         """Test HTML generation with both milestones and games"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close],
-            [sample_home_game],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close], [sample_home_game], test_date)
 
         # Verify HTML structure
         assert "<html>" in html
@@ -192,11 +163,7 @@ class TestEmailTemplate:
     def test_generate_html_only_milestones(self, sample_milestone_close):
         """Test HTML generation with only milestones, no games"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close], [], test_date)
 
         # Should not have games section
         assert "Today's Games" not in html
@@ -208,11 +175,7 @@ class TestEmailTemplate:
     def test_generate_html_only_games(self, sample_home_game):
         """Test HTML generation with only games, no milestones"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [],
-            [sample_home_game],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([], [sample_home_game], test_date)
 
         # Should have games section
         assert "Today's Games" in html
@@ -236,18 +199,10 @@ class TestEmailTemplate:
         # Should have no milestones message
         assert "No Milestone Alerts" in html
 
-    def test_generate_html_multiple_milestones(
-        self,
-        sample_milestone_close,
-        sample_milestone_far
-    ):
+    def test_generate_html_multiple_milestones(self, sample_milestone_close, sample_milestone_far):
         """Test HTML generation with multiple milestones"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close, sample_milestone_far],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close, sample_milestone_far], [], test_date)
 
         # Should show count
         assert "2 player(s)" in html
@@ -263,11 +218,7 @@ class TestEmailTemplate:
     def test_generate_html_progress_bar(self, sample_milestone_close):
         """Test that progress bar is included in HTML"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close], [], test_date)
 
         # Should have progress bar elements
         assert "progress-bar" in html
@@ -276,11 +227,7 @@ class TestEmailTemplate:
     def test_generate_html_progress_bar_caps_at_100(self, sample_milestone_at_100):
         """Test that progress bar doesn't exceed 100%"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_at_100],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_at_100], [], test_date)
 
         # Should cap at 100%
         assert 'style="width: 100%"' in html or 'style="width: 100.0%"' in html
@@ -288,11 +235,7 @@ class TestEmailTemplate:
     def test_generate_html_estimated_games(self, sample_milestone_close):
         """Test that estimated games to milestone is shown"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close], [], test_date)
 
         # Should show estimated games
         assert "Estimated 2 game(s)" in html
@@ -300,11 +243,7 @@ class TestEmailTemplate:
     def test_generate_html_no_estimated_games(self, sample_milestone_far):
         """Test handling when estimated games is None"""
         test_date = date(2024, 3, 15)
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_far],
-            [],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_far], [], test_date)
 
         # Should not show estimated games when None
         assert "Estimated" not in html or "N/A" in html
@@ -312,11 +251,7 @@ class TestEmailTemplate:
     def test_generate_html_away_game(self, sample_away_game):
         """Test HTML generation for away game"""
         test_date = date(2024, 3, 20)
-        html = EmailTemplate.generate_milestone_email(
-            [],
-            [sample_away_game],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([], [sample_away_game], test_date)
 
         # Should show away location
         assert "Away" in html
@@ -325,11 +260,7 @@ class TestEmailTemplate:
     def test_generate_html_game_no_time(self, sample_game_no_time):
         """Test HTML generation for game without time"""
         test_date = date(2024, 4, 5)
-        html = EmailTemplate.generate_milestone_email(
-            [],
-            [sample_game_no_time],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([], [sample_game_no_time], test_date)
 
         # Should show TBD for time
         assert "TBD" in html
@@ -344,18 +275,10 @@ class TestEmailTemplate:
         assert "color:" in html
         assert "#8B0000" in html  # Haverford color
 
-    def test_generate_text_version_with_milestones_and_games(
-        self,
-        sample_milestone_close,
-        sample_home_game
-    ):
+    def test_generate_text_version_with_milestones_and_games(self, sample_milestone_close, sample_home_game):
         """Test plain text generation with milestones and games"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [sample_milestone_close],
-            [sample_home_game],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([sample_milestone_close], [sample_home_game], test_date)
 
         # Verify structure
         assert "HAVERFORD COLLEGE SPORTS MILESTONES" in text
@@ -377,11 +300,7 @@ class TestEmailTemplate:
     def test_generate_text_version_only_milestones(self, sample_milestone_close):
         """Test text generation with only milestones"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([sample_milestone_close], [], test_date)
 
         # Should not have games section
         assert "TODAY'S GAMES" not in text
@@ -392,11 +311,7 @@ class TestEmailTemplate:
     def test_generate_text_version_only_games(self, sample_home_game):
         """Test text generation with only games"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [],
-            [sample_home_game],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([], [sample_home_game], test_date)
 
         # Should have games section
         assert "TODAY'S GAMES" in text
@@ -416,11 +331,7 @@ class TestEmailTemplate:
     def test_generate_text_version_formatting(self, sample_milestone_close):
         """Test that text version has proper formatting"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([sample_milestone_close], [], test_date)
 
         # Should have separator lines
         assert "=" * 60 in text
@@ -433,27 +344,15 @@ class TestEmailTemplate:
     def test_generate_text_version_percentage(self, sample_milestone_close):
         """Test that percentage is shown in text version"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [sample_milestone_close],
-            [],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([sample_milestone_close], [], test_date)
 
         # Should show percentage
         assert "98.5% complete" in text
 
-    def test_generate_text_version_multiple_games(
-        self,
-        sample_home_game,
-        sample_away_game
-    ):
+    def test_generate_text_version_multiple_games(self, sample_home_game, sample_away_game):
         """Test text generation with multiple games"""
         test_date = date(2024, 3, 15)
-        text = EmailTemplate.generate_text_version(
-            [],
-            [sample_home_game, sample_away_game],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([], [sample_home_game, sample_away_game], test_date)
 
         # Should include both games
         assert "Men's Basketball" in text
@@ -470,33 +369,16 @@ class TestEmailTemplate:
         assert "automated notification" in text.lower()
         assert "StatsTracker" in text
 
-    def test_html_and_text_contain_same_info(
-        self,
-        sample_milestone_close,
-        sample_home_game
-    ):
+    def test_html_and_text_contain_same_info(self, sample_milestone_close, sample_home_game):
         """Test that HTML and text versions contain the same information"""
         test_date = date(2024, 3, 15)
 
-        html = EmailTemplate.generate_milestone_email(
-            [sample_milestone_close],
-            [sample_home_game],
-            test_date
-        )
+        html = EmailTemplate.generate_milestone_email([sample_milestone_close], [sample_home_game], test_date)
 
-        text = EmailTemplate.generate_text_version(
-            [sample_milestone_close],
-            [sample_home_game],
-            test_date
-        )
+        text = EmailTemplate.generate_text_version([sample_milestone_close], [sample_home_game], test_date)
 
         # Both should contain key information
-        key_info = [
-            "Jane Smith",
-            "Men's Basketball",
-            "State University",
-            "1000 career points"
-        ]
+        key_info = ["Jane Smith", "Men's Basketball", "State University", "1000 career points"]
 
         for info in key_info:
             assert info in html
@@ -505,13 +387,14 @@ class TestEmailTemplate:
     def test_special_characters_in_player_name(self):
         """Test handling of special characters in player names"""
         from src.milestone_detector.models import MilestoneType
+
         milestone = Milestone(
             milestone_id="bball_1000pts",
             sport="basketball",
             stat_name="points",
             threshold=1000,
             milestone_type=MilestoneType.CAREER_TOTAL,
-            description="1000 points"
+            description="1000 points",
         )
         prox = MilestoneProximity(
             player_id="player_special",
@@ -520,7 +403,7 @@ class TestEmailTemplate:
             current_value=950,
             distance=50,
             percentage=95.0,
-            estimated_games_to_milestone=3
+            estimated_games_to_milestone=3,
         )
 
         test_date = date(2024, 3, 15)
@@ -536,13 +419,14 @@ class TestEmailTemplate:
     def test_large_numbers_formatted_correctly(self):
         """Test that large numbers are displayed correctly"""
         from src.milestone_detector.models import MilestoneType
+
         milestone = Milestone(
             milestone_id="bball_10000pts",
             sport="basketball",
             stat_name="points",
             threshold=10000,
             milestone_type=MilestoneType.CAREER_TOTAL,
-            description="10000 career points"
+            description="10000 career points",
         )
         prox = MilestoneProximity(
             player_id="player_superstar",
@@ -551,7 +435,7 @@ class TestEmailTemplate:
             current_value=9876,
             distance=124,
             percentage=98.76,
-            estimated_games_to_milestone=5
+            estimated_games_to_milestone=5,
         )
 
         test_date = date(2024, 3, 15)

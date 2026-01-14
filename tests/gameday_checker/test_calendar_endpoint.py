@@ -5,7 +5,6 @@ Test the calendar AJAX endpoint that the browser uses
 import requests
 import re
 import json
-from bs4 import BeautifulSoup
 
 # Test the endpoint with March 2026
 url = "https://haverfordathletics.com/services/responsive-calendar.ashx"

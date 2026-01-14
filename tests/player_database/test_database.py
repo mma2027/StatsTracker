@@ -5,7 +5,6 @@ Example test file for player database module
 import pytest
 import tempfile
 import os
-from datetime import datetime
 
 from src.player_database import PlayerDatabase, Player, StatEntry
 

@@ -3,7 +3,6 @@ Examine the JSON structure from the calendar endpoint
 """
 
 import requests
-import json
 from datetime import date
 
 
@@ -43,7 +42,7 @@ if march_data:
     # Show structure of first day
     if march_data:
         first_day = march_data[0]
-        print(f"\nFirst day structure:")
+        print("\nFirst day structure:")
         print(f"  Keys: {list(first_day.keys())}")
         print(f"  Date: {first_day.get('date')}")
         print(f"  Number of events: {len(first_day.get('events', []))}")
@@ -51,7 +50,7 @@ if march_data:
         # Show structure of first event
         if first_day.get("events"):
             first_event = first_day["events"][0]
-            print(f"\nFirst event structure:")
+            print("\nFirst event structure:")
             print(f"  Keys: {list(first_event.keys())}")
             print(f"  Sport: {first_event['sport']['title']}")
             print(f"  Opponent: {first_event['opponent']['title']}")

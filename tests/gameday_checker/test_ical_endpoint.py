@@ -39,7 +39,7 @@ try:
             dates = date_pattern.findall(response.text)
 
             if dates:
-                print(f"Sample dates found:")
+                print("Sample dates found:")
                 for date in dates[:10]:
                     # Format: YYYYMMDD -> YYYY-MM-DD
                     formatted = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
@@ -61,5 +61,5 @@ for sport in ["mens-basketball", "mens-lacrosse", "wten"]:
             print(f"✓ {sport}: {resp.status_code} - {resp.headers.get('content-type')}")
         else:
             print(f"✗ {sport}: {resp.status_code}")
-    except Exception as e:
+    except Exception:
         print(f"✗ {sport}: Error")

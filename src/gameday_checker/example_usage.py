@@ -10,7 +10,7 @@ from datetime import date
 # Add parent directory to path to allow imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from gameday_checker.checker import GamedayChecker
+from gameday_checker.checker import GamedayChecker  # noqa: E402
 
 # Set up logging to see what's happening
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")

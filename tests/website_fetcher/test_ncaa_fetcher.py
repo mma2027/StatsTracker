@@ -5,11 +5,10 @@ These tests validate the NCAA stats scraping functionality.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from bs4 import BeautifulSoup
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
-from src.website_fetcher.base_fetcher import FetchResult
 
 
 class TestNCAAFetcher:

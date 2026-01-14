@@ -36,7 +36,7 @@ for link_tag in soup.find_all("link"):
     rel = link_tag.get("rel", [])
     href = link_tag.get("href", "")
     if any(keyword in str(rel).lower() + href.lower() for keyword in ["alternate", "feed", "ics"]):
-        print(f"Found in <link> tag:")
+        print("Found in <link> tag:")
         print(f"  rel={rel}, href={href}")
 
 # Check individual sport pages for subscribe options
@@ -91,5 +91,5 @@ for test_url in test_urls:
             print(f"  Content-Type: {resp.headers.get('content-type')}")
         elif resp.status_code != 404:
             print(f"? {test_url} - {resp.status_code}")
-    except Exception as e:
+    except Exception:
         pass
