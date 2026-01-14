@@ -41,9 +41,40 @@
         </div>
     </section>
 
+    <!-- TFRR Stats Update Section -->
+    <section class="demo-section">
+        <h2>3. Update TFRR Stats (Track & Field / Cross Country)</h2>
+        <p>Fetch personal records for all Haverford track & field and cross country athletes using Playwright. This will take 20-40 minutes due to rate limiting.</p>
+
+        <div class="alert alert-warning">
+            ⚠️ <strong>Note:</strong> This process is slow by design to avoid rate limiting. It will:
+            <ul style="margin-top: 8px; margin-bottom: 0;">
+                <li>Fetch rosters for all 4 teams (Men's/Women's Track & Cross Country)</li>
+                <li>Get personal records for each athlete</li>
+                <li>Update the database with all PRs</li>
+                <li>Take approximately 20-40 minutes to complete</li>
+            </ul>
+        </div>
+
+        <button id="btn-update-tfrr" class="btn btn-primary btn-lg">
+            🏃 Update TFRR Stats
+        </button>
+
+        <div id="tfrr-status" class="status-message" style="display: none;"></div>
+        <div id="tfrr-progress" class="progress-box" style="display: none;">
+            <h4>Progress:</h4>
+            <div id="tfrr-current-item" class="current-item"></div>
+            <div id="tfrr-details" class="progress-details"></div>
+        </div>
+        <div id="tfrr-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div id="tfrr-info"></div>
+        </div>
+    </section>
+
     <!-- Gameday Simulator Section -->
     <section class="demo-section">
-        <h2>3. Simulate Gameday Checker</h2>
+        <h2>4. Simulate Gameday Checker</h2>
         <p>Check for games on a specific date and see what email would be sent.</p>
 
         <div class="form-group">
@@ -100,7 +131,7 @@
 
     <!-- Complete Daily Workflow Section -->
     <section class="demo-section">
-        <h2>4. Run Complete 8 AM Daily Workflow</h2>
+        <h2>5. Run Complete 8 AM Daily Workflow</h2>
         <p>Simulate the ENTIRE daily automation process (what runs at 8 AM every day). This will:</p>
         <ol>
             <li>Update all stats (NCAA only) - 5-10 minutes</li>
@@ -389,6 +420,203 @@ document.getElementById('btn-update-squash').addEventListener('click', async fun
         status.textContent = `❌ Error: ${error.message}`;
         button.textContent = '🎾 Update Squash Stats';
         button.disabled = false;
+    }
+});
+
+// Update TFRR Stats Button
+document.getElementById('btn-update-tfrr').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('tfrr-status');
+    const progress = document.getElementById('tfrr-progress');
+    const currentItem = document.getElementById('tfrr-current-item');
+    const details = document.getElementById('tfrr-details');
+    const results = document.getElementById('tfrr-results');
+    const infoDiv = document.getElementById('tfrr-info');
+
+    // Confirm before starting (since it takes 20-40 minutes)
+    if (!confirm('This will take 20-40 minutes to complete due to rate limiting. Continue?')) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '⏳ Initializing...';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Starting TFRR stats update...';
+    progress.style.display = 'block';
+    results.style.display = 'none';
+    details.innerHTML = ''; // Clear previous warnings
+
+    // Generate session ID for progress tracking
+    const sessionId = 'tfrr-' + Date.now();
+
+    // Track progress for button text
+    let currentTeam = '';
+    let currentAthleteCount = 0;
+    let totalAthletes = 0;
+
+    // Start listening to progress stream
+    const eventSource = new EventSource(`/api/progress/${sessionId}`);
+
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'info' || data.type === 'fetch') {
+            currentItem.textContent = data.message;
+            currentItem.className = 'current-item item-info';
+
+            // Update button text based on progress
+            if (data.message.includes('Initializing')) {
+                button.textContent = '⏳ Initializing Playwright...';
+            } else if (data.message.includes('Starting TFRR fetcher')) {
+                button.textContent = '⏳ Starting fetcher...';
+            } else if (data.message.includes('Fetching') && (data.message.includes('roster') || data.message.includes('PRs'))) {
+                // Extract team name - match either "Fetching X roster" or "Fetching X roster and PRs"
+                const teamMatch = data.message.match(/Fetching (.+?)(?: roster| $)/);
+                if (teamMatch) {
+                    currentTeam = teamMatch[1];
+                    button.textContent = `⏳ Fetching ${currentTeam}...`;
+                }
+            } else if (data.message.includes('Processing') && data.message.includes('athletes')) {
+                // Just got roster count, waiting to process
+                button.textContent = `⏳ ${currentTeam} - Getting PRs...`;
+            } else if (data.message.includes('Processing') && data.message.includes('athlete ')) {
+                // Extract progress like "5/25" from "Processing X athlete 5/25: Name"
+                const progressMatch = data.message.match(/athlete (\d+)\/(\d+)/);
+                if (progressMatch) {
+                    currentAthleteCount = parseInt(progressMatch[1]);
+                    totalAthletes = parseInt(progressMatch[2]);
+                    const percentage = Math.round((currentAthleteCount / totalAthletes) * 100);
+                    button.textContent = `⏳ ${currentTeam} (${currentAthleteCount}/${totalAthletes} - ${percentage}%)`;
+                }
+            } else if (data.message.includes('Exporting') && data.message.includes('CSV')) {
+                button.textContent = `⏳ Exporting ${currentTeam} CSV...`;
+            }
+        } else if (data.type === 'success') {
+            currentItem.textContent = data.message;
+            currentItem.className = 'current-item item-success';
+
+            // Team completed
+            if (data.message.includes('✅')) {
+                button.textContent = '⏳ Moving to next team...';
+            }
+        } else if (data.type === 'warning') {
+            // Add warning to details
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'progress-warning';
+            warningDiv.textContent = '⚠️ ' + data.message;
+            details.appendChild(warningDiv);
+        } else if (data.type === 'error') {
+            currentItem.textContent = data.message;
+            currentItem.className = 'current-item item-error';
+            status.className = 'status-message status-error';
+            status.textContent = '❌ ' + data.message;
+            button.textContent = '❌ Update Failed';
+        } else if (data.type === 'complete') {
+            currentItem.textContent = data.message;
+            currentItem.className = 'current-item item-success';
+            button.textContent = '⏳ Finalizing...';
+
+            // Store summary data from complete message and show completion UI
+            if (data.teams_processed !== undefined) {
+                window.tfrrSummaryData = {
+                    teams_processed: data.teams_processed,
+                    athletes_added: data.athletes_added,
+                    athletes_updated: data.athletes_updated,
+                    prs_added: data.prs_added,
+                    csv_files: data.csv_files || [],
+                    timestamp: data.timestamp
+                };
+
+                // NOW show completion UI
+                setTimeout(() => {
+                    eventSource.close();
+                    status.className = 'status-message status-success';
+                    status.textContent = '✅ TFRR stats updated successfully!';
+
+                    // Use summary data from SSE complete message
+                    const summaryData = window.tfrrSummaryData || {};
+
+                    // Display statistics
+                    if (summaryData.teams_processed !== undefined) {
+                        let csvFilesHtml = '';
+                        if (summaryData.csv_files && summaryData.csv_files.length > 0) {
+                            csvFilesHtml = `
+                                <div style="margin-top: 1rem;">
+                                    <strong>CSV Files Exported:</strong>
+                                    <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                                        ${summaryData.csv_files.map(file => `<li><code>${file}</code></li>`).join('')}
+                                    </ul>
+                                    <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
+                                        Location: <code>csv_exports/</code>
+                                    </p>
+                                </div>
+                            `;
+                        }
+
+                        infoDiv.innerHTML = `
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <strong>Teams Processed:</strong> ${summaryData.teams_processed}
+                                </div>
+                                <div class="stat-item">
+                                    <strong>Athletes Added:</strong> ${summaryData.athletes_added}
+                                </div>
+                                <div class="stat-item">
+                                    <strong>Athletes Updated:</strong> ${summaryData.athletes_updated}
+                                </div>
+                                <div class="stat-item">
+                                    <strong>PRs Added:</strong> ${summaryData.prs_added}
+                                </div>
+                            </div>
+                            ${csvFilesHtml}
+                            <p style="margin-top: 1rem; color: #666;">
+                                <small>Fetched from TFRR at ${new Date(summaryData.timestamp).toLocaleString()}</small>
+                            </p>
+                        `;
+                        results.style.display = 'block';
+                    }
+
+                    button.textContent = '✅ TFRR Stats Updated';
+                    progress.style.display = 'none';
+
+                    // Reset button after 5 seconds
+                    setTimeout(() => {
+                        button.textContent = '🏃 Update TFRR Stats';
+                        button.disabled = false;
+                    }, 5000);
+                }, 2000);
+            }
+        }
+    };
+
+    eventSource.onerror = function() {
+        eventSource.close();
+    };
+
+    try {
+        const response = await fetch('/api/update-tfrr-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'TFRR stats update failed to start');
+        }
+
+        // API call succeeded - now wait for SSE completion
+        // Don't show success yet! Wait for the 'complete' message from SSE
+
+    } catch (error) {
+        eventSource.close();
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '🏃 Update TFRR Stats';
+        button.disabled = false;
+        progress.style.display = 'none';
     }
 });
 
