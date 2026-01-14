@@ -8,7 +8,11 @@
       "Bash(curl:*)",
       "Bash(python3:*)",
       "Bash(pkill:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(for i in {1..10})",
+      "Bash(do)",
+      "Bash(echo:*)",
+      "Bash(done)"
     ]
   }
 }

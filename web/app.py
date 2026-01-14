@@ -753,6 +753,254 @@ def api_update_cricket_stats():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route("/api/update-tfrr-stats", methods=["POST"])
+def api_update_tfrr_stats():
+    """API endpoint to fetch TFRR stats using Playwright and update database."""
+    try:
+        data = request.get_json() or {}
+        session_id = data.get("session_id")
+
+        if not session_id:
+            return jsonify({"error": "session_id is required"}), 400
+
+        logger.info(f"TFRR stats update triggered via web interface (session: {session_id})")
+
+        def run_update_with_progress():
+            try:
+                logger.info(f"[{session_id}] Background thread started for TFRR update")
+                send_progress(session_id, {"type": "info", "message": "Initializing TFRR Playwright fetcher..."})
+
+                # Load config
+                config = load_config(str(CONFIG_PATH))
+                db_config = config.get("database", {})
+                database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
+                season = "2024-25"
+
+                # Import TFRR Playwright fetcher
+                from src.website_fetcher.tfrr_playwright_fetcher import TFRRPlaywrightFetcher, HAVERFORD_TEAMS
+
+                # Initialize fetcher
+                send_progress(session_id, {"type": "info", "message": "Starting TFRR fetcher..."})
+                tfrr_fetcher = TFRRPlaywrightFetcher(
+                    base_url="https://www.tfrrs.org",
+                    timeout=30,
+                    headless=True,
+                )
+
+                total_athletes_added = 0
+                total_athletes_updated = 0
+                total_prs_added = 0
+                teams_processed = 0
+                csv_files = []
+
+                # Process each Haverford team
+                for team_name, team_code in HAVERFORD_TEAMS.items():
+                    sport_display = team_name.replace("_", " ").title()
+                    logger.info(f"[{session_id}] Processing {team_name}: {team_code}")
+                    send_progress(
+                        session_id,
+                        {"type": "info", "message": f"Fetching {sport_display} roster and PRs..."}
+                    )
+
+                    try:
+                        # Determine sport type
+                        sport_type = "cross_country" if "cross_country" in team_name else "track"
+
+                        # Fetch team stats with PRs
+                        result = tfrr_fetcher.fetch_team_stats(team_code, sport_type)
+
+                        if result.success and result.data:
+                            roster = result.data.get("roster", [])
+                            logger.info(f"[{session_id}] Fetched {len(roster)} athletes for {team_name}")
+                            send_progress(
+                                session_id,
+                                {"type": "info", "message": f"Processing {len(roster)} {sport_display} athletes..."}
+                            )
+
+                            athletes_added_this_team = 0
+                            athletes_updated_this_team = 0
+                            prs_added_this_team = 0
+
+                            # Process each athlete
+                            for idx, athlete in enumerate(roster):
+                                athlete_name = athlete.get("name")
+                                athlete_id_tfrr = athlete.get("athlete_id")
+
+                                if not athlete_name or not athlete_id_tfrr:
+                                    continue
+
+                                # Send progress every 5 athletes
+                                if idx % 5 == 0 or idx == len(roster) - 1:
+                                    send_progress(
+                                        session_id,
+                                        {
+                                            "type": "fetch",
+                                            "message": f"Processing {sport_display} athlete {idx+1}/{len(roster)}: {athlete_name}"
+                                        }
+                                    )
+
+                                # Generate player ID
+                                player_id = generate_player_id(athlete_name, team_name)
+
+                                # Check if player exists
+                                existing_player = database.get_player(player_id)
+                                if not existing_player:
+                                    player = Player(
+                                        player_id=player_id,
+                                        name=athlete_name,
+                                        sport=team_name,
+                                        team="Haverford",
+                                        position=None,
+                                        year=athlete.get("year"),
+                                        active=True,
+                                    )
+                                    database.add_player(player)
+                                    athletes_added_this_team += 1
+                                    total_athletes_added += 1
+                                else:
+                                    # Update existing player
+                                    database.update_player(existing_player)
+                                    athletes_updated_this_team += 1
+                                    total_athletes_updated += 1
+
+                                # Add PRs to database
+                                prs = athlete.get("personal_records", {})
+                                for event_name, pr_value in prs.items():
+                                    if pr_value:
+                                        stat_entry = StatEntry(
+                                            player_id=player_id,
+                                            stat_name=event_name,
+                                            stat_value=str(pr_value),
+                                            season=season,
+                                            date_recorded=datetime.now(),
+                                        )
+                                        database.add_stat(stat_entry)
+                                        prs_added_this_team += 1
+                                        total_prs_added += 1
+
+                            logger.info(
+                                f"[{session_id}] {team_name}: {athletes_added_this_team} added, "
+                                f"{athletes_updated_this_team} updated, {prs_added_this_team} PRs"
+                            )
+                            send_progress(
+                                session_id,
+                                {
+                                    "type": "success",
+                                    "message": f"✅ {sport_display}: {len(roster)} athletes, {prs_added_this_team} PRs added"
+                                }
+                            )
+                            teams_processed += 1
+
+                            # Export to CSV
+                            try:
+                                import csv
+                                send_progress(session_id, {"type": "info", "message": f"Exporting {sport_display} to CSV..."})
+
+                                # Create CSV filename
+                                timestamp = datetime.now().strftime("%Y%m%d")
+                                csv_filename = f"haverford_{team_name}_{timestamp}.csv"
+                                csv_path = CSV_EXPORTS_DIR / csv_filename
+
+                                # Prepare CSV data
+                                with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+                                    if roster:
+                                        # Get all unique PR event names
+                                        all_events = set()
+                                        for athlete in roster:
+                                            prs = athlete.get("personal_records", {})
+                                            all_events.update(prs.keys())
+
+                                        # Sort events for consistent column order
+                                        sorted_events = sorted(list(all_events))
+
+                                        # Create headers
+                                        headers = ["Athlete Name", "TFRR ID"] + sorted_events
+                                        writer = csv.DictWriter(csvfile, fieldnames=headers)
+                                        writer.writeheader()
+
+                                        # Write athlete rows
+                                        for athlete in roster:
+                                            row = {
+                                                "Athlete Name": athlete.get("name", ""),
+                                                "TFRR ID": athlete.get("athlete_id", "")
+                                            }
+                                            # Add PR values
+                                            prs = athlete.get("personal_records", {})
+                                            for event in sorted_events:
+                                                row[event] = prs.get(event, "")
+                                            writer.writerow(row)
+
+                                csv_files.append(csv_filename)
+                                logger.info(f"[{session_id}] Exported {csv_filename}")
+                                send_progress(
+                                    session_id,
+                                    {"type": "info", "message": f"✅ Exported {csv_filename}"}
+                                )
+                            except Exception as e:
+                                logger.error(f"[{session_id}] Error exporting CSV for {team_name}: {e}")
+                                send_progress(
+                                    session_id,
+                                    {"type": "warning", "message": f"Failed to export CSV for {sport_display}: {str(e)}"}
+                                )
+
+                        else:
+                            error_msg = result.error if result else "Unknown error"
+                            logger.error(f"[{session_id}] Failed to fetch {team_name}: {error_msg}")
+                            send_progress(
+                                session_id,
+                                {"type": "warning", "message": f"Failed to fetch {sport_display}: {error_msg}"}
+                            )
+
+                    except Exception as e:
+                        logger.error(f"[{session_id}] Error processing {team_name}: {e}", exc_info=True)
+                        send_progress(
+                            session_id,
+                            {"type": "warning", "message": f"Error processing {sport_display}: {str(e)}"}
+                        )
+
+                # Final success message with summary data
+                send_progress(
+                    session_id,
+                    {
+                        "type": "complete",
+                        "message": f"TFRR update complete! {teams_processed} teams, {total_athletes_added + total_athletes_updated} athletes, {total_prs_added} PRs",
+                        "teams_processed": teams_processed,
+                        "athletes_added": total_athletes_added,
+                        "athletes_updated": total_athletes_updated,
+                        "prs_added": total_prs_added,
+                        "csv_files": csv_files,
+                        "timestamp": datetime.now().isoformat(),
+                    }
+                )
+                close_progress_stream(session_id)
+
+                logger.info(
+                    f"[{session_id}] TFRR update complete: {teams_processed} teams, "
+                    f"{total_athletes_added} added, {total_athletes_updated} updated, {total_prs_added} PRs"
+                )
+
+            except Exception as e:
+                logger.error(f"TFRR update error in background thread: {e}", exc_info=True)
+                send_progress(session_id, {"type": "error", "message": f"Error: {str(e)}"})
+                close_progress_stream(session_id)
+
+        # Run in background thread
+        thread = Thread(target=run_update_with_progress)
+        thread.daemon = True
+        thread.start()
+
+        # Note: csv_files will be returned via progress stream, not here
+        return jsonify({
+            "success": True,
+            "message": "TFRR stats update started",
+            "session_id": session_id,
+        })
+
+    except Exception as e:
+        logger.error(f"TFRR stats update failed: {e}", exc_info=True)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/api/update-squash-stats", methods=["POST"])
 def api_update_squash_stats():
     """API endpoint to fetch squash stats from ClubLocker and update database."""
