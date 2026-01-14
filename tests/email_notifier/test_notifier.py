@@ -231,9 +231,9 @@ class TestEmailNotifier:
 
         # Verify
         assert result is True
-        mock_subject_gen.assert_called_once_with(test_date, 1, True)
-        mock_html_gen.assert_called_once_with([sample_milestone], [sample_game], test_date)
-        mock_text_gen.assert_called_once_with([sample_milestone], [sample_game], test_date)
+        mock_subject_gen.assert_called_once_with(test_date, 1, 0)
+        mock_html_gen.assert_called_once_with([sample_milestone], [sample_game], test_date, None)
+        mock_text_gen.assert_called_once_with([sample_milestone], [sample_game], test_date, None)
         mock_server.send_message.assert_called_once()
 
     @patch("src.email_notifier.notifier.smtplib.SMTP")

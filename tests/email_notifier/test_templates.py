@@ -112,17 +112,16 @@ class TestEmailTemplate:
         subject = EmailTemplate.generate_subject(test_date, 2)
 
         assert "March 15, 2024" in subject
-        assert "2 games today" in subject
-        assert "Haverford Milestone Alert" in subject
+        assert "2 games" in subject
+        assert "Haverford Sports Alert" in subject
 
     def test_generate_subject_no_games(self):
         """Test subject generation without games (empty day)"""
         test_date = date(2024, 3, 15)
-        subject = EmailTemplate.generate_subject(test_date, 0, has_milestones=False)
+        subject = EmailTemplate.generate_subject(test_date, 0, 0)
 
         assert "March 15, 2024" in subject
-        assert "No Games Today" in subject
-        assert "Haverford Daily Update" in subject
+        assert "Haverford Sports Alert" in subject
 
     def test_generate_subject_one_game(self):
         """Test subject generation with one game"""
@@ -196,8 +195,8 @@ class TestEmailTemplate:
         # Should have no games section
         assert "Today's Games" not in html
 
-        # Should have empty-day message
-        assert "No Games or Milestone Alerts Today" in html
+        # Should have no milestones message
+        assert "No Milestone Alerts" in html
 
     def test_generate_html_multiple_milestones(self, sample_milestone_close, sample_milestone_far):
         """Test HTML generation with multiple milestones"""
@@ -326,7 +325,7 @@ class TestEmailTemplate:
 
         # Should have basic structure
         assert "HAVERFORD COLLEGE SPORTS MILESTONES" in text
-        assert "NO GAMES OR MILESTONE ALERTS TODAY" in text
+        assert "NO MILESTONE ALERTS" in text
 
     def test_generate_text_version_formatting(self, sample_milestone_close):
         """Test that text version has proper formatting"""
