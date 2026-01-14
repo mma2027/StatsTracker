@@ -281,7 +281,13 @@ def update_squash_stats(
             else:
                 # Add new player
                 player = Player(
-                    player_id=player_id, name=player_name, sport=sport_key, team="Haverford", position="", year="", active=True
+                    player_id=player_id,
+                    name=player_name,
+                    sport=sport_key,
+                    team="Haverford",
+                    position="",
+                    year="",
+                    active=True,
                 )
                 db.add_player(player)
                 players_added += 1
@@ -321,12 +327,7 @@ def update_squash_stats(
     }
 
 
-def update_cricket_stats(
-    db: PlayerDatabase,
-    cricket_config: dict,
-    season: str,
-    logger: logging.Logger
-) -> dict:
+def update_cricket_stats(db: PlayerDatabase, cricket_config: dict, season: str, logger: logging.Logger) -> dict:
     """
     Fetch cricket stats and update database.
 
@@ -344,8 +345,7 @@ def update_cricket_stats(
     try:
         # Initialize cricket fetcher
         cricket_fetcher = CricketFetcher(
-            timeout=cricket_config.get('timeout', 30),
-            headless=cricket_config.get('headless', True)
+            timeout=cricket_config.get("timeout", 30), headless=cricket_config.get("headless", True)
         )
 
         # Fetch all cricket stats
@@ -353,7 +353,7 @@ def update_cricket_stats(
 
         if not result["success"]:
             logger.error(f"Error fetching cricket stats: {result.get('error')}")
-            return {'error': result.get('error'), 'players_added': 0, 'stats_added': 0}
+            return {"error": result.get("error"), "players_added": 0, "stats_added": 0}
 
         # Get DataFrame with all players
         df = result["data"]
@@ -366,11 +366,11 @@ def update_cricket_stats(
 
         # Process each player
         for _, row in df.iterrows():
-            player_name = row['Player']
+            player_name = row["Player"]
 
             try:
                 # Generate player ID
-                player_id = generate_player_id(player_name, 'cricket')
+                player_id = generate_player_id(player_name, "cricket")
 
                 # Check if player exists
                 existing_player = db.get_player(player_id)
@@ -382,24 +382,24 @@ def update_cricket_stats(
                     player = Player(
                         player_id=player_id,
                         name=player_name,
-                        sport='cricket',
-                        team='Haverford',
+                        sport="cricket",
+                        team="Haverford",
                         position=None,
                         year=None,
-                        active=True
+                        active=True,
                     )
                     db.add_player(player)
                     players_added += 1
 
                 # Add stats for all columns except Player name
                 for col in df.columns:
-                    if col == 'Player':
+                    if col == "Player":
                         continue
 
                     stat_value = row[col]
 
                     # Skip empty or null values
-                    if pd.isna(stat_value) or stat_value == '' or stat_value == 0:
+                    if pd.isna(stat_value) or stat_value == "" or stat_value == 0:
                         continue
 
                     stat_entry = StatEntry(
@@ -407,7 +407,7 @@ def update_cricket_stats(
                         stat_name=col,
                         stat_value=str(stat_value),
                         season=season,
-                        date_recorded=datetime.now()
+                        date_recorded=datetime.now(),
                     )
                     db.add_stat(stat_entry)
                     stats_added += 1
@@ -424,16 +424,16 @@ def update_cricket_stats(
             logger.warning(f"{len(errors)} errors occurred")
 
         return {
-            'success': True,
-            'players_added': players_added,
-            'players_updated': players_updated,
-            'stats_added': stats_added,
-            'errors': errors
+            "success": True,
+            "players_added": players_added,
+            "players_updated": players_updated,
+            "stats_added": stats_added,
+            "errors": errors,
         }
 
     except Exception as e:
         logger.error(f"Critical error in cricket stats update: {e}", exc_info=True)
-        return {'error': str(e), 'players_added': 0, 'stats_added': 0}
+        return {"error": str(e), "players_added": 0, "stats_added": 0}
 
 
 def main():

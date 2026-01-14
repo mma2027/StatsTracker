@@ -61,6 +61,10 @@ class SquashFetcher(BaseFetcher):
             # 2. Load roster page
             url = f"{self.base_url}/teams/{team_id}/roster"
             logger.debug(f"Loading URL: {url}")
+
+            if self.driver is None:
+                return FetchResult(success=False, error="WebDriver not initialized", source=self.name)
+
             self.driver.get(url)
 
             # 3. Wait for Angular to render (ClubLocker is an Angular SPA)
