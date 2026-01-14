@@ -147,6 +147,10 @@ def update_database_for_team(
                     db.add_player(player)
                 players_added += 1
 
+            # Clear existing stats for this player/season before adding new ones
+            if not dry_run:
+                db.clear_player_stats(player_id, season)
+
             # Add stats
             for stat_name, stat_value in player_data['stats'].items():
                 # Skip empty stats

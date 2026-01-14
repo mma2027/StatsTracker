@@ -832,12 +832,17 @@ def api_simulate_gameday():
         # Convert proximities to dict
         proximities_data = []
         for prox in proximities_list:
+            # Format numbers properly (remove .0 for whole numbers)
+            current = int(prox.current_value) if isinstance(prox.current_value, (int, float)) and prox.current_value == int(prox.current_value) else prox.current_value
+            target = int(prox.milestone.threshold) if isinstance(prox.milestone.threshold, (int, float)) and prox.milestone.threshold == int(prox.milestone.threshold) else prox.milestone.threshold
+            remaining = int(prox.distance) if isinstance(prox.distance, (int, float)) and prox.distance == int(prox.distance) else prox.distance
+
             proximities_data.append({
                 'player_name': prox.player_name,
                 'milestone': prox.milestone.description,
-                'current': str(prox.current_value),
-                'target': str(prox.milestone.threshold),
-                'remaining': str(prox.distance),
+                'current': str(current),
+                'target': str(target),
+                'remaining': str(remaining),
                 'percentage': f"{prox.percentage:.1f}%"
             })
 
