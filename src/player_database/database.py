@@ -254,6 +254,36 @@ class PlayerDatabase:
 
     # Stats operations
 
+    def clear_player_stats(self, player_id: str, season: str = None) -> bool:
+        """
+        Clear stats for a player, optionally for a specific season.
+
+        Args:
+            player_id: Player ID
+            season: Optional season to clear (None clears all seasons)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            if season:
+                cursor.execute("DELETE FROM stats WHERE player_id = ? AND season = ?", (player_id, season))
+                logger.info(f"Cleared stats for player {player_id}, season {season}")
+            else:
+                cursor.execute("DELETE FROM stats WHERE player_id = ?", (player_id,))
+                logger.info(f"Cleared all stats for player {player_id}")
+
+            conn.commit()
+            conn.close()
+            return True
+
+        except Exception as e:
+            logger.error(f"Error clearing player stats: {e}")
+            return False
+
     def add_stat(self, stat_entry: StatEntry) -> bool:
         """
         Add a stat entry to the database.
