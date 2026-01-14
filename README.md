@@ -1,50 +1,73 @@
 # StatsTracker
 
-A modular system for tracking Haverford College sports statistics and notifying about milestone achievements.
+A production-ready system for tracking Haverford College sports statistics, detecting milestones, and sending automated notifications. Features a comprehensive web interface for browsing stats, configuring milestones, and managing settings.
 
 ## Project Overview
 
-StatsTracker fetches sports statistics from various sources, tracks player progress, identifies milestone achievements, and sends email notifications on game days when players are close to milestones.
+StatsTracker automatically fetches sports statistics from NCAA and other sources, stores them in a database, tracks player progress toward milestones, and sends email notifications. The system includes a full web interface for browsing player stats, searching across all teams, and configuring milestone thresholds.
+
+## Features
+
+### Core System
+- ✅ **Automated Stats Fetching**: Daily updates from NCAA for 10+ Haverford sports
+- ✅ **Career Stats Tracking**: Season-by-season statistics with historical data
+- ✅ **Milestone Detection**: Configurable thresholds with proximity alerts
+- ✅ **Email Notifications**: Beautiful HTML emails with game schedules and milestone alerts
+- ✅ **Gameday Checker**: Automatic detection of upcoming games
+
+### Web Interface
+- ✅ **Stats Browser**: Browse all player statistics by sport/team
+- ✅ **Global Search**: Search for any player across all sports
+- ✅ **Settings Page**: Configure email, milestones, and notifications via web UI
+- ✅ **Milestone Configuration**: Per-sport stats selection with individual thresholds
+- ✅ **Responsive Design**: Clean, mobile-friendly interface
+
+### Supported Sports (10 NCAA Teams)
+- Men's & Women's Basketball
+- Men's & Women's Soccer
+- Men's & Women's Lacrosse
+- Baseball & Softball
+- Field Hockey
+- Women's Volleyball
 
 ## Architecture
 
-The project is divided into independent modules that can be developed in parallel:
+### Core Modules
 
-### 1. **Gameday Checker** (`src/gameday_checker/`) ✅ **Complete**
-- **Purpose**: Determines which Haverford College sports teams have games on a given day
-- **Input**: Date
-- **Output**: List of teams with games scheduled
-- **Status**: Fully implemented using Haverford athletics calendar API
-- **Performance**: Single HTTP request, ~2-5 seconds, full season access
+#### 1. **Website Fetcher** (`src/website_fetcher/`) ✅
+- NCAA stats fetcher (Selenium-based, handles JavaScript)
+- TFRR fetcher for track & field (in progress)
+- Generic parser works across all sports
+- Auto-recovery from invalid team IDs
 
-### 2. **Website Fetcher** (`src/website_fetcher/`)
-- **Purpose**: Fetches statistics from various sources (NCAA, TFRR, etc.)
-- **Components**:
-  - Base fetcher interface
-  - NCAA fetcher implementation
-  - TFRR (Track & Field Results Reporting) fetcher
-  - Additional sport-specific fetchers
-- **Owner**: TBD
+#### 2. **Player Database** (`src/player_database/`) ✅
+- SQLite database with flexible schema
+- Stores career stats with season-by-season breakdown
+- Fast search and filtering
+- Automatic updates with timestamp tracking
 
-### 3. **Player Database** (`src/player_database/`) ✅ **Complete**
-- **Purpose**: Stores and manages player statistics
-- **Responsibilities**:
-  - Data storage (SQLite)
-  - CRUD operations for player data
-  - Historical stats tracking
-- **Status**: Fully implemented with comprehensive test coverage
+#### 3. **Milestone Detector** (`src/milestone_detector/`) ✅
+- Configurable milestone thresholds per sport and stat
+- Proximity detection (alert when within X units)
+- Per-stat alert customization
+- Historical milestone tracking
 
-### 4. **Milestone Detector** (`src/milestone_detector/`)
-- **Purpose**: Analyzes player stats to identify who is close to milestones
-- **Input**: Player statistics from database
-- **Output**: List of players near milestones with details
-- **Owner**: TBD
+#### 4. **Email Notifier** (`src/email_notifier/`) ✅
+- HTML email templates with responsive design
+- Game schedule integration
+- Milestone proximity alerts
+- Multiple recipients and CC support
 
-### 5. **Email Notifier** (`src/email_notifier/`) ✅ **Complete**
-- **Purpose**: Sends formatted email notifications
-- **Input**: Milestone information and game schedule
-- **Output**: Email to recipients
-- **Status**: Fully implemented with customizable HTML templates and 48 tests
+#### 5. **Gameday Checker** (`src/gameday_checker/`) ✅
+- Fetches schedules from Haverford Athletics calendar
+- Fast single-request fetching for full season
+- Parses team, opponent, date, time, location
+
+#### 6. **Web Interface** (`web/`) ✅
+- Flask-based web application
+- Real-time stats browsing and search
+- Configuration management via web UI
+- Server-Sent Events for long-running operations
 
 ## Getting Started
 
@@ -74,8 +97,27 @@ cp config/config.example.yaml config/config.yaml
 
 ### Running the System
 
+#### Web Interface (Recommended)
 ```bash
+cd web
+python app.py
+```
+Then open http://localhost:5000 in your browser to:
+- Browse player statistics
+- Search for players
+- Configure milestones and settings
+- Monitor stats updates
+
+#### Command Line
+```bash
+# Fetch all NCAA stats and update database
 python main.py
+
+# Run milestone detection
+python main.py --check-milestones
+
+# Send test email
+python main.py --test-email
 ```
 
 ## Module Development Guide

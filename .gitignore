@@ -74,19 +74,24 @@ data/cache/
 
 # CSV exports (optional - uncomment to ignore CSV files)
 # csv_exports/*.csv
+csv_exports/archive/
 
 # Output directory
 output/*.html
 
 # Test output directories
 test_csv_output/
+test_output/
 ncaa_stats_output/
 tfrr_stats_output/
+output/
 
 # Temporary files
 *.tmp
 *.bak
 temp/
+test_*.py
+*_test.py
 
 # Claude Code
 .claude/
