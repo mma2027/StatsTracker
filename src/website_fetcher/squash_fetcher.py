@@ -5,7 +5,7 @@ Fetches squash statistics from clublocker.com
 """
 
 import re
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 import logging
 import time
 from datetime import datetime
@@ -79,11 +79,7 @@ class SquashFetcher(BaseFetcher):
             players_data, season = self._parse_roster(soup)
 
             if not players_data:
-                return FetchResult(
-                    success=False,
-                    error="No player data found on roster page",
-                    source=self.name
-                )
+                return FetchResult(success=False, error="No player data found on roster page", source=self.name)
 
             # 7. Return structured result
             logger.info(f"Successfully fetched {len(players_data)} players for team {team_id}")
@@ -94,9 +90,9 @@ class SquashFetcher(BaseFetcher):
                     "sport": sport,
                     "season": season,
                     "players": players_data,
-                    "stat_categories": ["wins"]
+                    "stat_categories": ["wins"],
                 },
-                source=self.name
+                source=self.name,
             )
 
         except Exception as e:
@@ -120,11 +116,7 @@ class SquashFetcher(BaseFetcher):
         try:
             logger.info(f"ClubLocker fetch_player_stats called for {player_id}")
             logger.warning("ClubLocker fetch_player_stats not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
         except Exception as e:
             return self.handle_error(e, "fetching player stats")
 
@@ -144,11 +136,7 @@ class SquashFetcher(BaseFetcher):
         try:
             logger.info(f"ClubLocker search_player called for {name}")
             logger.warning("ClubLocker search_player not yet implemented")
-            return FetchResult(
-                success=False,
-                error="Not yet implemented",
-                source=self.name
-            )
+            return FetchResult(success=False, error="Not yet implemented", source=self.name)
         except Exception as e:
             return self.handle_error(e, "searching for player")
 
@@ -249,10 +237,7 @@ class SquashFetcher(BaseFetcher):
 
                 if name:
                     logger.debug(f"  Found player: {name}, Wins: {wins}, Record: {win_loss_text}")
-                    players_data.append({
-                        "name": name,
-                        "stats": {"wins": str(wins)}
-                    })
+                    players_data.append({"name": name, "stats": {"wins": str(wins)}})
 
         logger.info(f"Parsed {len(players_data)} players from ClubLocker roster")
         return players_data, season
@@ -298,7 +283,7 @@ class SquashFetcher(BaseFetcher):
         # Look in page title
         title = soup.find("title")
         if title:
-            match = re.search(r'20\d{2}(?:-\d{2})?', title.text)
+            match = re.search(r"20\d{2}(?:-\d{2})?", title.text)
             if match:
                 logger.debug(f"Found season in title: {match.group(0)}")
                 return match.group(0)
@@ -306,7 +291,7 @@ class SquashFetcher(BaseFetcher):
         # Look in headers and prominent text
         for tag in soup.find_all(["h1", "h2", "h3", "span"], limit=20):
             text = tag.text.strip()
-            match = re.search(r'20\d{2}(?:-\d{2})?', text)
+            match = re.search(r"20\d{2}(?:-\d{2})?", text)
             if match:
                 logger.debug(f"Found season in {tag.name}: {match.group(0)}")
                 return match.group(0)
