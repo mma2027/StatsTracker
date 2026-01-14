@@ -292,6 +292,9 @@ def update_squash_stats(
                 db.add_player(player)
                 players_added += 1
 
+            # Clear existing stats for this player and season to avoid duplicates
+            db.clear_player_stats(player_id, season)
+
             # Add stats (wins)
             for stat_name, stat_value in player_data["stats"].items():
                 if stat_value == "" or stat_value is None:
@@ -510,6 +513,13 @@ def main():
                 # Normalize sport name from Haverford Athletics API format to database format
                 # e.g., "Men's Basketball" -> "mens_basketball"
                 sport_key = game.team.sport.lower().replace(" ", "_").replace("'", "")
+
+                # Special handling for squash: "mens_squash" -> "squash_mens"
+                if sport_key == "mens_squash":
+                    sport_key = "squash_mens"
+                elif sport_key == "womens_squash":
+                    sport_key = "squash_womens"
+
                 sports_with_games_today.add(sport_key)
 
             logger.info(f"Sports with games today: {', '.join(sports_with_games_today)}")
@@ -528,6 +538,19 @@ def main():
                 # Flatten the proximities for this sport
                 for player_id, proximities in sport_proximities.items():
                     proximities_list.extend(proximities)
+
+            # Filter to only show the closest milestone per player
+            player_closest_milestone = {}
+            for prox in proximities_list:
+                player_key = prox.player_id
+                if player_key not in player_closest_milestone:
+                    player_closest_milestone[player_key] = prox
+                else:
+                    # Keep the milestone with smallest distance
+                    if prox.distance < player_closest_milestone[player_key].distance:
+                        player_closest_milestone[player_key] = prox
+
+            proximities_list = list(player_closest_milestone.values())
 
             logger.info(f"Found {len(proximities_list)} milestone alerts for players with games today")
         else:
