@@ -11,14 +11,18 @@
 <div class="demo-sections">
     <!-- Stats Update Section -->
     <section class="demo-section">
-        <h2>1. Update NCAA Stats</h2>
-        <p>Re-fetch all player stats from NCAA website (10 teams). This will take 5-10 minutes.</p>
+        <h2>1. Update All Stats (NCAA + TFRR)</h2>
+        <p>Re-fetch all player stats from NCAA (10 teams) and TFRR. This will take 5-10 minutes.</p>
 
         <button id="btn-update-stats" class="btn btn-primary btn-lg">
-            🔄 Update Stats Now
+            🔄 Update All Stats
         </button>
 
         <div id="update-status" class="status-message" style="display: none;"></div>
+        <div id="update-progress" class="progress-box" style="display: none;">
+            <h4>Progress:</h4>
+            <div id="update-current-item" class="current-item"></div>
+        </div>
     </section>
 
     <!-- Gameday Simulator Section -->
@@ -78,9 +82,96 @@
         </div>
     </section>
 
+    <!-- Complete Daily Workflow Section -->
+    <section class="demo-section">
+        <h2>3. Run Complete 8 AM Daily Workflow</h2>
+        <p>Simulate the ENTIRE daily automation process (what runs at 8 AM every day). This will:</p>
+        <ol>
+            <li>Update all stats (NCAA only) - 5-10 minutes</li>
+            <li>Check for games on the selected date</li>
+            <li>Check milestones for players on teams with games</li>
+            <li>Send email notification</li>
+        </ol>
+
+        <div class="form-group">
+            <label for="workflow-date">Select Date:</label>
+            <input type="date" id="workflow-date" class="input-date" value="{{ today }}">
+        </div>
+
+        <button id="btn-run-workflow" class="btn btn-primary btn-lg">
+            🚀 Run Complete Daily Workflow
+        </button>
+
+        <div id="workflow-status" class="status-message" style="display: none;"></div>
+
+        <!-- Live Progress Display -->
+        <div id="workflow-live-progress" class="progress-box" style="display: none;">
+            <h4>Current Progress:</h4>
+            <div id="workflow-current-item" class="current-item"></div>
+        </div>
+
+        <!-- Workflow Progress Display -->
+        <div id="workflow-progress" class="workflow-progress" style="display: none;">
+            <h3>Workflow Progress:</h3>
+            <div id="workflow-steps"></div>
+        </div>
+
+        <!-- Workflow Results Display -->
+        <div id="workflow-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+
+            <div class="results-summary">
+                <div class="summary-item">
+                    <strong>Games:</strong> <span id="workflow-games-count">0</span>
+                </div>
+                <div class="summary-item">
+                    <strong>Milestone Alerts:</strong> <span id="workflow-milestones-count">0</span>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <h4>Games Scheduled:</h4>
+                <div id="workflow-games-list"></div>
+            </div>
+
+            <div class="results-section">
+                <h4>Milestone Proximities:</h4>
+                <div id="workflow-milestones-list"></div>
+            </div>
+
+            <div class="results-section" id="workflow-email-section" style="display: none;">
+                <h4>Email Preview:</h4>
+                <div class="email-subject">
+                    <strong>Subject:</strong> <span id="workflow-email-subject"></span>
+                </div>
+                <div id="workflow-email-preview" class="email-preview"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Clear Stats Database Section -->
+    <section class="demo-section">
+        <h2>4. Clear Stats Database</h2>
+        <p>Delete the stats database to start fresh. A new empty database will be created on the next stats update.</p>
+
+        <div class="warning-box">
+            ⚠️ <strong>Warning:</strong> This will permanently delete all player stats from the database. This is useful for testing the complete workflow from a clean state.
+        </div>
+
+        <button id="btn-clear-stats" class="btn btn-danger btn-lg">
+            🗑️ Clear Stats Database
+        </button>
+
+        <div id="clear-stats-status" class="status-message" style="display: none;"></div>
+        <div id="clear-stats-results" class="results-container" style="display: none;">
+            <h3>Clear Results:</h3>
+            <div id="clear-stats-info"></div>
+        </div>
+    </section>
+
     <!-- System Info Section -->
     <section class="demo-section">
-        <h2>3. System Information</h2>
+        <h2>5. System Information</h2>
         <div class="system-info">
             <div class="info-item">
                 <strong>NCAA Teams:</strong> 10 (Basketball, Soccer, Lacrosse, Field Hockey, Volleyball, Baseball, Softball)
@@ -102,38 +193,117 @@
 // Today's date for default
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('gameday-date').value = today;
+document.getElementById('workflow-date').value = today;
 
-// Update Stats Button
+// Update Stats Button with Real-Time Progress
 document.getElementById('btn-update-stats').addEventListener('click', async function() {
     const button = this;
     const status = document.getElementById('update-status');
+    const progressBox = document.getElementById('update-progress');
+    const currentItem = document.getElementById('update-current-item');
 
     button.disabled = true;
-    button.textContent = '⏳ Updating... (this may take 5-10 minutes)';
+    button.textContent = '⏳ Updating... (10-15 minutes)';
     status.style.display = 'block';
     status.className = 'status-message status-loading';
-    status.textContent = 'Fetching stats from NCAA website...';
+    progressBox.style.display = 'block';
+
+    // Generate unique session ID
+    const sessionId = 'update-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+    // Connect to SSE endpoint for real-time progress
+    const eventSource = new EventSource(`/api/progress/${sessionId}`);
+    let lastMessageTime = Date.now();
+    let errorCount = 0;
+    let completedSuccessfully = false;  // Track if we got success message
+
+    // Monitor for keep-alive (update timestamp even on keep-alive comments)
+    const checkConnection = setInterval(() => {
+        const timeSinceLastMessage = Date.now() - lastMessageTime;
+        if (timeSinceLastMessage > 30000) {  // 30 seconds without any activity
+            console.warn('No activity for 30 seconds, connection may be dead');
+        }
+    }, 5000);
+
+    eventSource.onmessage = function(event) {
+        lastMessageTime = Date.now();
+        const message = JSON.parse(event.data);
+
+        // Update UI based on message type
+        if (message.type === 'info' || message.type === 'fetch') {
+            currentItem.textContent = message.message;
+        } else if (message.type === 'warning') {
+            currentItem.textContent = '⚠️ ' + message.message;
+        } else if (message.type === 'error') {
+            currentItem.textContent = '❌ ' + message.message;
+            status.className = 'status-message status-error';
+            status.textContent = `❌ Error: ${message.message}`;
+            button.textContent = '🔄 Update All Stats';
+            button.disabled = false;
+            progressBox.style.display = 'none';
+            clearInterval(checkConnection);
+            eventSource.close();
+        } else if (message.type === 'success') {
+            completedSuccessfully = true;  // Mark as successfully completed
+            currentItem.textContent = message.message;
+            status.className = 'status-message status-success';
+            status.textContent = '✅ All stats updated successfully!';
+            button.textContent = '✅ Update Complete';
+            clearInterval(checkConnection);
+            setTimeout(() => {
+                progressBox.style.display = 'none';
+                eventSource.close();
+            }, 2000);
+        }
+    };
+
+    eventSource.onerror = function(err) {
+        // If we already completed successfully, ignore the error (natural stream close)
+        if (completedSuccessfully) {
+            console.log('SSE stream closed after successful completion (expected)');
+            eventSource.close();
+            return;
+        }
+
+        errorCount++;
+        console.error('SSE error (count: ' + errorCount + '):', err);
+
+        // Only show error if we've had multiple consecutive errors
+        // (Sometimes SSE fires onerror even when reconnecting)
+        if (errorCount > 2) {
+            currentItem.textContent = 'Connection error';
+            status.className = 'status-message status-error';
+            status.textContent = '❌ Connection lost - try refreshing the page';
+            button.textContent = '🔄 Update All Stats';
+            button.disabled = false;
+            progressBox.style.display = 'none';
+            clearInterval(checkConnection);
+            eventSource.close();
+        } else {
+            console.log('SSE error, but will retry...');
+        }
+    };
 
     try {
         const response = await fetch('/api/update-stats', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
         });
 
         const data = await response.json();
 
-        if (data.success) {
-            status.className = 'status-message status-success';
-            status.textContent = '✅ Stats updated successfully!';
-            button.textContent = '✅ Update Complete';
-        } else {
+        if (!data.success) {
             throw new Error(data.error || 'Update failed');
         }
     } catch (error) {
+        currentItem.textContent = 'Failed to start update';
         status.className = 'status-message status-error';
         status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🔄 Update Stats Now';
+        button.textContent = '🔄 Update All Stats';
         button.disabled = false;
+        progressBox.style.display = 'none';
+        eventSource.close();
     }
 });
 
@@ -250,6 +420,191 @@ document.getElementById('btn-send-test-email').addEventListener('click', async f
         status.textContent = `❌ Error: ${error.message}`;
     } finally {
         button.textContent = '✉️ Send Test Email';
+        button.disabled = false;
+    }
+});
+
+// Run Complete Daily Workflow Button with Real-Time Progress
+document.getElementById('btn-run-workflow').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('workflow-status');
+    const liveProgress = document.getElementById('workflow-live-progress');
+    const currentItem = document.getElementById('workflow-current-item');
+    const progress = document.getElementById('workflow-progress');
+    const results = document.getElementById('workflow-results');
+    const stepsDiv = document.getElementById('workflow-steps');
+    const date = document.getElementById('workflow-date').value;
+
+    if (!confirm('Run the complete 8 AM daily workflow? This will:\n\n1. Update all stats (NCAA, Cricket, TFRR) - 10-15 min\n2. Check games\n3. Check milestones\n4. Send email\n\nThis may take 10-15 minutes.')) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '⏳ Running Workflow... (10-15 minutes)';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    liveProgress.style.display = 'block';
+    progress.style.display = 'none';
+    results.style.display = 'none';
+    stepsDiv.innerHTML = '';
+
+    // Generate unique session ID
+    const sessionId = 'workflow-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+
+    // Connect to SSE endpoint for real-time progress
+    const eventSource = new EventSource(`/api/progress/${sessionId}`);
+    let completedSuccessfully = false;  // Track if we got complete message
+
+    eventSource.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+
+        // Update UI based on message type
+        if (message.type === 'step') {
+            currentItem.textContent = message.message;
+            currentItem.style.fontWeight = 'bold';
+            currentItem.style.color = '#0066cc';
+        } else if (message.type === 'info') {
+            currentItem.textContent = message.message;
+            currentItem.style.fontWeight = 'normal';
+            currentItem.style.color = '#333';
+        } else if (message.type === 'fetch') {
+            currentItem.textContent = '  → ' + message.message;
+            currentItem.style.fontWeight = 'normal';
+            currentItem.style.color = '#555';
+        } else if (message.type === 'warning') {
+            currentItem.textContent = '⚠️ ' + message.message;
+            currentItem.style.color = '#ff9800';
+        } else if (message.type === 'error') {
+            currentItem.textContent = '❌ ' + message.message;
+            status.className = 'status-message status-error';
+            status.textContent = `❌ Error: ${message.message}`;
+            button.textContent = '🚀 Run Complete 8 AM Workflow';
+            button.disabled = false;
+            liveProgress.style.display = 'none';
+            eventSource.close();
+        } else if (message.type === 'success') {
+            currentItem.textContent = message.message;
+            currentItem.style.color = '#4CAF50';
+        } else if (message.type === 'complete') {
+            completedSuccessfully = true;  // Mark as successfully completed
+            currentItem.textContent = message.message;
+            status.className = 'status-message status-success';
+            status.textContent = '✅ Daily workflow completed successfully!';
+            button.textContent = '✅ Workflow Complete';
+            setTimeout(() => {
+                liveProgress.style.display = 'none';
+                eventSource.close();
+            }, 3000);
+        }
+    };
+
+    eventSource.onerror = function() {
+        // If we already completed successfully, ignore the error (natural stream close)
+        if (completedSuccessfully) {
+            console.log('SSE stream closed after successful completion (expected)');
+            eventSource.close();
+            return;
+        }
+
+        currentItem.textContent = 'Connection error';
+        status.className = 'status-message status-error';
+        status.textContent = '❌ Connection lost';
+        button.textContent = '🚀 Run Complete 8 AM Workflow';
+        button.disabled = false;
+        liveProgress.style.display = 'none';
+        eventSource.close();
+    };
+
+    try {
+        const response = await fetch('/api/run-daily-workflow', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ date: date, session_id: sessionId })
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Workflow failed to start');
+        }
+
+        // Note: SSE will handle progress updates and completion
+    } catch (error) {
+        currentItem.textContent = 'Failed to start workflow';
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '🚀 Run Complete 8 AM Workflow';
+        button.disabled = false;
+        liveProgress.style.display = 'none';
+        eventSource.close();
+    }
+});
+
+// Clear Stats Database Button
+document.getElementById('btn-clear-stats').addEventListener('click', async function() {
+    const button = this;
+    const status = document.getElementById('clear-stats-status');
+    const results = document.getElementById('clear-stats-results');
+    const infoDiv = document.getElementById('clear-stats-info');
+
+    if (!confirm('Are you sure you want to delete the stats database?\n\nThis will:\n• Permanently delete all player statistics\n• Remove all sports data\n• Clear the database file\n\nA new empty database will be created on the next stats update.\n\nThis action is useful for demo/testing purposes.')) {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '⏳ Clearing Database...';
+    status.style.display = 'block';
+    status.className = 'status-message status-loading';
+    status.textContent = 'Deleting stats database...';
+    results.style.display = 'none';
+
+    try {
+        const response = await fetch('/api/clear-stats', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            status.className = 'status-message status-success';
+            status.textContent = `✅ ${data.message}`;
+
+            // Display statistics
+            let sportsHtml = '';
+            if (data.stats.sports && Object.keys(data.stats.sports).length > 0) {
+                sportsHtml = '<div class="stat-item stat-full-width"><strong>Sports Removed:</strong><ul>';
+                for (const [sport, count] of Object.entries(data.stats.sports)) {
+                    const sportDisplay = sport.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    sportsHtml += `<li>${sportDisplay}: ${count} players</li>`;
+                }
+                sportsHtml += '</ul></div>';
+            }
+
+            infoDiv.innerHTML = `
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <strong>Total Players Removed:</strong> ${data.stats.total_players}
+                    </div>
+                    ${sportsHtml}
+                </div>
+            `;
+
+            results.style.display = 'block';
+            button.textContent = '✅ Database Cleared';
+
+            // Reset button after 3 seconds
+            setTimeout(() => {
+                button.textContent = '🗑️ Clear Stats Database';
+                button.disabled = false;
+            }, 3000);
+        } else {
+            throw new Error(data.error || 'Failed to clear stats database');
+        }
+    } catch (error) {
+        status.className = 'status-message status-error';
+        status.textContent = `❌ Error: ${error.message}`;
+        button.textContent = '🗑️ Clear Stats Database';
         button.disabled = false;
     }
 });
