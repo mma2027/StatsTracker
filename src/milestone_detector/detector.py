@@ -22,16 +22,18 @@ class MilestoneDetector:
     configured milestone thresholds.
     """
 
-    def __init__(self, database: PlayerDatabase, milestone_config: Dict[str, Any]):
+    def __init__(self, database: PlayerDatabase, milestone_config: Dict[str, Any], proximity_config: Dict[str, Any] = None):
         """
         Initialize the milestone detector.
 
         Args:
             database: PlayerDatabase instance
             milestone_config: Configuration dict with milestone definitions
+            proximity_config: Optional dict with per-stat proximity thresholds
         """
         self.database = database
         self.milestone_config = milestone_config
+        self.proximity_config = proximity_config or {}
         self.milestones = self._load_milestones(milestone_config)
         logger.info(f"MilestoneDetector initialized with {len(self.milestones)} milestones")
 
@@ -93,10 +95,15 @@ class MilestoneDetector:
         for milestone in relevant_milestones:
             proximity = self._calculate_proximity(player_stats, milestone)
 
+            # Get stat-specific proximity threshold
+            stat_threshold = self._get_proximity_threshold(
+                milestone.sport, milestone.stat_name, proximity_threshold
+            )
+
             # Only include if close AND not already passed
             if (
                 proximity
-                and self._is_close_to_milestone(proximity, proximity_threshold)
+                and self._is_close_to_milestone(proximity, stat_threshold)
                 and not self._has_passed_milestone(proximity)
             ):
                 close_milestones.append(proximity)
@@ -130,6 +137,24 @@ class MilestoneDetector:
 
         logger.info(f"Found milestone proximities for {len(results)} players")
         return results
+
+    def _get_proximity_threshold(self, sport: str, stat_name: str, default: int = 10) -> int:
+        """
+        Get proximity threshold for a specific stat.
+
+        Args:
+            sport: Sport name (e.g., 'mens_basketball')
+            stat_name: Stat name (e.g., 'PTS', 'Tot Reb')
+            default: Default threshold if not found in config
+
+        Returns:
+            Proximity threshold value
+        """
+        if not self.proximity_config:
+            return default
+
+        sport_config = self.proximity_config.get(sport, {})
+        return sport_config.get(stat_name, default)
 
     def _calculate_proximity(self, player_stats: PlayerStats, milestone: Milestone) -> Optional[MilestoneProximity]:
         """
