@@ -173,7 +173,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div style="padding: 12px; margin-bottom: 8px; background: ${idx % 2 === 0 ? '#f8f9fa' : 'white'}; border-radius: 5px; border-left: 4px solid #667eea;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <strong style="font-size: 16px;">${result.name}</strong>
+                                <strong style="font-size: 16px;">
+                                    <a href="/player/${result.player_id}" style="color: #333; text-decoration: none;">${result.name}</a>
+                                </strong>
                                 <span style="color: #666; margin-left: 10px;">${result.sport}</span>
                                 ${result.year ? `<span style="color: #999; margin-left: 10px;">${result.year}</span>` : ''}
                             </div>
@@ -188,9 +190,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             ` : ''}
                         </div>
-                        <a href="/view-sport/${result.sport_key}" style="font-size: 12px; color: #667eea; text-decoration: none; margin-top: 5px; display: inline-block;">
-                            View ${result.sport} stats →
-                        </a>
+                        <div style="margin-top: 8px; display: flex; gap: 10px;">
+                            <a href="/player/${result.player_id}" style="font-size: 12px; color: #667eea; text-decoration: none;">
+                                View full profile →
+                            </a>
+                            <a href="/view-sport/${result.sport_key}" style="font-size: 12px; color: #999; text-decoration: none;">
+                                View ${result.sport} stats →
+                            </a>
+                        </div>
                     </div>
                 `;
             });

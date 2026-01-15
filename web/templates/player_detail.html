@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}{{ player.name }} - {{ sport_display }} - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1>{{ player.name }}</h1>
+            <p>{{ sport_display }}{% if player.year %} - {{ player.year }}{% endif %}</p>
+        </div>
+        <a href="{{ url_for('view_sport', sport_key=player.sport) }}" class="btn btn-secondary">
+            ← Back to {{ sport_display }}
+        </a>
+    </div>
+</div>
+
+<!-- Career Stats Summary -->
+<div class="stats-summary" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px;">
+    <h2 style="margin-top: 0;">Career Statistics</h2>
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; margin-top: 20px;">
+        {% for stat_name, stat_value in career_stats.items() %}
+        <div class="stat-card" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">
+                {{ stat_value }}
+            </div>
+            <div style="font-size: 14px; opacity: 0.9;">
+                {{ stat_name }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Season-by-Season Breakdown -->
+<div class="seasons-section">
+    <h2>Season-by-Season Statistics</h2>
+
+    {% for season_data in seasons_data %}
+    <div class="season-card" style="background: {% if season_data.is_career %}#f0f0f0{% else %}white{% endif %}; border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; {% if season_data.is_career %}color: #667eea; font-weight: bold;{% endif %}">
+            {{ season_data.season }}
+            {% if season_data.is_career %}
+            <span style="font-size: 14px; font-weight: normal; color: #666;">(Total)</span>
+            {% endif %}
+        </h3>
+
+        <div class="stats-table" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8f9fa;">
+                        {% for stat_name in season_data.stats.keys() %}
+                        <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">{{ stat_name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for stat_value in season_data.stats.values() %}
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ stat_value }}</td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Ask AI Section -->
+<div class="ask-ai-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-top: 30px;">
+    <h3 style="margin-top: 0;">🤖 Ask AI About {{ player.name }}</h3>
+    <p style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">
+        Try: "What was their best season?", "How many points did they score?", "Compare their seasons"
+    </p>
+
+    <div style="position: relative;">
+        <input type="text"
+               id="ai-question"
+               placeholder="Ask a question about {{ player.name }}'s stats..."
+               style="width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; box-sizing: border-box;"
+               autocomplete="off">
+
+        <button id="ask-button"
+                style="position: absolute; right: 5px; top: 5px; padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;"
+                onclick="askAI()">
+            Ask
+        </button>
+    </div>
+
+    <div id="ai-loading" style="display: none; margin-top: 15px; text-align: center;">
+        <div class="spinner" style="border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+        <p style="margin-top: 10px; font-size: 14px;">Thinking...</p>
+    </div>
+
+    <div id="ai-response" style="display: none; margin-top: 15px; padding: 20px; background: rgba(255,255,255,0.2); border-radius: 8px;">
+        <p id="ai-answer" style="line-height: 1.6; margin: 0; white-space: pre-wrap;"></p>
+    </div>
+</div>
+
+<!-- Player Info -->
+<div class="player-info" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 30px;">
+    <h3>Player Information</h3>
+    <table style="width: 100%; max-width: 500px;">
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Name:</td>
+            <td style="padding: 8px;">{{ player.name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Sport:</td>
+            <td style="padding: 8px;">{{ sport_display }}</td>
+        </tr>
+        {% if player.position %}
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Position:</td>
+            <td style="padding: 8px;">{{ player.position }}</td>
+        </tr>
+        {% endif %}
+        {% if player.year %}
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Year:</td>
+            <td style="padding: 8px;">{{ player.year }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td style="padding: 8px; font-weight: bold;">Team:</td>
+            <td style="padding: 8px;">{{ player.team }}</td>
+        </tr>
+    </table>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+const playerId = "{{ player.player_id }}";
+
+// Allow Enter key to trigger ask
+document.getElementById('ai-question').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        askAI();
+    }
+});
+
+async function askAI() {
+    const question = document.getElementById('ai-question').value.trim();
+    if (!question) return;
+
+    const loadingEl = document.getElementById('ai-loading');
+    const responseEl = document.getElementById('ai-response');
+    const answerEl = document.getElementById('ai-answer');
+    const buttonEl = document.getElementById('ask-button');
+
+    // Show loading
+    loadingEl.style.display = 'block';
+    responseEl.style.display = 'none';
+    buttonEl.disabled = true;
+    buttonEl.textContent = 'Thinking...';
+
+    try {
+        const response = await fetch('/api/ask-about-player', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                player_id: playerId,
+                question: question
+            })
+        });
+
+        const data = await response.json();
+
+        loadingEl.style.display = 'none';
+        buttonEl.disabled = false;
+        buttonEl.textContent = 'Ask';
+
+        if (data.status === 'success') {
+            answerEl.textContent = data.answer;
+            responseEl.style.display = 'block';
+        } else {
+            answerEl.textContent = 'Error: ' + (data.error || 'Unable to get answer');
+            responseEl.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error asking AI:', error);
+        loadingEl.style.display = 'none';
+        buttonEl.disabled = false;
+        buttonEl.textContent = 'Ask';
+        answerEl.textContent = 'Network error. Please try again.';
+        responseEl.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

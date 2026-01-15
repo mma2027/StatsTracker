@@ -38,6 +38,10 @@ QUERY_SCHEMA = {
             "type": "string",
             "description": "Primary statistic to search by (e.g., PTS, Goals, Assists). Must match exact stat name from database.",
         },
+        "player_name": {
+            "type": "string",
+            "description": "Player name to search for (used when intent is search_name)",
+        },
         "filters": {
             "type": "object",
             "properties": {
@@ -110,7 +114,7 @@ SYSTEM_PROMPT = """You are a sports statistics query assistant for Haverford Col
 - **filter_threshold**: Queries about players near a specific number
   - Examples: "close to 1000 points", "around 500 rebounds", "between 50 and 100 assists"
 - **search_name**: Queries that are primarily player names
-  - Examples: "John Smith", "Smith basketball"
+  - Examples: "John Smith", "Smith basketball", "Find Adam Strong"
 - **compare_players**: Queries comparing specific players
   - Examples: "compare John and Jane", "who has more points"
 - **ambiguous**: Unclear queries that need clarification
@@ -121,7 +125,9 @@ SYSTEM_PROMPT = """You are a sports statistics query assistant for Haverford Col
 - "top [N] [stat/position]" → intent: rank_by_stat, limit: N
 - "who has the most [stat]" → intent: rank_by_stat, limit: 1
 - "players close to [number] [stat]" → intent: filter_threshold, set min/max range
-- "[player name]" → intent: search_name
+- "[player name]" → intent: search_name, set player_name field
+- "find [player name]" → intent: search_name
+- "show me [player name]" → intent: search_name
 
 **Stat Name Matching:**
 - Match stat names EXACTLY as they appear in the schema above
@@ -211,6 +217,26 @@ Query: "best performers"
 {
   "intent": "ambiguous",
   "interpretation": "Query is ambiguous: need to specify which sport and which statistic to rank by. Options: points, goals, assists, etc."
+}
+```
+
+Query: "Adam Strong"
+```json
+{
+  "intent": "search_name",
+  "player_name": "Adam Strong",
+  "sport": "all",
+  "interpretation": "Searching for player named Adam Strong across all sports"
+}
+```
+
+Query: "find Seth Anderson basketball"
+```json
+{
+  "intent": "search_name",
+  "player_name": "Seth Anderson",
+  "sport": "mens_basketball",
+  "interpretation": "Searching for player named Seth Anderson in basketball"
 }
 ```"""
 

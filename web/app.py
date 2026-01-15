@@ -286,6 +286,104 @@ def api_semantic_search():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/ask-about-player", methods=["POST"])
+def api_ask_about_player():
+    """Conversational API to ask questions about a specific player using Claude."""
+    try:
+        data = request.get_json()
+        player_id = data.get("player_id", "").strip()
+        question = data.get("question", "").strip()
+
+        if not player_id or not question:
+            return jsonify({"error": "player_id and question required"}), 400
+
+        # Load database
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(
+            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
+        )
+
+        # Get player data
+        player = database.get_player(player_id)
+        if not player:
+            return jsonify({"error": "Player not found"}), 404
+
+        player_stats = database.get_player_stats(player_id)
+        if not player_stats:
+            return jsonify({"error": "No stats found for player"}), 404
+
+        # Prepare context for Claude
+        sport_display = player.sport.replace("_", " ").title()
+        context = f"""Player Information:
+Name: {player.name}
+Sport: {sport_display}
+Team: {player.team}
+{"Position: " + player.position if player.position else ""}
+{"Year: " + player.year if player.year else ""}
+
+Career Statistics:
+"""
+        for stat_name, stat_value in player_stats.career_stats.items():
+            context += f"- {stat_name}: {stat_value}\n"
+
+        context += "\nSeason-by-Season Stats:\n"
+        for season, stats in sorted(player_stats.season_stats.items()):
+            context += f"\n{season}:\n"
+            for stat_name, stat_value in stats.items():
+                context += f"  - {stat_name}: {stat_value}\n"
+
+        # Call Claude API
+        try:
+            llm_client = AnthropicClient(config=config)
+
+            if not llm_client.is_available():
+                return jsonify({"error": "AI service not available"}), 503
+
+            # Create a conversational prompt
+            system_prompt = "You are a helpful sports statistics assistant. Answer questions about player statistics clearly and concisely. Focus on the data provided."
+
+            user_prompt = f"""{context}
+
+User Question: {question}
+
+Please answer the question based on the statistics provided above. Be specific and cite the exact numbers."""
+
+            # Use the Anthropic client directly
+            from anthropic import Anthropic
+            client = Anthropic(api_key=llm_client.api_key)
+
+            response = client.messages.create(
+                model=llm_client.model,
+                max_tokens=llm_client.max_tokens,
+                temperature=0.3,  # Lower temperature for more factual responses
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+
+            # Extract text response
+            answer = response.content[0].text if response.content else "Unable to generate response"
+
+            return jsonify({
+                "status": "success",
+                "question": question,
+                "answer": answer,
+                "player": {
+                    "name": player.name,
+                    "sport": sport_display,
+                    "player_id": player_id
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error calling Claude API: {e}")
+            return jsonify({"error": "AI service error", "details": str(e)}), 500
+
+    except Exception as e:
+        logger.error(f"Ask about player error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/settings")
 def settings():
     """Display and edit configuration settings."""
@@ -465,6 +563,51 @@ def view_sport(sport_key):
 
     except Exception as e:
         logger.error(f"Error loading sport data: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/player/<player_id>")
+def player_detail(player_id):
+    """View detailed stats for a specific player."""
+    try:
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(
+            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
+        )
+
+        # Get player info
+        player = database.get_player(player_id)
+        if not player:
+            return jsonify({"error": "Player not found"}), 404
+
+        # Get player stats
+        player_stats = database.get_player_stats(player_id)
+        if not player_stats:
+            return jsonify({"error": "No stats found for player"}), 404
+
+        # Prepare data for template
+        sport_display = player.sport.replace("_", " ").title()
+
+        # Get season stats sorted by season
+        seasons_data = []
+        for season, stats in sorted(player_stats.season_stats.items()):
+            seasons_data.append({
+                "season": season,
+                "stats": stats,
+                "is_career": season == "Career"
+            })
+
+        return render_template(
+            "player_detail.html",
+            player=player,
+            sport_display=sport_display,
+            career_stats=player_stats.career_stats,
+            seasons_data=seasons_data
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading player detail: {e}")
         return jsonify({"error": str(e)}), 500
 
 

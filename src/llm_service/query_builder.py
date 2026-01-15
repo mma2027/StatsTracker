@@ -134,14 +134,15 @@ class SemanticQueryBuilder:
         Execute name search query.
 
         Args:
-            params: May contain query string or player name
+            params: May contain player_name, query string, or interpretation
 
         Returns:
-            List of matching players
+            List of matching players with their career stats
         """
         # Try to extract player name from various fields
-        query = params.get("query", "")
+        query = params.get("player_name", "") or params.get("query", "")
         interpretation = params.get("interpretation", "")
+        sport_filter = params.get("sport")
 
         # If query is empty, try interpretation
         if not query and interpretation:
@@ -151,12 +152,29 @@ class SemanticQueryBuilder:
             logger.warning("No query text for name search")
             return []
 
-        # Use database's search_players method
-        players = self.database.search_players(query)
+        # Filter by sport if specified and not "all"
+        sport = sport_filter if sport_filter and sport_filter != "all" else None
 
-        # Convert to result format
+        # Use database's search_players method
+        players = self.database.search_players(query, sport=sport)
+
+        # Convert to result format with career stats summary
         results = []
         for player in players:
+            # Get player's career stats for display
+            player_stats = self.database.get_player_stats(player.player_id)
+
+            # Get top 3 career stats to show
+            top_stats = {}
+            if player_stats and player_stats.career_stats:
+                # Sort stats by value (descending) and take top 3
+                sorted_stats = sorted(
+                    player_stats.career_stats.items(),
+                    key=lambda x: x[1] if isinstance(x[1], (int, float)) else 0,
+                    reverse=True
+                )[:3]
+                top_stats = dict(sorted_stats)
+
             results.append(
                 {
                     "player_id": player.player_id,
@@ -166,13 +184,14 @@ class SemanticQueryBuilder:
                     "team": player.team,
                     "position": player.position,
                     "year": player.year,
+                    "career_stats": top_stats,
                     "stat_name": None,
                     "stat_value": None,
-                    "season": None,
+                    "season": "Career",
                 }
             )
 
-        logger.info(f"Name search returned {len(results)} results")
+        logger.info(f"Name search for '{query}' returned {len(results)} results")
         return results
 
     def _compare_players(self, params: Dict) -> List[Dict]:
