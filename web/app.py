@@ -543,14 +543,51 @@ def view_sport(sport_key):
                     }
                 )
 
+        # Sort stats in NCAA order (important stats first)
+        def get_stat_priority(stat_name):
+            """Return priority for stat ordering (lower = more important)."""
+            # Common important stats come first
+            priority_stats = {
+                # Basketball
+                'G': 1, 'GS': 2, 'MP': 3, 'PTS': 4, 'Tot Reb': 5, 'AST': 6, 'STL': 7, 'BLK': 8,
+                'FGM': 9, 'FGA': 10, 'FG%': 11, '3FG': 12, '3FGA': 13, '3FG%': 14, 'FT': 15, 'FTA': 16, 'FT%': 17,
+                'ORebs': 18, 'DRebs': 19, 'Fouls': 20,
+                # Soccer
+                'Goals': 1, 'Assists': 2, 'Points': 3, 'ShAtt': 4, 'SoG': 5, 'GWG': 6,
+                # Lacrosse
+                'GB': 7, 'Ground Balls': 7, 'TO': 8, 'CT': 9, 'FO Won': 10, 'Draw Controls': 10,
+                'Shots': 11, 'SOG': 12, 'Freepos Goals': 13,
+                # Baseball/Softball
+                'H': 1, 'HR': 2, 'RBI': 3, 'R': 4, 'AVG': 5, '2B': 6, '3B': 7, 'BB': 8, 'SB': 9, 'TB': 10,
+                # Field Hockey
+                'ShAtt': 4, 'DSv': 5,
+                # Volleyball
+                'Kills': 1, 'Aces': 3, 'Digs': 4, 'Block Assists': 5, 'Block Solos': 6, 'S': 7,
+                # Track/XC - running events by distance
+                '100': 1, '200': 2, '400': 3, '800': 4, 'MILE': 5, '1500': 6, '3000': 7, '5000': 8, '10,000': 9,
+                '3 MILE (XC)': 10, '4 MILE (XC)': 11, '5K (XC)': 12, '6K (XC)': 13, '8K (XC)': 14,
+                '60H': 15, '100H': 16, '400H': 17, '3000S': 18,
+                # Field events
+                'HJ': 20, 'PV': 21, 'LJ': 22, 'TJ': 23, 'SP': 24, 'DT': 25, 'JT': 26, 'HT': 27, 'PENT': 28,
+                # Cricket
+                'Batting_Runs': 1, 'Batting_Avg': 2, 'Batting_SR': 3, 'Batting_HS': 4,
+                'Bowling_Wkts': 5, 'Bowling_Avg': 6, 'Bowling_Econ': 7, 'Bowling_SR': 8,
+                'Fielding_Catches': 9, 'Fielding_Stumpings': 10,
+                # Squash
+                'wins': 1,
+            }
+            return priority_stats.get(stat_name, 999)
+
+        sorted_stats = sorted(all_stat_names, key=lambda x: (get_stat_priority(x), x))
+
         # Create headers - Player Name, Season, then all stats
-        headers = ["Player Name", "Season"] + sorted(all_stat_names)
+        headers = ["Player Name", "Season"] + sorted_stats
         rows = []
 
         for entry in player_seasons:
             row = {"Player Name": entry["player_name"], "Season": entry["season"]}
             # Add stats
-            for stat_name in all_stat_names:
+            for stat_name in sorted_stats:
                 row[stat_name] = entry["stats"].get(stat_name, "-")
             rows.append(row)
 
@@ -609,8 +646,14 @@ def player_detail(player_id):
 
 @app.route("/demo")
 def demo():
-    """Demo page with testing buttons."""
+    """Demo page with essential operations."""
     return render_template("demo.html")
+
+
+@app.route("/testing")
+def testing():
+    """Testing page with advanced operations."""
+    return render_template("testing.html")
 
 
 @app.route("/api/progress/<session_id>")

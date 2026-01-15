@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Testing Panel - StatsTracker{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🧪 Testing Panel</h1>
+    <p>Advanced testing tools for individual data source updates and system operations</p>
+</div>
+
+<div class="demo-sections">
+    <!-- Individual NCAA Stats Update -->
+    <section class="demo-section">
+        <h2>1. Update NCAA Stats Only</h2>
+        <p>Re-fetch stats from NCAA only (Basketball, Soccer, Lacrosse, Field Hockey, Volleyball, Baseball, Softball). Takes ~5 minutes.</p>
+
+        <button id="btn-update-ncaa" class="btn btn-primary btn-lg">
+            🏀 Update NCAA Stats
+        </button>
+
+        <div id="ncaa-status" class="status-message" style="display: none;"></div>
+        <div id="ncaa-progress" class="progress-box" style="display: none;">
+            <h4>Progress:</h4>
+            <div id="ncaa-current-item" class="current-item"></div>
+        </div>
+    </section>
+
+    <!-- Squash Stats Update Section -->
+    <section class="demo-section">
+        <h2>2. Update Squash Stats (ClubLocker)</h2>
+        <p>Fetch squash player statistics from ClubLocker for all configured teams (Men's & Women's, both seasons). Takes 1-2 minutes.</p>
+
+        <button id="btn-update-squash" class="btn btn-primary btn-lg">
+            🎾 Update Squash Stats
+        </button>
+
+        <div id="squash-status" class="status-message" style="display: none;"></div>
+        <div id="squash-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div id="squash-info"></div>
+        </div>
+    </section>
+
+    <!-- TFRR Stats Update Section -->
+    <section class="demo-section">
+        <h2>3. Update TFRR Stats (Track & Field / Cross Country)</h2>
+        <p>Fetch personal records for all Haverford track & field and cross country athletes using Playwright. Takes 20-40 minutes due to rate limiting.</p>
+
+        <div class="alert alert-warning">
+            ⚠️ <strong>Note:</strong> This process is slow by design to avoid rate limiting. It will:
+            <ul style="margin-top: 8px; margin-bottom: 0;">
+                <li>Fetch rosters for all 4 teams (Men's/Women's Track & Cross Country)</li>
+                <li>Get personal records for each athlete</li>
+                <li>Update the database with all PRs</li>
+                <li>Take approximately 20-40 minutes to complete</li>
+            </ul>
+        </div>
+
+        <button id="btn-update-tfrr" class="btn btn-primary btn-lg">
+            🏃 Update TFRR Stats
+        </button>
+
+        <div id="tfrr-status" class="status-message" style="display: none;"></div>
+        <div id="tfrr-progress" class="progress-box" style="display: none;">
+            <h4>Progress:</h4>
+            <div id="tfrr-current-item" class="current-item"></div>
+            <div id="tfrr-details" class="progress-details"></div>
+        </div>
+        <div id="tfrr-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div id="tfrr-info"></div>
+        </div>
+    </section>
+
+    <!-- Cricket Stats Section -->
+    <section class="demo-section">
+        <h2>4. Update Cricket Stats</h2>
+        <p>Fetch cricket statistics from CricClubs for Haverford Cricket team and export to CSV.</p>
+
+        <div class="alert alert-warning">
+            <strong>⚠️ Note:</strong> This process may take 2-3 minutes to complete.
+            <ul>
+                <li>Fetches batting, bowling, and fielding statistics</li>
+                <li>Exports merged data to CSV file</li>
+                <li>Includes all Haverford cricket players</li>
+            </ul>
+        </div>
+
+        <button id="btn-update-cricket" class="btn btn-primary btn-lg">
+            🏏 Update Cricket Stats
+        </button>
+
+        <div id="cricket-status" class="status-message" style="display: none;"></div>
+        <div id="cricket-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div id="cricket-info"></div>
+        </div>
+    </section>
+
+    <!-- Complete Daily Workflow Section -->
+    <section class="demo-section">
+        <h2>5. Run Complete 8 AM Daily Workflow</h2>
+        <p>Simulate the ENTIRE daily automation process (what runs at 8 AM every day). This will:</p>
+        <ol>
+            <li>Update all stats (NCAA only) - 5-10 minutes</li>
+            <li>Check for games on the selected date</li>
+            <li>Check milestones for players on teams with games</li>
+            <li>Send email notification</li>
+        </ol>
+
+        <div class="form-group">
+            <label for="workflow-date">Select Date:</label>
+            <input type="date" id="workflow-date" class="input-date" value="{{ today }}">
+        </div>
+
+        <button id="btn-run-workflow" class="btn btn-primary btn-lg">
+            🚀 Run Complete Daily Workflow
+        </button>
+
+        <div id="workflow-status" class="status-message" style="display: none;"></div>
+        <div id="workflow-live-progress" class="progress-box" style="display: none;">
+            <h4>Current Progress:</h4>
+            <div id="workflow-current-item" class="current-item"></div>
+        </div>
+        <div id="workflow-progress" class="workflow-progress" style="display: none;">
+            <h3>Workflow Progress:</h3>
+            <div id="workflow-steps"></div>
+        </div>
+        <div id="workflow-results" class="results-container" style="display: none;">
+            <h3>Results:</h3>
+            <div class="results-summary">
+                <div class="summary-item">
+                    <strong>Games:</strong> <span id="workflow-games-count">0</span>
+                </div>
+                <div class="summary-item">
+                    <strong>Milestone Alerts:</strong> <span id="workflow-milestones-count">0</span>
+                </div>
+            </div>
+            <div class="results-section">
+                <h4>Games Scheduled:</h4>
+                <div id="workflow-games-list"></div>
+            </div>
+            <div class="results-section">
+                <h4>Milestone Proximities:</h4>
+                <div id="workflow-milestones-list"></div>
+            </div>
+            <div class="results-section" id="workflow-email-section" style="display: none;">
+                <h4>Email Preview:</h4>
+                <div class="email-subject">
+                    <strong>Subject:</strong> <span id="workflow-email-subject"></span>
+                </div>
+                <div id="workflow-email-preview" class="email-preview"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Clear Stats Database Section -->
+    <section class="demo-section">
+        <h2>6. Clear Stats Database</h2>
+        <p>Delete the stats database to start fresh. A new empty database will be created on the next stats update.</p>
+
+        <div class="warning-box">
+            ⚠️ <strong>Warning:</strong> This will permanently delete all player stats from the database. This is useful for testing the complete workflow from a clean state.
+        </div>
+
+        <button id="btn-clear-stats" class="btn btn-danger btn-lg">
+            🗑️ Clear Stats Database
+        </button>
+
+        <div id="clear-stats-status" class="status-message" style="display: none;"></div>
+        <div id="clear-stats-results" class="results-container" style="display: none;">
+            <h3>Clear Results:</h3>
+            <div id="clear-stats-info"></div>
+        </div>
+    </section>
+
+    <!-- System Info Section -->
+    <section class="demo-section">
+        <h2>7. System Information</h2>
+        <div class="system-info">
+            <div class="info-item">
+                <strong>NCAA Teams:</strong> 10 (Basketball, Soccer, Lacrosse, Field Hockey, Volleyball, Baseball, Softball)
+            </div>
+            <div class="info-item">
+                <strong>Squash Teams:</strong> 4 ClubLocker teams (Men's & Women's, 2024-25 & 2025-26 seasons)
+            </div>
+            <div class="info-item">
+                <strong>TFRR Teams:</strong> 4 teams (Men's/Women's Track & Cross Country)
+            </div>
+            <div class="info-item">
+                <strong>Cricket:</strong> Haverford Cricket Club
+            </div>
+            <div class="info-item">
+                <strong>Database:</strong> data/stats.db
+            </div>
+            <div class="info-item">
+                <strong>CSV Exports:</strong> csv_exports/
+            </div>
+            <div class="info-item">
+                <strong>Cron Schedule:</strong> Daily at 8:00 AM
+            </div>
+        </div>
+    </section>
+</div>
+
+<script src="{{ url_for('static', filename='js/testing.js') }}"></script>
+{% endblock %}

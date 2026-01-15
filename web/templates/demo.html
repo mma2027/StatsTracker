@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Demo & Testing - StatsTracker{% endblock %}
+{% block title %}Demo Panel - StatsTracker{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>🎮 Demo & Testing Panel</h1>
-    <p>Manually trigger system operations and test functionality</p>
+    <h1>🎮 Demo Panel</h1>
+    <p>Run essential operations for testing and demonstrations</p>
 </div>
 
 <div class="demo-sections">
     <!-- Stats Update Section -->
     <section class="demo-section">
-        <h2>1. Update All Stats (NCAA + TFRR)</h2>
-        <p>Re-fetch all player stats from NCAA (10 teams) and TFRR. This will take 5-10 minutes.</p>
+        <h2>Update All Stats</h2>
+        <p>Re-fetch all player stats from NCAA, ClubLocker, TFRR, and CricClubs. This will take 5-10 minutes.</p>
 
         <button id="btn-update-stats" class="btn btn-primary btn-lg">
             🔄 Update All Stats
@@ -25,83 +25,9 @@
         </div>
     </section>
 
-    <!-- Squash Stats Update Section -->
-    <section class="demo-section">
-        <h2>2. Update Squash Stats (ClubLocker)</h2>
-        <p>Fetch squash player statistics from ClubLocker for all configured teams (Men's & Women's, both seasons). This will take 1-2 minutes.</p>
-
-        <button id="btn-update-squash" class="btn btn-primary btn-lg">
-            🎾 Update Squash Stats
-        </button>
-
-        <div id="squash-status" class="status-message" style="display: none;"></div>
-        <div id="squash-results" class="results-container" style="display: none;">
-            <h3>Results:</h3>
-            <div id="squash-info"></div>
-        </div>
-    </section>
-
-    <!-- TFRR Stats Update Section -->
-    <section class="demo-section">
-        <h2>3. Update TFRR Stats (Track & Field / Cross Country)</h2>
-        <p>Fetch personal records for all Haverford track & field and cross country athletes using Playwright. This will take 20-40 minutes due to rate limiting.</p>
-
-        <div class="alert alert-warning">
-            ⚠️ <strong>Note:</strong> This process is slow by design to avoid rate limiting. It will:
-            <ul style="margin-top: 8px; margin-bottom: 0;">
-                <li>Fetch rosters for all 4 teams (Men's/Women's Track & Cross Country)</li>
-                <li>Get personal records for each athlete</li>
-                <li>Update the database with all PRs</li>
-                <li>Take approximately 20-40 minutes to complete</li>
-            </ul>
-        </div>
-
-        <button id="btn-update-tfrr" class="btn btn-primary btn-lg">
-            🏃 Update TFRR Stats
-        </button>
-
-        <div id="tfrr-status" class="status-message" style="display: none;"></div>
-        <div id="tfrr-progress" class="progress-box" style="display: none;">
-            <h4>Progress:</h4>
-            <div id="tfrr-current-item" class="current-item"></div>
-            <div id="tfrr-details" class="progress-details"></div>
-        </div>
-        <div id="tfrr-results" class="results-container" style="display: none;">
-            <h3>Results:</h3>
-            <div id="tfrr-info"></div>
-        </div>
-    </section>
-
-    <!-- Cricket Stats Section -->
-    <section class="demo-section">
-        <h2>4. Update Cricket Stats</h2>
-        <p>Fetch cricket statistics from CricClubs for Haverford Cricket team and export to CSV.</p>
-
-        <div class="alert alert-warning">
-            <strong>⚠️ Note:</strong> This process may take 2-3 minutes to complete.
-            <ul>
-                <li>Fetches batting, bowling, and fielding statistics</li>
-                <li>Exports merged data to CSV file</li>
-                <li>Includes all Haverford cricket players</li>
-            </ul>
-        </div>
-
-        <button id="btn-update-cricket" class="btn btn-primary btn-lg">
-            🏏 Update Cricket Stats
-        </button>
-
-        <div id="cricket-status" class="status-message" style="display: none;"></div>
-
-        <!-- Results Display -->
-        <div id="cricket-results" class="results-container" style="display: none;">
-            <h3>Results:</h3>
-            <div id="cricket-info"></div>
-        </div>
-    </section>
-
     <!-- Gameday Simulator Section -->
     <section class="demo-section">
-        <h2>5. Simulate Gameday Checker</h2>
+        <h2>Simulate Gameday Checker</h2>
         <p>Check for games on a specific date and see what email would be sent.</p>
 
         <div class="form-group">
@@ -116,7 +42,7 @@
         <div id="gameday-status" class="status-message" style="display: none;"></div>
 
         <!-- Results Display -->
-        <div id="gameday-results" class="results-container" style="display: none;">
+        <div id="gameday-results" class="results-container" style="display: none; margin-top: 1.5rem;">
             <h3>Results:</h3>
 
             <div class="results-summary">
@@ -133,135 +59,26 @@
 
             <div class="results-section">
                 <h4>Games Scheduled:</h4>
-                <div id="games-list"></div>
+                <div id="games-list" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
 
             <div class="results-section">
                 <h4>Milestone Proximities:</h4>
-                <div id="milestones-list"></div>
+                <div id="milestones-list" style="max-height: 300px; overflow-y: auto;"></div>
             </div>
 
             <div class="results-section">
                 <h4>Email Preview:</h4>
-                <div class="email-subject">
+                <div class="email-subject" style="margin-bottom: 1rem;">
                     <strong>Subject:</strong> <span id="email-subject"></span>
                 </div>
-                <div id="email-preview" class="email-preview"></div>
+                <div id="email-preview" class="email-preview" style="max-height: 500px; overflow-y: auto;"></div>
             </div>
 
-            <button id="btn-send-test-email" class="btn btn-secondary">
+            <button id="btn-send-test-email" class="btn btn-secondary" style="margin-top: 1rem;">
                 ✉️ Send Test Email
             </button>
             <div id="email-send-status" class="status-message" style="display: none;"></div>
-        </div>
-    </section>
-
-    <!-- Complete Daily Workflow Section -->
-    <section class="demo-section">
-        <h2>5. Run Complete 8 AM Daily Workflow</h2>
-        <p>Simulate the ENTIRE daily automation process (what runs at 8 AM every day). This will:</p>
-        <ol>
-            <li>Update all stats (NCAA only) - 5-10 minutes</li>
-            <li>Check for games on the selected date</li>
-            <li>Check milestones for players on teams with games</li>
-            <li>Send email notification</li>
-        </ol>
-
-        <div class="form-group">
-            <label for="workflow-date">Select Date:</label>
-            <input type="date" id="workflow-date" class="input-date" value="{{ today }}">
-        </div>
-
-        <button id="btn-run-workflow" class="btn btn-primary btn-lg">
-            🚀 Run Complete Daily Workflow
-        </button>
-
-        <div id="workflow-status" class="status-message" style="display: none;"></div>
-
-        <!-- Live Progress Display -->
-        <div id="workflow-live-progress" class="progress-box" style="display: none;">
-            <h4>Current Progress:</h4>
-            <div id="workflow-current-item" class="current-item"></div>
-        </div>
-
-        <!-- Workflow Progress Display -->
-        <div id="workflow-progress" class="workflow-progress" style="display: none;">
-            <h3>Workflow Progress:</h3>
-            <div id="workflow-steps"></div>
-        </div>
-
-        <!-- Workflow Results Display -->
-        <div id="workflow-results" class="results-container" style="display: none;">
-            <h3>Results:</h3>
-
-            <div class="results-summary">
-                <div class="summary-item">
-                    <strong>Games:</strong> <span id="workflow-games-count">0</span>
-                </div>
-                <div class="summary-item">
-                    <strong>Milestone Alerts:</strong> <span id="workflow-milestones-count">0</span>
-                </div>
-            </div>
-
-            <div class="results-section">
-                <h4>Games Scheduled:</h4>
-                <div id="workflow-games-list"></div>
-            </div>
-
-            <div class="results-section">
-                <h4>Milestone Proximities:</h4>
-                <div id="workflow-milestones-list"></div>
-            </div>
-
-            <div class="results-section" id="workflow-email-section" style="display: none;">
-                <h4>Email Preview:</h4>
-                <div class="email-subject">
-                    <strong>Subject:</strong> <span id="workflow-email-subject"></span>
-                </div>
-                <div id="workflow-email-preview" class="email-preview"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Clear Stats Database Section -->
-    <section class="demo-section">
-        <h2>5. Clear Stats Database</h2>
-        <p>Delete the stats database to start fresh. A new empty database will be created on the next stats update.</p>
-
-        <div class="warning-box">
-            ⚠️ <strong>Warning:</strong> This will permanently delete all player stats from the database. This is useful for testing the complete workflow from a clean state.
-        </div>
-
-        <button id="btn-clear-stats" class="btn btn-danger btn-lg">
-            🗑️ Clear Stats Database
-        </button>
-
-        <div id="clear-stats-status" class="status-message" style="display: none;"></div>
-        <div id="clear-stats-results" class="results-container" style="display: none;">
-            <h3>Clear Results:</h3>
-            <div id="clear-stats-info"></div>
-        </div>
-    </section>
-
-    <!-- System Info Section -->
-    <section class="demo-section">
-        <h2>6. System Information</h2>
-        <div class="system-info">
-            <div class="info-item">
-                <strong>NCAA Teams:</strong> 10 (Basketball, Soccer, Lacrosse, Field Hockey, Volleyball, Baseball, Softball)
-            </div>
-            <div class="info-item">
-                <strong>Squash Teams:</strong> 4 ClubLocker teams (Men's & Women's, 2024-25 & 2025-26 seasons)
-            </div>
-            <div class="info-item">
-                <strong>Database:</strong> data/stats.db
-            </div>
-            <div class="info-item">
-                <strong>CSV Exports:</strong> csv_exports/ncaa/ and csv_exports/tfrr/
-            </div>
-            <div class="info-item">
-                <strong>Cron Schedule:</strong> Daily at 8:00 AM
-            </div>
         </div>
     </section>
 </div>
@@ -270,7 +87,6 @@
 // Today's date for default
 const today = new Date().toISOString().split('T')[0];
 document.getElementById('gameday-date').value = today;
-document.getElementById('workflow-date').value = today;
 
 // Update Stats Button with Real-Time Progress
 document.getElementById('btn-update-stats').addEventListener('click', async function() {
@@ -292,12 +108,11 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
     const eventSource = new EventSource(`/api/progress/${sessionId}`);
     let lastMessageTime = Date.now();
     let errorCount = 0;
-    let completedSuccessfully = false;  // Track if we got success message
+    let completedSuccessfully = false;
 
-    // Monitor for keep-alive (update timestamp even on keep-alive comments)
     const checkConnection = setInterval(() => {
         const timeSinceLastMessage = Date.now() - lastMessageTime;
-        if (timeSinceLastMessage > 30000) {  // 30 seconds without any activity
+        if (timeSinceLastMessage > 30000) {
             console.warn('No activity for 30 seconds, connection may be dead');
         }
     }, 5000);
@@ -306,7 +121,6 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
         lastMessageTime = Date.now();
         const message = JSON.parse(event.data);
 
-        // Update UI based on message type
         if (message.type === 'info' || message.type === 'fetch') {
             currentItem.textContent = message.message;
         } else if (message.type === 'warning') {
@@ -321,7 +135,7 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
             clearInterval(checkConnection);
             eventSource.close();
         } else if (message.type === 'success') {
-            completedSuccessfully = true;  // Mark as successfully completed
+            completedSuccessfully = true;
             currentItem.textContent = message.message;
             status.className = 'status-message status-success';
             status.textContent = '✅ All stats updated successfully!';
@@ -335,7 +149,6 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
     };
 
     eventSource.onerror = function(err) {
-        // If we already completed successfully, ignore the error (natural stream close)
         if (completedSuccessfully) {
             console.log('SSE stream closed after successful completion (expected)');
             eventSource.close();
@@ -345,8 +158,6 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
         errorCount++;
         console.error('SSE error (count: ' + errorCount + '):', err);
 
-        // Only show error if we've had multiple consecutive errors
-        // (Sometimes SSE fires onerror even when reconnecting)
         if (errorCount > 2) {
             currentItem.textContent = 'Connection error';
             status.className = 'status-message status-error';
@@ -356,8 +167,6 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
             progressBox.style.display = 'none';
             clearInterval(checkConnection);
             eventSource.close();
-        } else {
-            console.log('SSE error, but will retry...');
         }
     };
 
@@ -381,342 +190,6 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
         button.disabled = false;
         progressBox.style.display = 'none';
         eventSource.close();
-    }
-});
-
-// Update Squash Stats Button
-document.getElementById('btn-update-squash').addEventListener('click', async function() {
-    const button = this;
-    const status = document.getElementById('squash-status');
-    const results = document.getElementById('squash-results');
-    const infoDiv = document.getElementById('squash-info');
-
-    button.disabled = true;
-    button.textContent = '⏳ Fetching Squash Stats...';
-    status.style.display = 'block';
-    status.className = 'status-message status-loading';
-    status.textContent = 'Fetching squash stats from ClubLocker...';
-    results.style.display = 'none';
-
-    try {
-        const response = await fetch('/api/update-squash-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            status.className = 'status-message status-success';
-            status.textContent = '✅ Squash stats updated successfully!';
-
-            // Display statistics
-            infoDiv.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <strong>Teams Processed:</strong> ${data.teams_processed}
-                    </div>
-                    <div class="stat-item">
-                        <strong>Players Added:</strong> ${data.players_added}
-                    </div>
-                    <div class="stat-item">
-                        <strong>Players Updated:</strong> ${data.players_updated}
-                    </div>
-                    <div class="stat-item">
-                        <strong>Stats Added:</strong> ${data.stats_added}
-                    </div>
-                </div>
-                <p style="margin-top: 1rem; color: #666;">
-                    <small>Fetched from ClubLocker at ${new Date(data.timestamp).toLocaleString()}</small>
-                </p>
-            `;
-
-            results.style.display = 'block';
-            button.textContent = '✅ Squash Stats Updated';
-
-            // Reset button after 3 seconds
-            setTimeout(() => {
-                button.textContent = '🎾 Update Squash Stats';
-                button.disabled = false;
-            }, 3000);
-        } else {
-            throw new Error(data.error || 'Squash stats update failed');
-        }
-    } catch (error) {
-        status.className = 'status-message status-error';
-        status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🎾 Update Squash Stats';
-        button.disabled = false;
-    }
-});
-
-// Update TFRR Stats Button
-document.getElementById('btn-update-tfrr').addEventListener('click', async function() {
-    const button = this;
-    const status = document.getElementById('tfrr-status');
-    const progress = document.getElementById('tfrr-progress');
-    const currentItem = document.getElementById('tfrr-current-item');
-    const details = document.getElementById('tfrr-details');
-    const results = document.getElementById('tfrr-results');
-    const infoDiv = document.getElementById('tfrr-info');
-
-    // Confirm before starting (since it takes 20-40 minutes)
-    if (!confirm('This will take 20-40 minutes to complete due to rate limiting. Continue?')) {
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = '⏳ Initializing...';
-    status.style.display = 'block';
-    status.className = 'status-message status-loading';
-    status.textContent = 'Starting TFRR stats update...';
-    progress.style.display = 'block';
-    results.style.display = 'none';
-    details.innerHTML = ''; // Clear previous warnings
-
-    // Generate session ID for progress tracking
-    const sessionId = 'tfrr-' + Date.now();
-
-    // Track progress for button text
-    let currentTeam = '';
-    let currentAthleteCount = 0;
-    let totalAthletes = 0;
-
-    // Start listening to progress stream
-    const eventSource = new EventSource(`/api/progress/${sessionId}`);
-
-    eventSource.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-
-        if (data.type === 'info' || data.type === 'fetch') {
-            currentItem.textContent = data.message;
-            currentItem.className = 'current-item item-info';
-
-            // Update button text based on progress
-            if (data.message.includes('Initializing')) {
-                button.textContent = '⏳ Initializing Playwright...';
-            } else if (data.message.includes('Starting TFRR fetcher')) {
-                button.textContent = '⏳ Starting fetcher...';
-            } else if (data.message.includes('Fetching') && (data.message.includes('roster') || data.message.includes('PRs'))) {
-                // Extract team name - match either "Fetching X roster" or "Fetching X roster and PRs"
-                const teamMatch = data.message.match(/Fetching (.+?)(?: roster| $)/);
-                if (teamMatch) {
-                    currentTeam = teamMatch[1];
-                    button.textContent = `⏳ Fetching ${currentTeam}...`;
-                }
-            } else if (data.message.includes('Processing') && data.message.includes('athletes')) {
-                // Just got roster count, waiting to process
-                button.textContent = `⏳ ${currentTeam} - Getting PRs...`;
-            } else if (data.message.includes('Processing') && data.message.includes('athlete ')) {
-                // Extract progress like "5/25" from "Processing X athlete 5/25: Name"
-                const progressMatch = data.message.match(/athlete (\d+)\/(\d+)/);
-                if (progressMatch) {
-                    currentAthleteCount = parseInt(progressMatch[1]);
-                    totalAthletes = parseInt(progressMatch[2]);
-                    const percentage = Math.round((currentAthleteCount / totalAthletes) * 100);
-                    button.textContent = `⏳ ${currentTeam} (${currentAthleteCount}/${totalAthletes} - ${percentage}%)`;
-                }
-            } else if (data.message.includes('Exporting') && data.message.includes('CSV')) {
-                button.textContent = `⏳ Exporting ${currentTeam} CSV...`;
-            }
-        } else if (data.type === 'success') {
-            currentItem.textContent = data.message;
-            currentItem.className = 'current-item item-success';
-
-            // Team completed
-            if (data.message.includes('✅')) {
-                button.textContent = '⏳ Moving to next team...';
-            }
-        } else if (data.type === 'warning') {
-            // Add warning to details
-            const warningDiv = document.createElement('div');
-            warningDiv.className = 'progress-warning';
-            warningDiv.textContent = '⚠️ ' + data.message;
-            details.appendChild(warningDiv);
-        } else if (data.type === 'error') {
-            currentItem.textContent = data.message;
-            currentItem.className = 'current-item item-error';
-            status.className = 'status-message status-error';
-            status.textContent = '❌ ' + data.message;
-            button.textContent = '❌ Update Failed';
-        } else if (data.type === 'complete') {
-            currentItem.textContent = data.message;
-            currentItem.className = 'current-item item-success';
-            button.textContent = '⏳ Finalizing...';
-
-            // Store summary data from complete message and show completion UI
-            if (data.teams_processed !== undefined) {
-                window.tfrrSummaryData = {
-                    teams_processed: data.teams_processed,
-                    athletes_added: data.athletes_added,
-                    athletes_updated: data.athletes_updated,
-                    prs_added: data.prs_added,
-                    csv_files: data.csv_files || [],
-                    timestamp: data.timestamp
-                };
-
-                // NOW show completion UI
-                setTimeout(() => {
-                    eventSource.close();
-                    status.className = 'status-message status-success';
-                    status.textContent = '✅ TFRR stats updated successfully!';
-
-                    // Use summary data from SSE complete message
-                    const summaryData = window.tfrrSummaryData || {};
-
-                    // Display statistics
-                    if (summaryData.teams_processed !== undefined) {
-                        let csvFilesHtml = '';
-                        if (summaryData.csv_files && summaryData.csv_files.length > 0) {
-                            csvFilesHtml = `
-                                <div style="margin-top: 1rem;">
-                                    <strong>CSV Files Exported:</strong>
-                                    <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
-                                        ${summaryData.csv_files.map(file => `<li><code>${file}</code></li>`).join('')}
-                                    </ul>
-                                    <p style="margin-top: 0.5rem; color: #666; font-size: 0.9rem;">
-                                        Location: <code>csv_exports/</code>
-                                    </p>
-                                </div>
-                            `;
-                        }
-
-                        infoDiv.innerHTML = `
-                            <div class="stats-grid">
-                                <div class="stat-item">
-                                    <strong>Teams Processed:</strong> ${summaryData.teams_processed}
-                                </div>
-                                <div class="stat-item">
-                                    <strong>Athletes Added:</strong> ${summaryData.athletes_added}
-                                </div>
-                                <div class="stat-item">
-                                    <strong>Athletes Updated:</strong> ${summaryData.athletes_updated}
-                                </div>
-                                <div class="stat-item">
-                                    <strong>PRs Added:</strong> ${summaryData.prs_added}
-                                </div>
-                            </div>
-                            ${csvFilesHtml}
-                            <p style="margin-top: 1rem; color: #666;">
-                                <small>Fetched from TFRR at ${new Date(summaryData.timestamp).toLocaleString()}</small>
-                            </p>
-                        `;
-                        results.style.display = 'block';
-                    }
-
-                    button.textContent = '✅ TFRR Stats Updated';
-                    progress.style.display = 'none';
-
-                    // Reset button after 5 seconds
-                    setTimeout(() => {
-                        button.textContent = '🏃 Update TFRR Stats';
-                        button.disabled = false;
-                    }, 5000);
-                }, 2000);
-            }
-        }
-    };
-
-    eventSource.onerror = function() {
-        eventSource.close();
-    };
-
-    try {
-        const response = await fetch('/api/update-tfrr-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: sessionId })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error || 'TFRR stats update failed to start');
-        }
-
-        // API call succeeded - now wait for SSE completion
-        // Don't show success yet! Wait for the 'complete' message from SSE
-
-    } catch (error) {
-        eventSource.close();
-        status.className = 'status-message status-error';
-        status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🏃 Update TFRR Stats';
-        button.disabled = false;
-        progress.style.display = 'none';
-    }
-});
-
-// Update Cricket Stats Button
-document.getElementById('btn-update-cricket').addEventListener('click', async function() {
-    const button = this;
-    const status = document.getElementById('cricket-status');
-    const results = document.getElementById('cricket-results');
-    const infoDiv = document.getElementById('cricket-info');
-
-    // Confirm before starting
-    if (!confirm('This will take 2-3 minutes to fetch cricket stats from CricClubs. Continue?')) {
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = '⏳ Fetching Cricket Stats...';
-    status.style.display = 'block';
-    status.className = 'status-message status-loading';
-    status.textContent = 'Fetching cricket statistics from CricClubs...';
-    results.style.display = 'none';
-
-    try {
-        const response = await fetch('/api/update-cricket-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            status.className = 'status-message status-success';
-            status.textContent = '✅ Cricket stats updated successfully!';
-
-            // Display results
-            infoDiv.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <strong>CSV File:</strong> <code>${data.csv_path.split('/').pop()}</code>
-                    </div>
-                    <div class="stat-item">
-                        <strong>Location:</strong> <code>csv_exports/</code>
-                    </div>
-                    <div class="stat-item">
-                        <strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}
-                    </div>
-                </div>
-                <p style="margin-top: 1rem;">
-                    <strong>Data Includes:</strong>
-                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
-                        <li>Batting statistics (runs, average, strike rate, etc.)</li>
-                        <li>Bowling statistics (wickets, economy rate, average, etc.)</li>
-                        <li>Fielding statistics (catches, run-outs, stumpings)</li>
-                    </ul>
-                </p>
-            `;
-            results.style.display = 'block';
-
-            button.textContent = '✅ Cricket Stats Updated';
-
-            // Reset button after 5 seconds
-            setTimeout(() => {
-                button.textContent = '🏏 Update Cricket Stats';
-                button.disabled = false;
-            }, 5000);
-        } else {
-            throw new Error(data.error || 'Failed to update cricket stats');
-        }
-    } catch (error) {
-        status.className = 'status-message status-error';
-        status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🏏 Update Cricket Stats';
-        button.disabled = false;
     }
 });
 
@@ -833,191 +306,6 @@ document.getElementById('btn-send-test-email').addEventListener('click', async f
         status.textContent = `❌ Error: ${error.message}`;
     } finally {
         button.textContent = '✉️ Send Test Email';
-        button.disabled = false;
-    }
-});
-
-// Run Complete Daily Workflow Button with Real-Time Progress
-document.getElementById('btn-run-workflow').addEventListener('click', async function() {
-    const button = this;
-    const status = document.getElementById('workflow-status');
-    const liveProgress = document.getElementById('workflow-live-progress');
-    const currentItem = document.getElementById('workflow-current-item');
-    const progress = document.getElementById('workflow-progress');
-    const results = document.getElementById('workflow-results');
-    const stepsDiv = document.getElementById('workflow-steps');
-    const date = document.getElementById('workflow-date').value;
-
-    if (!confirm('Run the complete 8 AM daily workflow? This will:\n\n1. Update all stats (NCAA, Cricket, TFRR) - 10-15 min\n2. Check games\n3. Check milestones\n4. Send email\n\nThis may take 10-15 minutes.')) {
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = '⏳ Running Workflow... (10-15 minutes)';
-    status.style.display = 'block';
-    status.className = 'status-message status-loading';
-    liveProgress.style.display = 'block';
-    progress.style.display = 'none';
-    results.style.display = 'none';
-    stepsDiv.innerHTML = '';
-
-    // Generate unique session ID
-    const sessionId = 'workflow-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-
-    // Connect to SSE endpoint for real-time progress
-    const eventSource = new EventSource(`/api/progress/${sessionId}`);
-    let completedSuccessfully = false;  // Track if we got complete message
-
-    eventSource.onmessage = function(event) {
-        const message = JSON.parse(event.data);
-
-        // Update UI based on message type
-        if (message.type === 'step') {
-            currentItem.textContent = message.message;
-            currentItem.style.fontWeight = 'bold';
-            currentItem.style.color = '#0066cc';
-        } else if (message.type === 'info') {
-            currentItem.textContent = message.message;
-            currentItem.style.fontWeight = 'normal';
-            currentItem.style.color = '#333';
-        } else if (message.type === 'fetch') {
-            currentItem.textContent = '  → ' + message.message;
-            currentItem.style.fontWeight = 'normal';
-            currentItem.style.color = '#555';
-        } else if (message.type === 'warning') {
-            currentItem.textContent = '⚠️ ' + message.message;
-            currentItem.style.color = '#ff9800';
-        } else if (message.type === 'error') {
-            currentItem.textContent = '❌ ' + message.message;
-            status.className = 'status-message status-error';
-            status.textContent = `❌ Error: ${message.message}`;
-            button.textContent = '🚀 Run Complete 8 AM Workflow';
-            button.disabled = false;
-            liveProgress.style.display = 'none';
-            eventSource.close();
-        } else if (message.type === 'success') {
-            currentItem.textContent = message.message;
-            currentItem.style.color = '#4CAF50';
-        } else if (message.type === 'complete') {
-            completedSuccessfully = true;  // Mark as successfully completed
-            currentItem.textContent = message.message;
-            status.className = 'status-message status-success';
-            status.textContent = '✅ Daily workflow completed successfully!';
-            button.textContent = '✅ Workflow Complete';
-            setTimeout(() => {
-                liveProgress.style.display = 'none';
-                eventSource.close();
-            }, 3000);
-        }
-    };
-
-    eventSource.onerror = function() {
-        // If we already completed successfully, ignore the error (natural stream close)
-        if (completedSuccessfully) {
-            console.log('SSE stream closed after successful completion (expected)');
-            eventSource.close();
-            return;
-        }
-
-        currentItem.textContent = 'Connection error';
-        status.className = 'status-message status-error';
-        status.textContent = '❌ Connection lost';
-        button.textContent = '🚀 Run Complete 8 AM Workflow';
-        button.disabled = false;
-        liveProgress.style.display = 'none';
-        eventSource.close();
-    };
-
-    try {
-        const response = await fetch('/api/run-daily-workflow', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: date, session_id: sessionId })
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.error || 'Workflow failed to start');
-        }
-
-        // Note: SSE will handle progress updates and completion
-    } catch (error) {
-        currentItem.textContent = 'Failed to start workflow';
-        status.className = 'status-message status-error';
-        status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🚀 Run Complete 8 AM Workflow';
-        button.disabled = false;
-        liveProgress.style.display = 'none';
-        eventSource.close();
-    }
-});
-
-// Clear Stats Database Button
-document.getElementById('btn-clear-stats').addEventListener('click', async function() {
-    const button = this;
-    const status = document.getElementById('clear-stats-status');
-    const results = document.getElementById('clear-stats-results');
-    const infoDiv = document.getElementById('clear-stats-info');
-
-    if (!confirm('Are you sure you want to delete the stats database?\n\nThis will:\n• Permanently delete all player statistics\n• Remove all sports data\n• Clear the database file\n\nA new empty database will be created on the next stats update.\n\nThis action is useful for demo/testing purposes.')) {
-        return;
-    }
-
-    button.disabled = true;
-    button.textContent = '⏳ Clearing Database...';
-    status.style.display = 'block';
-    status.className = 'status-message status-loading';
-    status.textContent = 'Deleting stats database...';
-    results.style.display = 'none';
-
-    try {
-        const response = await fetch('/api/clear-stats', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            status.className = 'status-message status-success';
-            status.textContent = `✅ ${data.message}`;
-
-            // Display statistics
-            let sportsHtml = '';
-            if (data.stats.sports && Object.keys(data.stats.sports).length > 0) {
-                sportsHtml = '<div class="stat-item stat-full-width"><strong>Sports Removed:</strong><ul>';
-                for (const [sport, count] of Object.entries(data.stats.sports)) {
-                    const sportDisplay = sport.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    sportsHtml += `<li>${sportDisplay}: ${count} players</li>`;
-                }
-                sportsHtml += '</ul></div>';
-            }
-
-            infoDiv.innerHTML = `
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <strong>Total Players Removed:</strong> ${data.stats.total_players}
-                    </div>
-                    ${sportsHtml}
-                </div>
-            `;
-
-            results.style.display = 'block';
-            button.textContent = '✅ Database Cleared';
-
-            // Reset button after 3 seconds
-            setTimeout(() => {
-                button.textContent = '🗑️ Clear Stats Database';
-                button.disabled = false;
-            }, 3000);
-        } else {
-            throw new Error(data.error || 'Failed to clear stats database');
-        }
-    } catch (error) {
-        status.className = 'status-message status-error';
-        status.textContent = `❌ Error: ${error.message}`;
-        button.textContent = '🗑️ Clear Stats Database';
         button.disabled = false;
     }
 });
