@@ -223,8 +223,11 @@ class PRTracker:
 
                 # Check for improvement
                 if self._is_improvement(event, old_pr, new_pr):
-                    # Check if date is within range
-                    if old_date and (today - old_date).days <= date_range_days:
+                    # If we have historical data from within the date range window,
+                    # this is a recent breakthrough worth reporting
+                    # (the old_date tells us when we last checked, so if it's recent,
+                    # the breakthrough happened since then)
+                    if old_date is None or (today - old_date).days <= date_range_days:
                         # Calculate improvement amount
                         improvement = self._calculate_improvement(event, old_pr, new_pr)
 
