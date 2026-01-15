@@ -14,7 +14,7 @@ from datetime import datetime
 
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def save_athlete_prs_csv(athlete_data, sport_name, output_dir="csv_exports/tfrr"):
@@ -93,7 +93,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
     sport_type = "cross_country" if "cross_country" in sport_key else "track"
 
     # Fetch team stats
-    print(f"\n[1/2] Fetching team roster and PRs...")
+    print("\n[1/2] Fetching team roster and PRs...")
     result = fetcher.fetch_team_stats(team_code, sport_type)
 
     if not result.success:
@@ -105,7 +105,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
     print(f"  ✓ Found {len(athletes)} athletes\n")
 
     # Fetch individual athlete PRs
-    print(f"[2/2] Fetching PRs for each athlete...")
+    print("[2/2] Fetching PRs for each athlete...")
     successful_files = []
     failed_athletes = []
 
@@ -116,7 +116,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
         print(f"  [{i}/{len(athletes)}] {athlete_name}... ", end='', flush=True)
 
         if not athlete_id:
-            print(f"⊘ (no athlete ID)")
+            print("⊘ (no athlete ID)")
             failed_athletes.append({'name': athlete_name, 'error': 'No athlete ID'})
             continue
 
@@ -128,7 +128,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
                 print(f"✗ (fetch failed: {athlete_result.error})")
                 failed_athletes.append({'name': athlete_name, 'error': athlete_result.error})
             else:
-                print(f"✗ (no result)")
+                print("✗ (no result)")
                 failed_athletes.append({'name': athlete_name, 'error': 'No result returned'})
             continue
 
@@ -136,7 +136,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
         prs = athlete_pr_data.get('personal_records', {})
 
         if not prs:
-            print(f"⊘ (no PRs)")
+            print("⊘ (no PRs)")
             continue
 
         # Transform data for CSV
@@ -153,7 +153,7 @@ def fetch_team_athlete_prs(team_code, sport_key, sport_display, output_dir="csv_
                 print(f"✓ ({len(prs)} PRs)")
                 successful_files.append(csv_path)
             else:
-                print(f"✗ (failed to save)")
+                print("✗ (failed to save)")
                 failed_athletes.append({'name': athlete_name, 'error': 'CSV save failed'})
 
         except Exception as e:

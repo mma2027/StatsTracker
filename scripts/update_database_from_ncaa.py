@@ -14,10 +14,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
-from src.player_database.database import PlayerDatabase
-from src.player_database.models import Player, StatEntry
-from auto_update_team_ids import fetch_with_auto_recovery
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
+from src.player_database.database import PlayerDatabase  # noqa: E402
+from src.player_database.models import Player, StatEntry  # noqa: E402
+from auto_update_team_ids import fetch_with_auto_recovery  # noqa: E402
 
 
 def generate_player_id(name: str, sport: str) -> str:
@@ -93,7 +93,7 @@ def update_database_for_team(
 
     if not result.success:
         if "No statistics available yet" in result.error:
-            print(f"  ⚠️  Season not started yet - skipping")
+            print("  ⚠️  Season not started yet - skipping")
             return {'skipped': True, 'players_added': 0, 'stats_added': 0}
         else:
             print(f"  ✗ Error: {result.error}")

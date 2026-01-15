@@ -14,7 +14,7 @@ from datetime import datetime
 
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
@@ -104,14 +104,14 @@ def fetch_all_to_csv(output_dir="csv_exports"):
                         'file': csv_path
                     })
                 else:
-                    print(f"  ⚠️  Fetched data but failed to save CSV")
+                    print("  ⚠️  Fetched data but failed to save CSV")
                     results['failed'].append({
                         'sport': sport_display,
                         'error': 'CSV save failed'
                     })
 
             elif "No player statistics found" in result.error:
-                print(f"  ⚠️  No stats yet (season hasn't started)")
+                print("  ⚠️  No stats yet (season hasn't started)")
                 results['no_stats'].append(sport_display)
 
             else:

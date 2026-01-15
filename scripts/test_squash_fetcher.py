@@ -11,8 +11,8 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import logging
-from src.website_fetcher import SquashFetcher
+import logging  # noqa: E402
+from src.website_fetcher import SquashFetcher  # noqa: E402
 
 # Setup logging to see what's happening
 logging.basicConfig(
@@ -99,11 +99,11 @@ def test_invalid_team_id():
     result = fetcher.fetch_team_stats("99999999", "squash")
 
     if not result.success:
-        print(f"\n✅ Error handling works correctly!")
+        print("\n✅ Error handling works correctly!")
         print(f"Error message: {result.error}")
         return True
     else:
-        print(f"\n⚠️  Expected failure but got success (unexpected)")
+        print("\n⚠️  Expected failure but got success (unexpected)")
         return False
 
 

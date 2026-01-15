@@ -21,10 +21,10 @@ import yaml
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.gameday_checker.models import Game, Team
-from src.player_database import PlayerDatabase
-from src.milestone_detector import MilestoneDetector
-from src.email_notifier import EmailNotifier
+from src.gameday_checker.models import Game, Team  # noqa: E402
+from src.player_database import PlayerDatabase  # noqa: E402
+from src.milestone_detector import MilestoneDetector  # noqa: E402
+from src.email_notifier import EmailNotifier  # noqa: E402
 
 
 def main():
@@ -92,7 +92,9 @@ def main():
         print("   Top 5:")
         for prox in proximities_list[:5]:
             status = "✓" if prox.distance <= 0 else f"{abs(prox.distance)} away"
-            print(f"   • {prox.player_name}: {prox.current_value}/{prox.milestone.threshold} {prox.milestone.stat_name} ({status})")
+            threshold_val = prox.milestone.threshold
+            stat = prox.milestone.stat_name
+            print(f"   • {prox.player_name}: {prox.current_value}/{threshold_val} {stat} ({status})")
     print()
 
     # Check for PR breakthroughs
@@ -136,7 +138,7 @@ def main():
 
     # Show what will be sent
     recipients = email_config.get('recipients', [])
-    print(f"📧 Sending email...")
+    print("📧 Sending email...")
     print(f"   To: {', '.join(recipients)}")
     print(f"   From: {email_config.get('sender_email')}")
     print(f"   Games: {len(games)}")

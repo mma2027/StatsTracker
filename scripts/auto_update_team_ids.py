@@ -11,7 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def discover_and_map_teams():
@@ -211,7 +211,7 @@ def fetch_with_auto_recovery(team_id, sport):
                     if team['sport'] == target_sport:
                         new_team_id = team['team_id']
                         print(f"✓ Found new team ID: {new_team_id}")
-                        print(f"🔄 Retrying with new ID...")
+                        print("🔄 Retrying with new ID...")
 
                         # Retry with new ID
                         result = fetcher.fetch_team_stats(new_team_id, sport)

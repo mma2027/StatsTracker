@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
-from datetime import date
-import logging
+from gameday_checker.checker import GamedayChecker  # noqa: E402
+from datetime import date  # noqa: E402
+import logging  # noqa: E402
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -40,7 +40,7 @@ for test_date, description in test_dates:
             print(f"  - {game.team.sport}: vs {game.opponent}")
             print(f"    Time: {game.time}, Location: {home_away}")
     else:
-        print(f"FAIL: No games found")
+        print("FAIL: No games found")  # noqa: F541
 
 print("\n" + "=" * 70)
 print("Summary")

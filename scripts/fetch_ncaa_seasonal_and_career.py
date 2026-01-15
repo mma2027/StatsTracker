@@ -20,7 +20,7 @@ import time
 
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def save_player_career_csv(player_data, sport_name, player_name_override=None, output_dir="csv_exports/ncaa"):
@@ -96,7 +96,7 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
     print(f"{'='*70}")
 
     # Step 1: Fetch roster with player IDs
-    print(f"\n[1/2] Fetching roster with player IDs...")
+    print("\n[1/2] Fetching roster with player IDs...")
     roster_result = fetcher.fetch_team_roster_with_ids(str(team_id), sport_key)
 
     if not roster_result.success:
@@ -107,7 +107,7 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
     print(f"  ✓ Found {len(roster)} players on roster\n")
 
     # Step 2: Fetch career stats for each player
-    print(f"[2/2] Fetching career stats for each player...")
+    print("[2/2] Fetching career stats for each player...")
     successful_files = []
     failed_players = []
 
@@ -132,7 +132,7 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
                     print(f"✓ ({num_seasons} seasons)")
                     successful_files.append(csv_path)
                 else:
-                    print(f"✗ (failed to save CSV)")
+                    print("✗ (failed to save CSV)")
                     failed_players.append({'name': player_name, 'error': 'CSV save failed'})
             else:
                 print(f"⊘ ({career_result.error})")

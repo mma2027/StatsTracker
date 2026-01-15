@@ -8,11 +8,10 @@ school's main page and looking at different academic years.
 
 import sys
 import json
-from datetime import datetime
 
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_SCHOOL_ID
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402, F401
 
 
 def discover_historical_ids(years_back=6):
@@ -25,16 +24,12 @@ def discover_historical_ids(years_back=6):
     Returns:
         Dict of {sport_name: {year: team_id}}
     """
-    fetcher = NCAAFetcher()
     historical_ids = {}
 
     print("=" * 70)
     print(f"Discovering Historical Team IDs (last {years_back} years)")
     print("=" * 70)
     print()
-
-    # Get current year
-    current_year = datetime.now().year
 
     # Note: NCAA team IDs are tied to specific academic years
     # We would need to access historical pages or use archived team IDs

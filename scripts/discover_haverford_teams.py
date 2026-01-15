@@ -10,7 +10,7 @@ each academic year to update team IDs in the config.
 import sys
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402
 
 
 def main():

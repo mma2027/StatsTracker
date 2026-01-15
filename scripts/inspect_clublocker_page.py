@@ -12,11 +12,11 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
+from selenium import webdriver  # noqa: E402
+from selenium.webdriver.chrome.service import Service  # noqa: E402
+from selenium.webdriver.chrome.options import Options  # noqa: E402
+from webdriver_manager.chrome import ChromeDriverManager  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
 
 
 def inspect_clublocker_page(team_id="40879"):
@@ -84,7 +84,7 @@ def inspect_clublocker_page(team_id="40879"):
 
             # Show first few data rows
             if len(rows) > 1:
-                print(f"    First 3 data rows:")
+                print("    First 3 data rows:")
                 for j, row in enumerate(rows[1:4], 1):
                     cells = row.find_all(["td", "th"])
                     cell_texts = [c.text.strip()[:30] for c in cells]
@@ -97,16 +97,18 @@ def inspect_clublocker_page(team_id="40879"):
 
         roster_keywords = ["roster", "player", "squad", "team"]
         for keyword in roster_keywords:
-            elements = soup.find_all(["div", "section"],
-                                    class_=lambda x: x and keyword in str(x).lower() if x else False)
+            elements = soup.find_all(
+                ["div", "section"],
+                class_=lambda x: x and keyword in str(x).lower() if x else False
+            )
             if elements:
                 print(f"\n  Elements with '{keyword}' in class ({len(elements)}):")
                 for elem in elements[:3]:
                     print(f"    - Tag: {elem.name}, Classes: {elem.get('class')}")
                     # Get first 100 chars of text
-                    text = elem.get_text(strip=True)[:100]
-                    if text:
-                        print(f"      Text preview: {text}...")
+                    text_preview = elem.get_text(strip=True)[:100]
+                    if text_preview:
+                        print(f"      Text preview: {text_preview}...")
 
         # Look for win-related elements
         print("\n" + "=" * 80)
@@ -115,12 +117,15 @@ def inspect_clublocker_page(team_id="40879"):
 
         win_keywords = ["win", "record", "w-l", "match"]
         for keyword in win_keywords:
-            elements = soup.find_all(["span", "div", "td"],
-                                    class_=lambda x: x and keyword in str(x).lower() if x else False)
+            elements = soup.find_all(
+                ["span", "div", "td"],
+                class_=lambda x: x and keyword in str(x).lower() if x else False
+            )
             if elements:
                 print(f"\n  Elements with '{keyword}' in class ({len(elements)}):")
                 for elem in elements[:5]:
-                    print(f"    - Tag: {elem.name}, Classes: {elem.get('class')}, Text: {elem.text.strip()[:50]}")
+                    elem_text = elem.text.strip()[:50]
+                    print(f"    - Tag: {elem.name}, Classes: {elem.get('class')}, Text: {elem_text}")
 
         # Look for any elements with numbers that might be wins
         print("\n" + "=" * 80)

@@ -36,7 +36,7 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
         print("=" * 70)
 
         # Read CSV files
-        print(f"\n1. Reading CSV files...")
+        print("\n1. Reading CSV files...")
         print(f"   - Batting:  {batting_file}")
         batting_df = pd.read_csv(batting_file)
         print(f"     ✅ Loaded {len(batting_df)} rows, {len(batting_df.columns)} columns")
@@ -50,7 +50,7 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
         print(f"     ✅ Loaded {len(fielding_df)} rows, {len(fielding_df.columns)} columns")
 
         # Identify player column
-        print(f"\n2. Identifying player column...")
+        print("\n2. Identifying player column...")
         player_col = None
         for col in batting_df.columns:
             if col.lower() in ["player", "name", "player name"]:
@@ -65,34 +65,34 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
         print(f"   ✅ Using '{player_col}' as player identifier")
 
         # Standardize column names
-        print(f"\n3. Standardizing column names...")
+        print("\n3. Standardizing column names...")
         if player_col != "Player":
             batting_df.rename(columns={player_col: "Player"}, inplace=True)
             bowling_df.rename(columns={player_col: "Player"}, inplace=True)
             fielding_df.rename(columns={player_col: "Player"}, inplace=True)
 
         # Add prefixes to columns (except Player)
-        print(f"   - Adding 'Batting_' prefix...")
+        print("   - Adding 'Batting_' prefix...")
         batting_df.columns = [col if col == "Player" else f"Batting_{col}" for col in batting_df.columns]
 
-        print(f"   - Adding 'Bowling_' prefix...")
+        print("   - Adding 'Bowling_' prefix...")
         bowling_df.columns = [col if col == "Player" else f"Bowling_{col}" for col in bowling_df.columns]
 
-        print(f"   - Adding 'Fielding_' prefix...")
+        print("   - Adding 'Fielding_' prefix...")
         fielding_df.columns = [col if col == "Player" else f"Fielding_{col}" for col in fielding_df.columns]
 
         # Merge dataframes
-        print(f"\n4. Merging dataframes...")
-        print(f"   - Merging batting and bowling...")
+        print("\n4. Merging dataframes...")
+        print("   - Merging batting and bowling...")
         merged = batting_df.merge(bowling_df, on="Player", how="outer")
         print(f"     ✅ {len(merged)} rows after merge")
 
-        print(f"   - Merging with fielding...")
+        print("   - Merging with fielding...")
         merged = merged.merge(fielding_df, on="Player", how="outer")
         print(f"     ✅ {len(merged)} rows after merge")
 
         # Filter for Haverford players (if team column exists)
-        print(f"\n5. Filtering data...")
+        print("\n5. Filtering data...")
         team_cols = [col for col in merged.columns if "team" in col.lower()]
         if team_cols:
             print(f"   Found team column(s): {team_cols}")
@@ -106,11 +106,11 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
             print(f"   ℹ️  No team column found, keeping all {len(merged)} players")
 
         # Sort by player name
-        print(f"\n6. Sorting by player name...")
+        print("\n6. Sorting by player name...")
         merged = merged.sort_values("Player").reset_index(drop=True)
 
         # Export to CSV
-        print(f"\n7. Exporting to CSV...")
+        print("\n7. Exporting to CSV...")
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -118,17 +118,17 @@ def merge_cricket_data(batting_file, bowling_file, fielding_file, output_file):
         print(f"   ✅ Exported to: {output_file}")
 
         # Summary
-        print(f"\n" + "=" * 70)
-        print(f"✅ SUCCESS!")
-        print(f"=" * 70)
-        print(f"\n📊 Final Statistics:")
+        print("\n" + "=" * 70)
+        print("✅ SUCCESS!")
+        print("=" * 70)
+        print("\n📊 Final Statistics:")
         print(f"   - Total players:    {len(merged)}")
         print(f"   - Total columns:    {len(merged.columns)}")
         print(f"   - Batting columns:  {len([c for c in merged.columns if c.startswith('Batting_')])}")
         print(f"   - Bowling columns:  {len([c for c in merged.columns if c.startswith('Bowling_')])}")
         print(f"   - Fielding columns: {len([c for c in merged.columns if c.startswith('Fielding_')])}")
 
-        print(f"\n👥 Players:")
+        print("\n👥 Players:")
         for i, player in enumerate(merged["Player"], 1):
             print(f"   {i}. {player}")
 

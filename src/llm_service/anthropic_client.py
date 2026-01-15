@@ -4,7 +4,6 @@ Anthropic Claude API client for semantic search query translation.
 
 import json
 import logging
-import os
 from typing import Dict, Optional
 
 try:

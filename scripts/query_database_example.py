@@ -8,7 +8,7 @@ Demonstrates how to query stats from the database after updating from NCAA.
 import sys
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.player_database.database import PlayerDatabase
+from src.player_database.database import PlayerDatabase  # noqa: E402
 
 
 def main():
@@ -64,7 +64,7 @@ def main():
             stats = db.get_player_stats(player.player_id, season="2025-26")
             if stats and stats.season_stats:
                 season_data = stats.season_stats.get("2025-26", {})
-                print(f"  2025-26 Stats:")
+                print("  2025-26 Stats:")
                 for stat_name, stat_value in list(season_data.items())[:10]:
                     print(f"    {stat_name}: {stat_value}")
                 if len(season_data) > 10:

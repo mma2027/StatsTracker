@@ -4,18 +4,13 @@ NCAA Website Fetcher
 Fetches statistics from NCAA.org or stats.ncaa.org
 """
 
-import requests
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import logging
 import time
-from datetime import datetime
 
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 
@@ -336,7 +331,7 @@ class NCAAFetcher(BaseFetcher):
 
             # Find all links with /players/{player_id} pattern
             all_links = soup.find_all("a", href=True)
-            player_links = [l for l in all_links if "/players/" in l.get("href", "")]
+            player_links = [link for link in all_links if "/players/" in link.get("href", "")]
 
             for link in player_links:
                 href = link.get("href")
@@ -512,9 +507,11 @@ class NCAAFetcher(BaseFetcher):
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument(
-            "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        user_agent = (
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         )
+        chrome_options.add_argument(f"--user-agent={user_agent}")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
 
         service = Service(ChromeDriverManager().install())
@@ -702,7 +699,7 @@ class NCAAFetcher(BaseFetcher):
             cell_values = [c.get_text().strip() for c in cells]
 
             if not cell_values:
-                logger.debug(f"Skipping row: no cells")
+                logger.debug("Skipping row: no cells")
                 continue
 
             # First cell should be the year

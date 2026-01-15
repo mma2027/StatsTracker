@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import csv
-from collections import defaultdict
-import logging
-from src.website_fetcher import SquashFetcher
+import csv  # noqa: E402
+from collections import defaultdict  # noqa: E402
+import logging  # noqa: E402
+from src.website_fetcher import SquashFetcher  # noqa: E402
 
 # Setup logging
 logging.basicConfig(
@@ -97,7 +97,7 @@ def fetch_womens_squash():
                 stats["total"]
             ])
 
-    print(f"   ✓ CSV file created successfully!")
+    print("   ✓ CSV file created successfully!")
 
     # Display summary
     print("\n" + "="*80)

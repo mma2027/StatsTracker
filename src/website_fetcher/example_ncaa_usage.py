@@ -25,7 +25,7 @@ def fetch_team_example(team_id: str, sport: str):
         print(f"Number of players: {len(data['players'])}")
         print(f"\nStat categories: {', '.join(data['stat_categories'])}")
 
-        print(f"\nFirst 5 players:")
+        print("\nFirst 5 players:")
         for i, player in enumerate(data["players"][:5]):
             print(f"\n{i+1}. {player['name']}")
             print(f"   Stats: {player['stats']}")

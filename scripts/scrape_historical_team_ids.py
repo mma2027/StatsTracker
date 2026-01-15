@@ -16,15 +16,15 @@ from datetime import datetime
 
 sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_SCHOOL_ID
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
+from src.website_fetcher.ncaa_fetcher import HAVERFORD_SCHOOL_ID  # noqa: E402, F401
+from selenium import webdriver  # noqa: E402
+from selenium.webdriver.chrome.service import Service  # noqa: E402
+from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402, F401
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402, F401
+from selenium.webdriver.support import expected_conditions as EC  # noqa: E402, F401
+from webdriver_manager.chrome import ChromeDriverManager  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
 
 
 def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
