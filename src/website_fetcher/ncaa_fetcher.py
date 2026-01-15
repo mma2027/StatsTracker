@@ -89,7 +89,9 @@ class NCAAFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching player stats")
 
-    def fetch_player_career_stats(self, player_id: str, sport: str, school_filter: str = "Haverford", reuse_driver: bool = False) -> FetchResult:
+    def fetch_player_career_stats(
+        self, player_id: str, sport: str, school_filter: str = "Haverford", reuse_driver: bool = False
+    ) -> FetchResult:
         """
         Fetch career statistics for an individual player across all their seasons.
 
@@ -428,32 +430,21 @@ class NCAAFetcher(BaseFetcher):
                 player_id = player["player_id"]
                 player_name = player["name"]
 
-                career_result = self.fetch_player_career_stats(
-                    player_id, sport, school_filter, reuse_driver=True
-                )
+                career_result = self.fetch_player_career_stats(player_id, sport, school_filter, reuse_driver=True)
 
                 if career_result.success:
-                    players_with_stats.append({
-                        "name": player_name,
-                        "player_id": player_id,
-                        "career_stats": career_result.data
-                    })
+                    players_with_stats.append(
+                        {"name": player_name, "player_id": player_id, "career_stats": career_result.data}
+                    )
                     logger.debug(f"Fetched career stats for {player_name}")
                 else:
                     logger.warning(f"Failed to fetch career stats for {player_name}: {career_result.error}")
                     # Still include player in list but without career stats
-                    players_with_stats.append({
-                        "name": player_name,
-                        "player_id": player_id,
-                        "career_stats": None,
-                        "error": career_result.error
-                    })
+                    players_with_stats.append(
+                        {"name": player_name, "player_id": player_id, "career_stats": None, "error": career_result.error}
+                    )
 
-            data = {
-                "team_id": team_id,
-                "sport": sport,
-                "players": players_with_stats
-            }
+            data = {"team_id": team_id, "sport": sport, "players": players_with_stats}
 
             logger.info(f"Successfully fetched team {team_id} with {len(players_with_stats)} players")
 
