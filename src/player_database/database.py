@@ -370,16 +370,23 @@ class PlayerDatabase:
                 except (ValueError, AttributeError):
                     pass
 
-                # Add to season stats
+                # Add to season stats (take latest value to avoid duplicates)
                 if stat_season not in season_stats:
                     season_stats[stat_season] = {}
                 season_stats[stat_season][stat_name] = stat_value
 
-                # Aggregate to career (simplified - may need sport-specific logic)
-                if isinstance(stat_value, (int, float)):
-                    career_stats[stat_name] = career_stats.get(stat_name, 0) + stat_value
-                else:
-                    career_stats[stat_name] = stat_value
+            # Calculate career stats from season data, excluding "Career" season to avoid double-counting
+            for stat_season, stats in season_stats.items():
+                # Skip "Career" season - we'll calculate it ourselves
+                if stat_season == "Career":
+                    continue
+
+                for stat_name, stat_value in stats.items():
+                    # Aggregate numeric stats by summing across seasons
+                    if isinstance(stat_value, (int, float)):
+                        career_stats[stat_name] = career_stats.get(stat_name, 0) + stat_value
+                    else:
+                        career_stats[stat_name] = stat_value
 
             return PlayerStats(player=player, career_stats=career_stats, season_stats=season_stats)
 
