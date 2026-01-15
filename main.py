@@ -564,10 +564,10 @@ def main():
 
         try:
             from src.pr_tracker import PRTracker
-            from src.website_fetcher.tfrr_fetcher import TFRRFetcher
+            from src.website_fetcher.tfrr_playwright_fetcher import TFRRPlaywrightFetcher
 
-            # Initialize PR tracker
-            tfrr_fetcher = TFRRFetcher()
+            # Initialize PR tracker with Playwright fetcher for better rate limit handling
+            tfrr_fetcher = TFRRPlaywrightFetcher(headless=True)
             pr_tracker = PRTracker(tfrr_fetcher)
 
             # Check for yesterday's PR breakthroughs

@@ -202,6 +202,11 @@ class EmailTemplate:
             html += f"<p>{len(pr_breakthroughs)} athlete(s) broke their personal records:</p>"
 
             for breakthrough in pr_breakthroughs:
+                # Determine arrow direction based on improvement type
+                # For time events, improvement shows as decrease (↓)
+                # For distance/height events, improvement shows as increase (↑)
+                arrow_direction = "↑" if "m" in breakthrough.improvement else "↓"
+
                 html += f"""
                 <div class="pr-breakthrough">
                     <div class="athlete-name">{breakthrough.athlete_name}</div>
@@ -210,12 +215,15 @@ class EmailTemplate:
                         <span class="old-pr">Previous: {breakthrough.old_pr}</span>
                         <span class="arrow">→</span>
                         <span class="new-pr">New PR: {breakthrough.new_pr}</span>
-                        <span class="improvement">(↓ {breakthrough.improvement})</span>
+                        <span class="improvement">({arrow_direction} {breakthrough.improvement})</span>
                     </div>
                 """
                 if breakthrough.meet_name:
                     html += f'<div class="meet-info">at {breakthrough.meet_name}</div>'
                 html += "</div>"
+        else:
+            html += "<h2>No PR Breakthroughs</h2>"
+            html += "<p>No athletes broke their personal records yesterday.</p>"
 
         # Add milestones section
         if proximities:
@@ -317,6 +325,10 @@ class EmailTemplate:
                 if breakthrough.meet_name:
                     text += f"  Meet: {breakthrough.meet_name}\n"
                 text += "\n"
+        else:
+            text += "NO PR BREAKTHROUGHS\n"
+            text += "-" * 60 + "\n"
+            text += "No athletes broke their personal records yesterday.\n\n"
 
         # Add milestones section
         if proximities:

@@ -1495,10 +1495,28 @@ def api_simulate_gameday():
 
         proximities_list = list(player_closest_milestone.values())
 
+        # Try to get real PR breakthroughs if available
+        pr_breakthroughs = []
+        try:
+            from src.pr_tracker import PRTracker
+            from src.website_fetcher.tfrr_playwright_fetcher import TFRRPlaywrightFetcher
+
+            # Check if PR history file exists
+            import os
+            if os.path.exists('data/pr_history.csv'):
+                # Initialize PR tracker
+                tfrr_fetcher = TFRRPlaywrightFetcher(headless=True)
+                pr_tracker = PRTracker(tfrr_fetcher)
+
+                # Get real PR breakthroughs (this will be empty if none exist)
+                pr_breakthroughs = pr_tracker.check_yesterday_breakthroughs()
+                logger.info(f"Found {len(pr_breakthroughs)} real PR breakthroughs")
+        except Exception as e:
+            logger.warning(f"Could not fetch PR breakthroughs: {e}")
+
         # Generate email preview (don't send)
-        has_milestones = len(proximities_list) > 0
-        subject = EmailTemplate.generate_subject(check_date, len(games), has_milestones)
-        html_body = EmailTemplate.generate_milestone_email(proximities_list, games, check_date)
+        subject = EmailTemplate.generate_subject(check_date, len(games), len(pr_breakthroughs))
+        html_body = EmailTemplate.generate_milestone_email(proximities_list, games, check_date, pr_breakthroughs)
 
         # Convert games to dict for JSON serialization
         games_data = []
@@ -1546,6 +1564,20 @@ def api_simulate_gameday():
                 }
             )
 
+        # Convert PR breakthroughs to dict
+        pr_breakthroughs_data = []
+        for breakthrough in pr_breakthroughs:
+            pr_breakthroughs_data.append(
+                {
+                    "athlete_name": breakthrough.athlete_name,
+                    "event": breakthrough.event,
+                    "old_pr": breakthrough.old_pr,
+                    "new_pr": breakthrough.new_pr,
+                    "improvement": breakthrough.improvement,
+                    "meet_name": breakthrough.meet_name or "Unknown Meet",
+                }
+            )
+
         return jsonify(
             {
                 "success": True,
@@ -1554,6 +1586,8 @@ def api_simulate_gameday():
                 "games_count": len(games),
                 "proximities": proximities_data,
                 "proximities_count": len(proximities_list),
+                "pr_breakthroughs": pr_breakthroughs_data,
+                "pr_breakthroughs_count": len(pr_breakthroughs),
                 "sports_with_games": list(sports_with_games),
                 "email_subject": subject,
                 "email_html": html_body,
