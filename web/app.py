@@ -202,8 +202,8 @@ def api_semantic_search():
 
         # Try LLM-powered semantic search
         try:
-            # Initialize LLM client
-            llm_client = AnthropicClient()
+            # Initialize LLM client with config
+            llm_client = AnthropicClient(config=config)
 
             if not llm_client.is_available():
                 raise Exception("Anthropic API not configured")
@@ -561,47 +561,48 @@ def api_update_stats():
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching {sport.replace("_", " ").title()} roster...',
+                                "message": f'Fetching {sport.replace("_", " ").title()} roster and career stats (optimized)...',
                             },
                         )
                         try:
-                            # First, get roster with player IDs
-                            roster_result = ncaa_fetcher.fetch_team_roster_with_ids(
-                                str(team_id), sport
+                            # Use optimized method that reuses driver for entire team
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
+                                str(team_id), sport, "Haverford"
                             )
 
-                            if not roster_result.success or not roster_result.data:
+                            if not team_result.success or not team_result.data:
                                 logger.warning(
-                                    f"[{session_id}] Failed to fetch roster for {sport}: {roster_result.error}"
+                                    f"[{session_id}] Failed to fetch team data for {sport}: {team_result.error}"
                                 )
                                 send_progress(
                                     session_id,
                                     {
                                         "type": "warning",
-                                        "message": f'Could not fetch roster for {sport.replace("_", " ").title()}',
+                                        "message": f'Could not fetch data for {sport.replace("_", " ").title()}',
                                     },
                                 )
                                 continue
 
-                            roster = roster_result.data.get("players", [])
+                            players_with_stats = team_result.data.get("players", [])
                             logger.info(
-                                f"[{session_id}] Found {len(roster)} players on {sport} roster"
+                                f"[{session_id}] Found {len(players_with_stats)} players on {sport} roster"
                             )
                             send_progress(
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Fetching career stats for {len(roster)} {sport.replace("_", " ").title()} players...',
+                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
                                 },
                             )
 
                             players_added = 0
                             stats_added = 0
 
-                            # Fetch career stats for each player
-                            for idx, player_info in enumerate(roster):
-                                player_name = player_info.get("name")
-                                player_ncaa_id = player_info.get("player_id")
+                            # Process each player with their career stats
+                            for idx, player_with_stats in enumerate(players_with_stats):
+                                player_name = player_with_stats.get("name")
+                                player_ncaa_id = player_with_stats.get("player_id")
+                                career_data = player_with_stats.get("career_stats")
 
                                 if not player_name or not player_ncaa_id:
                                     continue
@@ -612,25 +613,20 @@ def api_update_stats():
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Fetching {sport.replace("_", " ").title()} player {idx+1}/{len(roster)}...',
+                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
                                         },
                                     )
 
                                 # Generate our internal player ID
                                 player_id = generate_player_id(player_name, sport)
 
-                                # Fetch career stats for this player
-                                career_result = ncaa_fetcher.fetch_player_career_stats(
-                                    player_ncaa_id, sport, "Haverford"
-                                )
-
-                                if not career_result.success or not career_result.data:
+                                # Check if career stats were successfully fetched
+                                if not career_data:
                                     logger.warning(
-                                        f"[{session_id}] Failed to fetch career stats for {player_name}"
+                                        f"[{session_id}] No career stats available for {player_name}"
                                     )
                                     continue
 
-                                career_data = career_result.data
                                 seasons_data = career_data.get("seasons", [])
 
                                 # Check if player exists, add if not
@@ -1757,31 +1753,33 @@ def api_run_daily_workflow():
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching NCAA {sport.replace("_", " ").title()} roster...',
+                                "message": f'Fetching NCAA {sport.replace("_", " ").title()} roster and career stats (optimized)...',
                             },
                         )
                         try:
-                            # Fetch roster with player IDs
-                            roster_result = ncaa_fetcher.fetch_team_roster_with_ids(
-                                str(team_id), sport
+                            # Use optimized method that reuses driver for entire team
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
+                                str(team_id), sport, "Haverford"
                             )
-                            if not roster_result.success or not roster_result.data:
-                                logger.warning(f"Failed to fetch roster for {sport}")
+                            if not team_result.success or not team_result.data:
+                                logger.warning(f"Failed to fetch team data for {sport}")
                                 continue
 
-                            roster = roster_result.data.get("players", [])
+                            players_with_stats = team_result.data.get("players", [])
                             send_progress(
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Fetching career stats for {len(roster)} {sport.replace("_", " ").title()} players...',
+                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
                                 },
                             )
 
-                            # Fetch career stats for each player
-                            for idx, player_info in enumerate(roster):
-                                player_name = player_info.get("name")
-                                player_ncaa_id = player_info.get("player_id")
+                            # Process each player with their career stats
+                            for idx, player_with_stats in enumerate(players_with_stats):
+                                player_name = player_with_stats.get("name")
+                                player_ncaa_id = player_with_stats.get("player_id")
+                                career_data = player_with_stats.get("career_stats")
+
                                 if not player_name or not player_ncaa_id:
                                     continue
 
@@ -1790,19 +1788,15 @@ def api_run_daily_workflow():
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Fetching {sport.replace("_", " ").title()} player {idx+1}/{len(roster)}...',
+                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
                                         },
                                     )
 
                                 player_id = generate_player_id(player_name, sport)
-                                career_result = ncaa_fetcher.fetch_player_career_stats(
-                                    player_ncaa_id, sport, "Haverford"
-                                )
 
-                                if not career_result.success or not career_result.data:
+                                if not career_data:
                                     continue
 
-                                career_data = career_result.data
                                 seasons_data = career_data.get("seasons", [])
 
                                 existing_player = database.get_player(player_id)
