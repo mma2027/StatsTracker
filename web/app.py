@@ -19,6 +19,7 @@ from queue import Queue, Empty
 from threading import Thread
 import yaml
 import pandas as pd
+from dotenv import load_dotenv
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -45,6 +46,19 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
 
 # Progress tracking
 progress_queues = {}  # session_id -> Queue
+
+# Sport display name mapping
+SPORT_DISPLAY_NAMES = {
+    "mens_track_xc": "Men's Track & Field / Cross Country",
+    "womens_track_xc": "Women's Track & Field / Cross Country",
+}
+
+
+def get_sport_display_name(sport_key):
+    """Convert sport key to display name."""
+    if sport_key in SPORT_DISPLAY_NAMES:
+        return SPORT_DISPLAY_NAMES[sport_key]
+    return sport_key.replace("_", " ").title()
 
 
 def create_progress_stream(session_id):
@@ -88,7 +102,7 @@ def csv_browser():
             sport = player.sport
             if sport not in sports_data:
                 sports_data[sport] = {
-                    "name": sport.replace("_", " ").title(),
+                    "name": get_sport_display_name(sport),
                     "sport_key": sport,
                     "player_count": 0,
                     "last_updated": None,
@@ -144,7 +158,7 @@ def api_search_players():
                 matching_players.append(
                     {
                         "name": player.name,
-                        "sport": player.sport.replace("_", " ").title(),
+                        "sport": get_sport_display_name(player.sport),
                         "sport_key": player.sport,
                         "last_updated": last_updated,
                     }
@@ -254,7 +268,7 @@ def api_semantic_search():
                     {
                         "player_id": player.player_id,
                         "name": player.name,
-                        "sport": player.sport.replace("_", " ").title(),
+                        "sport": get_sport_display_name(player.sport),
                         "sport_key": player.sport,
                         "team": player.team,
                         "position": player.position,
@@ -281,6 +295,104 @@ def api_semantic_search():
 
     except Exception as e:
         logger.error(f"Semantic search error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/ask-about-player", methods=["POST"])
+def api_ask_about_player():
+    """Conversational API to ask questions about a specific player using Claude."""
+    try:
+        data = request.get_json()
+        player_id = data.get("player_id", "").strip()
+        question = data.get("question", "").strip()
+
+        if not player_id or not question:
+            return jsonify({"error": "player_id and question required"}), 400
+
+        # Load database
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(
+            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
+        )
+
+        # Get player data
+        player = database.get_player(player_id)
+        if not player:
+            return jsonify({"error": "Player not found"}), 404
+
+        player_stats = database.get_player_stats(player_id)
+        if not player_stats:
+            return jsonify({"error": "No stats found for player"}), 404
+
+        # Prepare context for Claude
+        sport_display = get_sport_display_name(player.sport)
+        context = f"""Player Information:
+Name: {player.name}
+Sport: {sport_display}
+Team: {player.team}
+{"Position: " + player.position if player.position else ""}
+{"Year: " + player.year if player.year else ""}
+
+Career Statistics:
+"""
+        for stat_name, stat_value in player_stats.career_stats.items():
+            context += f"- {stat_name}: {stat_value}\n"
+
+        context += "\nSeason-by-Season Stats:\n"
+        for season, stats in sorted(player_stats.season_stats.items()):
+            context += f"\n{season}:\n"
+            for stat_name, stat_value in stats.items():
+                context += f"  - {stat_name}: {stat_value}\n"
+
+        # Call Claude API
+        try:
+            llm_client = AnthropicClient(config=config)
+
+            if not llm_client.is_available():
+                return jsonify({"error": "AI service not available"}), 503
+
+            # Create a conversational prompt
+            system_prompt = "You are a helpful sports statistics assistant. Answer questions about player statistics clearly and concisely. Focus on the data provided."
+
+            user_prompt = f"""{context}
+
+User Question: {question}
+
+Please answer the question based on the statistics provided above. Be specific and cite the exact numbers."""
+
+            # Use the Anthropic client directly
+            from anthropic import Anthropic
+            client = Anthropic(api_key=llm_client.api_key)
+
+            response = client.messages.create(
+                model=llm_client.model,
+                max_tokens=llm_client.max_tokens,
+                temperature=0.3,  # Lower temperature for more factual responses
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+
+            # Extract text response
+            answer = response.content[0].text if response.content else "Unable to generate response"
+
+            return jsonify({
+                "status": "success",
+                "question": question,
+                "answer": answer,
+                "player": {
+                    "name": player.name,
+                    "sport": sport_display,
+                    "player_id": player_id
+                }
+            })
+
+        except Exception as e:
+            logger.error(f"Error calling Claude API: {e}")
+            return jsonify({"error": "AI service error", "details": str(e)}), 500
+
+    except Exception as e:
+        logger.error(f"Ask about player error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -442,11 +554,56 @@ def view_sport(sport_key):
                 row[stat_name] = entry["stats"].get(stat_name, "-")
             rows.append(row)
 
-        sport_display = sport_key.replace("_", " ").title()
-        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows)
+        sport_display = get_sport_display_name(sport_key)
+        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows, sport_key=sport_key)
 
     except Exception as e:
         logger.error(f"Error loading sport data: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/player/<player_id>")
+def player_detail(player_id):
+    """View detailed stats for a specific player."""
+    try:
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(
+            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
+        )
+
+        # Get player info
+        player = database.get_player(player_id)
+        if not player:
+            return jsonify({"error": "Player not found"}), 404
+
+        # Get player stats
+        player_stats = database.get_player_stats(player_id)
+        if not player_stats:
+            return jsonify({"error": "No stats found for player"}), 404
+
+        # Prepare data for template
+        sport_display = get_sport_display_name(player.sport)
+
+        # Get season stats sorted by season
+        seasons_data = []
+        for season, stats in sorted(player_stats.season_stats.items()):
+            seasons_data.append({
+                "season": season,
+                "stats": stats,
+                "is_career": season == "Career"
+            })
+
+        return render_template(
+            "player_detail.html",
+            player=player,
+            sport_display=sport_display,
+            career_stats=player_stats.career_stats,
+            seasons_data=seasons_data
+        )
+
+    except Exception as e:
+        logger.error(f"Error loading player detail: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -532,7 +689,7 @@ def api_update_stats():
                     csv_exports_successful = 0
                     logger.info(f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams")
                     for sport, team_id in haverford_teams.items():
-                        sport_title = sport.replace("_", " ").title()
+                        sport_title = get_sport_display_name(sport)
                         logger.info(f"[{session_id}] Fetching {sport}")
                         send_progress(
                             session_id,
@@ -640,14 +797,14 @@ def api_update_stats():
                                 session_id,
                                 {
                                     "type": "fetch",
-                                    "message": f'Exporting {sport.replace("_", " ").title()} to CSV...',
+                                    "message": f'Exporting {get_sport_display_name(sport)} to CSV...',
                                 },
                             )
                             result = ncaa_fetcher.fetch_team_stats(str(team_id), sport)
 
                             if result.success and result.data:
                                 # Save to CSV
-                                sport_display = sport.replace("_", " ").title()
+                                sport_display = get_sport_display_name(sport)
                                 safe_sport_name = sport.replace(" ", "_").lower()
                                 timestamp = datetime.now().strftime("%Y%m%d")
                                 filename = f"haverford_{safe_sport_name}_{timestamp}.csv"
@@ -759,7 +916,7 @@ def api_update_stats():
                 tfrr_stats_added = 0
 
                 for sport_key, team_code in HAVERFORD_TEAMS.items():
-                    sport_display = sport_key.replace("_", " ").title()
+                    sport_display = get_sport_display_name(sport_key)
                     send_progress(
                         session_id,
                         {"type": "fetch", "message": f"Fetching TFRR {sport_display}..."},
@@ -1049,7 +1206,7 @@ def api_update_tfrr_stats():
 
                 # Process each Haverford team
                 for team_name, team_code in HAVERFORD_TEAMS.items():
-                    sport_display = team_name.replace("_", " ").title()
+                    sport_display = get_sport_display_name(team_name)
                     logger.info(f"[{session_id}] Processing {team_name}: {team_code}")
                     send_progress(
                         session_id,
@@ -1698,7 +1855,7 @@ def api_run_daily_workflow():
                     )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     for sport, team_id in haverford_teams.items():
-                        sport_title = sport.replace("_", " ").title()
+                        sport_title = get_sport_display_name(sport)
                         send_progress(
                             session_id,
                             {
@@ -1955,7 +2112,7 @@ def api_run_daily_workflow():
                             session_id,
                             {
                                 "type": "info",
-                                "message": f'Checking milestones for {sport_key.replace("_", " ").title()}...',
+                                "message": f'Checking milestones for {get_sport_display_name(sport_key)}...',
                             },
                         )
                         sport_proximities = milestone_detector.check_all_players_milestones(

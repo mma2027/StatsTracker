@@ -56,15 +56,6 @@
         <p class="section-description">View all players in a specific sport</p>
 
         {% if sports %}
-        <!-- Team Filter Search Bar -->
-        <div class="search-container" style="margin-bottom: 20px;">
-            <input type="text"
-                   id="sport-search"
-                   placeholder="🔍 Filter teams/sports..."
-                   style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
-            <p id="sport-search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
-        </div>
-
         <div class="file-list" id="sports-list">
             {% for sport in sports %}
             <div class="file-item">
@@ -173,7 +164,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div style="padding: 12px; margin-bottom: 8px; background: ${idx % 2 === 0 ? '#f8f9fa' : 'white'}; border-radius: 5px; border-left: 4px solid #667eea;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <strong style="font-size: 16px;">${result.name}</strong>
+                                <strong style="font-size: 16px;">
+                                    <a href="/player/${result.player_id}" style="color: #333; text-decoration: none;">${result.name}</a>
+                                </strong>
                                 <span style="color: #666; margin-left: 10px;">${result.sport}</span>
                                 ${result.year ? `<span style="color: #999; margin-left: 10px;">${result.year}</span>` : ''}
                             </div>
@@ -188,9 +181,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             ` : ''}
                         </div>
-                        <a href="/view-sport/${result.sport_key}" style="font-size: 12px; color: #667eea; text-decoration: none; margin-top: 5px; display: inline-block;">
-                            View ${result.sport} stats →
-                        </a>
+                        <div style="margin-top: 8px; display: flex; gap: 10px;">
+                            <a href="/player/${result.player_id}" style="font-size: 12px; color: #667eea; text-decoration: none;">
+                                View full profile →
+                            </a>
+                            <a href="/view-sport/${result.sport_key}" style="font-size: 12px; color: #999; text-decoration: none;">
+                                View ${result.sport} stats →
+                            </a>
+                        </div>
                     </div>
                 `;
             });
@@ -272,37 +270,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         }, 300);
     });
-
-    // Sport/team filter functionality
-    const sportSearchInput = document.getElementById('sport-search');
-    const sportsList = document.getElementById('sports-list');
-    const sportSearchResults = document.getElementById('sport-search-results');
-    const fileItems = sportsList ? sportsList.querySelectorAll('.file-item') : [];
-
-    if (sportSearchInput && fileItems.length > 0) {
-        sportSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            fileItems.forEach(function(item) {
-                const sportName = item.querySelector('.file-name').textContent.toLowerCase();
-
-                if (sportName.includes(searchTerm)) {
-                    item.style.display = '';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-
-            // Update results text
-            if (searchTerm === '') {
-                sportSearchResults.textContent = '';
-            } else {
-                sportSearchResults.textContent = `Showing ${visibleCount} of ${fileItems.length} teams`;
-            }
-        });
-    }
 });
 </script>
 {% endblock %}
