@@ -54,12 +54,15 @@
 </div>
 
 <div class="csv-viewer">
-    <div class="table-container">
-        <table class="data-table">
+    <div class="table-container" style="max-height: calc(100vh - 400px); overflow-y: auto; position: relative;">
+        <table class="data-table sortable-table">
             <thead>
                 <tr>
                     {% for header in headers %}
-                    <th>{{ header }}</th>
+                    <th data-column="{{ loop.index0 }}" class="sortable">
+                        {{ header }}
+                        <span class="sort-icon">⇅</span>
+                    </th>
                     {% endfor %}
                 </tr>
             </thead>
@@ -220,8 +223,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Basic table filter search
     const searchInput = document.getElementById('player-search');
     const searchResults = document.getElementById('search-results');
-    const tableBody = document.querySelector('.data-table tbody');
-    const tableRows = tableBody.querySelectorAll('tr');
+    const table = document.querySelector('.sortable-table');
+    const tableBody = table.querySelector('tbody');
+    const tableRows = Array.from(tableBody.querySelectorAll('tr'));
     const totalRows = tableRows.length;
     const footerText = document.getElementById('table-footer-text');
 
@@ -248,6 +252,75 @@ document.addEventListener('DOMContentLoaded', function() {
             searchResults.textContent = `Found ${visibleCount} matching rows`;
             footerText.textContent = `Showing ${visibleCount} of ${totalRows} rows`;
         }
+    });
+
+    // Table sorting functionality
+    const headers = table.querySelectorAll('th.sortable');
+    let currentSort = { column: -1, ascending: true };
+
+    headers.forEach(header => {
+        header.style.cursor = 'pointer';
+        header.style.userSelect = 'none';
+
+        header.addEventListener('click', function() {
+            const columnIndex = parseInt(this.getAttribute('data-column'));
+            const ascending = currentSort.column === columnIndex ? !currentSort.ascending : true;
+
+            sortTable(columnIndex, ascending);
+            currentSort = { column: columnIndex, ascending: ascending };
+
+            // Update sort icons
+            headers.forEach(h => {
+                const icon = h.querySelector('.sort-icon');
+                if (h === this) {
+                    icon.textContent = ascending ? '▲' : '▼';
+                    icon.style.opacity = '1';
+                } else {
+                    icon.textContent = '⇅';
+                    icon.style.opacity = '0.3';
+                }
+            });
+        });
+    });
+
+    function sortTable(columnIndex, ascending) {
+        // Get all visible rows
+        const visibleRows = tableRows.filter(row => row.style.display !== 'none');
+
+        // Sort the rows
+        visibleRows.sort((a, b) => {
+            const aValue = a.cells[columnIndex].textContent.trim();
+            const bValue = b.cells[columnIndex].textContent.trim();
+
+            // Handle empty values
+            if (aValue === '-' && bValue !== '-') return 1;
+            if (bValue === '-' && aValue !== '-') return -1;
+            if (aValue === '-' && bValue === '-') return 0;
+
+            // Try to parse as numbers (including times like "16:23.4")
+            const aNum = parseFloat(aValue.replace(/:/g, ''));
+            const bNum = parseFloat(bValue.replace(/:/g, ''));
+
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return ascending ? aNum - bNum : bNum - aNum;
+            }
+
+            // String comparison
+            return ascending
+                ? aValue.localeCompare(bValue, undefined, { numeric: true, sensitivity: 'base' })
+                : bValue.localeCompare(aValue, undefined, { numeric: true, sensitivity: 'base' });
+        });
+
+        // Re-append rows in sorted order
+        visibleRows.forEach(row => tableBody.appendChild(row));
+    }
+
+    // Initialize sort icons
+    headers.forEach(header => {
+        const icon = header.querySelector('.sort-icon');
+        icon.style.opacity = '0.3';
+        icon.style.marginLeft = '5px';
+        icon.style.fontSize = '0.8em';
     });
 });
 </script>
