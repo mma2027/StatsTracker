@@ -84,7 +84,9 @@ class NCAAFetcher(BaseFetcher):
         except Exception as e:
             return self.handle_error(e, "fetching player stats")
 
-    def fetch_player_career_stats(self, player_id: str, sport: str, school_filter: str = "Haverford") -> FetchResult:
+    def fetch_player_career_stats(
+        self, player_id: str, sport: str, school_filter: str = "Haverford", reuse_driver: bool = False
+    ) -> FetchResult:
         """
         Fetch career statistics for an individual player across all their seasons.
 
@@ -95,6 +97,7 @@ class NCAAFetcher(BaseFetcher):
             player_id: NCAA player ID (e.g., "9335071")
             sport: Sport name (e.g., "mens_basketball")
             school_filter: School name to filter for (default: "Haverford")
+            reuse_driver: If True, reuse existing driver instead of creating new one (default: False)
 
         Returns:
             FetchResult with player career statistics
@@ -128,8 +131,9 @@ class NCAAFetcher(BaseFetcher):
         try:
             logger.info(f"Fetching career stats for player {player_id} in {sport}")
 
-            # Initialize Selenium driver
-            self._init_selenium_driver()
+            # Initialize Selenium driver if not reusing
+            if not reuse_driver or not self.driver:
+                self._init_selenium_driver()
 
             # Navigate to player page
             player_url = f"{self.base_url}/players/{player_id}"
@@ -175,8 +179,9 @@ class NCAAFetcher(BaseFetcher):
             return self.handle_error(e, "fetching player career stats")
 
         finally:
-            # Always close the driver
-            self._close_driver()
+            # Only close the driver if not reusing
+            if not reuse_driver:
+                self._close_driver()
 
     def fetch_team_stats(self, team_id: str, sport: str) -> FetchResult:
         """
@@ -264,7 +269,7 @@ class NCAAFetcher(BaseFetcher):
             # Always close the driver
             self._close_driver()
 
-    def fetch_team_roster_with_ids(self, team_id: str, sport: str) -> FetchResult:
+    def fetch_team_roster_with_ids(self, team_id: str, sport: str, reuse_driver: bool = False) -> FetchResult:
         """
         Fetch team roster with player IDs from the roster page.
 
@@ -276,6 +281,7 @@ class NCAAFetcher(BaseFetcher):
         Args:
             team_id: NCAA team ID
             sport: Sport name
+            reuse_driver: If True, reuse existing driver instead of creating new one (default: False)
 
         Returns:
             FetchResult with roster data
@@ -300,8 +306,9 @@ class NCAAFetcher(BaseFetcher):
         try:
             logger.info(f"Fetching roster with player IDs for team {team_id}")
 
-            # Initialize Selenium driver
-            self._init_selenium_driver()
+            # Initialize Selenium driver if not reusing
+            if not reuse_driver or not self.driver:
+                self._init_selenium_driver()
 
             # Navigate to team roster page
             roster_url = f"{self.base_url}/teams/{team_id}/roster"
@@ -364,7 +371,85 @@ class NCAAFetcher(BaseFetcher):
             return self.handle_error(e, "fetching team roster")
 
         finally:
-            # Always close the driver
+            # Only close the driver if not reusing
+            if not reuse_driver:
+                self._close_driver()
+
+    def fetch_team_with_career_stats(self, team_id: str, sport: str, school_filter: str = "Haverford") -> FetchResult:
+        """
+        Fetch team roster and career stats for all players using a single driver instance.
+
+        This is an optimized method that reuses the same ChromeDriver for all fetches
+        within a team, significantly improving performance and avoiding driver timeout issues.
+
+        Args:
+            team_id: NCAA team ID
+            sport: Sport name
+            school_filter: School name to filter for career stats (default: "Haverford")
+
+        Returns:
+            FetchResult with roster and all player career stats
+
+        Example data format:
+        {
+            "team_id": "611523",
+            "sport": "mens_basketball",
+            "players": [
+                {
+                    "name": "Seth Anderson",
+                    "player_id": "9335071",
+                    "career_stats": {...}
+                },
+                ...
+            ]
+        }
+        """
+        try:
+            logger.info(f"Fetching team {team_id} with career stats (single driver)")
+
+            # Initialize driver once for the entire team
+            self._init_selenium_driver()
+
+            # Fetch roster with player IDs
+            roster_result = self.fetch_team_roster_with_ids(team_id, sport, reuse_driver=True)
+
+            if not roster_result.success:
+                return roster_result
+
+            players = roster_result.data["players"]
+            logger.info(f"Fetching career stats for {len(players)} players")
+
+            # Fetch career stats for each player (reusing the same driver)
+            players_with_stats = []
+            for player in players:
+                player_id = player["player_id"]
+                player_name = player["name"]
+
+                career_result = self.fetch_player_career_stats(player_id, sport, school_filter, reuse_driver=True)
+
+                if career_result.success:
+                    players_with_stats.append(
+                        {"name": player_name, "player_id": player_id, "career_stats": career_result.data}
+                    )
+                    logger.debug(f"Fetched career stats for {player_name}")
+                else:
+                    logger.warning(f"Failed to fetch career stats for {player_name}: {career_result.error}")
+                    # Still include player in list but without career stats
+                    players_with_stats.append(
+                        {"name": player_name, "player_id": player_id, "career_stats": None, "error": career_result.error}
+                    )
+
+            data = {"team_id": team_id, "sport": sport, "players": players_with_stats}
+
+            logger.info(f"Successfully fetched team {team_id} with {len(players_with_stats)} players")
+
+            return FetchResult(success=True, data=data, source=self.name)
+
+        except Exception as e:
+            return self.handle_error(e, "fetching team with career stats")
+
+        finally:
+            # Close driver once at the end
             self._close_driver()
 
     def search_player(self, name: str, sport: str) -> FetchResult:

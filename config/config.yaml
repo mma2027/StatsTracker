@@ -489,7 +489,7 @@ llm:
   timeout: 10
   max_tokens: 1024
   temperature: 0.1
-  api_key: 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
+  # api_key stored in .env as ANTHROPIC_API_KEY for security
 semantic_search:
   enabled: true
   cache_ttl: 3600
