@@ -11,6 +11,10 @@ sqlalchemy>=2.0.0
 pyyaml>=6.0.0
 python-dotenv>=1.0.0
 
+# Web Framework
+flask>=3.0.0
+flask-limiter>=3.5.0
+
 # Email
 # Note: smtplib is built-in with Python, no need to install
 email-validator>=2.0.0
@@ -37,3 +41,6 @@ webdriver-manager>=4.0.0  # For automatic ChromeDriver management
 playwright>=1.40.0  # For advanced web scraping with better rate limit handling
 pandas>=2.0.0  # For data manipulation
 cloudscraper>=1.2.71  # For bypassing Cloudflare protection
+
+# LLM / Semantic Search
+anthropic>=0.18.0  # For Claude API integration

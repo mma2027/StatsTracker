@@ -423,3 +423,101 @@ class PlayerDatabase:
         except Exception as e:
             logger.error(f"Error searching players: {e}")
             return []
+
+    def semantic_query(self, structured_params: dict) -> List[dict]:
+        """
+        Execute semantic search query from LLM-generated parameters.
+
+        Args:
+            structured_params: Dict with keys:
+                - intent: "rank_by_stat", "filter_threshold", etc.
+                - sport: Sport filter (optional)
+                - stat_name: Stat to query
+                - filters: Additional filters (min_value, max_value, season, etc.)
+                - ordering: "DESC" or "ASC"
+                - limit: Max results
+
+        Returns:
+            List of dicts with player info and stat values
+        """
+        try:
+            intent = structured_params.get("intent")
+            sport = structured_params.get("sport")
+            stat_name = structured_params.get("stat_name")
+            filters = structured_params.get("filters", {})
+            ordering = structured_params.get("ordering", "DESC")
+            limit = structured_params.get("limit", 20)
+
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Base query
+            query = """
+                SELECT p.player_id, p.name, p.sport, p.team, p.position, p.year,
+                       s.stat_name, s.stat_value, s.season
+                FROM players p
+                JOIN stats s ON p.player_id = s.player_id
+                WHERE 1=1
+            """
+            params = []
+
+            # Add filters
+            if sport:
+                query += " AND p.sport = ?"
+                params.append(sport)
+
+            if stat_name:
+                query += " AND s.stat_name = ?"
+                params.append(stat_name)
+
+            if filters.get("season"):
+                query += " AND s.season = ?"
+                params.append(filters["season"])
+            else:
+                query += " AND s.season = 'Career'"  # Default to career stats
+
+            if filters.get("min_value"):
+                query += " AND CAST(s.stat_value AS REAL) >= ?"
+                params.append(filters["min_value"])
+
+            if filters.get("max_value"):
+                query += " AND CAST(s.stat_value AS REAL) <= ?"
+                params.append(filters["max_value"])
+
+            if filters.get("position"):
+                query += " AND p.position = ?"
+                params.append(filters["position"])
+
+            if filters.get("year"):
+                query += " AND p.year = ?"
+                params.append(filters["year"])
+
+            # Order and limit
+            if stat_name:
+                query += f" ORDER BY CAST(s.stat_value AS REAL) {ordering}"
+            query += f" LIMIT ?"
+            params.append(limit)
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            conn.close()
+
+            return [
+                {
+                    "player_id": row[0],
+                    "name": row[1],
+                    "sport": row[2].replace("_", " ").title(),
+                    "sport_key": row[2],
+                    "team": row[3],
+                    "position": row[4],
+                    "year": row[5],
+                    "stat_name": row[6],
+                    "stat_value": row[7],
+                    "season": row[8],
+                }
+                for row in rows
+            ]
+
+        except Exception as e:
+            logger.error(f"Semantic query error: {e}")
+            return []
