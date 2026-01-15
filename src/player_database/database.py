@@ -4,7 +4,7 @@ Player Database Implementation
 Handles all database operations for player statistics.
 """
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from datetime import datetime
 import logging
 import sqlite3
@@ -243,7 +243,13 @@ class PlayerDatabase:
 
             return [
                 Player(
-                    player_id=row[0], name=row[1], sport=row[2], team=row[3], position=row[4], year=row[5], active=bool(row[6])
+                    player_id=row[0],
+                    name=row[1],
+                    sport=row[2],
+                    team=row[3],
+                    position=row[4],
+                    year=row[5],
+                    active=bool(row[6]),
                 )
                 for row in rows
             ]
@@ -422,7 +428,13 @@ class PlayerDatabase:
 
             return [
                 Player(
-                    player_id=row[0], name=row[1], sport=row[2], team=row[3], position=row[4], year=row[5], active=bool(row[6])
+                    player_id=row[0],
+                    name=row[1],
+                    sport=row[2],
+                    team=row[3],
+                    position=row[4],
+                    year=row[5],
+                    active=bool(row[6]),
                 )
                 for row in rows
             ]
@@ -448,7 +460,8 @@ class PlayerDatabase:
             List of dicts with player info and stat values
         """
         try:
-            intent = structured_params.get("intent")
+            # Note: intent parameter is extracted but not currently used in query logic
+            _intent = structured_params.get("intent")  # noqa: F841
             sport = structured_params.get("sport")
             stat_name = structured_params.get("stat_name")
             filters = structured_params.get("filters", {})
@@ -502,7 +515,7 @@ class PlayerDatabase:
             # Order and limit
             if stat_name:
                 query += f" ORDER BY CAST(s.stat_value AS REAL) {ordering}"
-            query += f" LIMIT ?"
+            query += " LIMIT ?"
             params.append(limit)
 
             cursor.execute(query, params)

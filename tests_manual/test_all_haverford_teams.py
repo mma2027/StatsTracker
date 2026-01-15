@@ -7,10 +7,10 @@ by attempting to fetch stats for all 10 Haverford teams.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
+import time  # noqa: E402
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
-import time
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def test_all_teams():
@@ -42,7 +42,7 @@ def test_all_teams():
                 num_stats = len(data['stat_categories'])
                 season = data.get('season', 'Unknown')
 
-                print(f"  ✓ SUCCESS")
+                print("  ✓ SUCCESS")
                 print(f"    Season: {season}")
                 print(f"    Players: {num_players}")
                 print(f"    Stat categories: {num_stats}")

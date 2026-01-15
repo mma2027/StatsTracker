@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
-from datetime import date
-import logging
+from gameday_checker.checker import GamedayChecker  # noqa: E402
+from datetime import date  # noqa: E402
+import logging  # noqa: E402
 
 # Set up logging to see what's happening
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")
@@ -47,6 +47,6 @@ print("=" * 70)
 diagnostics = checker.validate_scraping("baseball")
 print(f"Total games in baseball schedule: {diagnostics.get('total_games')}")
 print(f"Date range: {diagnostics.get('date_range')}")
-print(f"\nSample dates:")
+print("\nSample dates:")  # noqa: F541
 for sample in diagnostics.get("sample_dates", []):
     print(f"  {sample['date']}: vs {sample['opponent']}")

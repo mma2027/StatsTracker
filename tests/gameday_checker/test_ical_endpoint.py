@@ -39,14 +39,14 @@ try:
             dates = date_pattern.findall(response.text)
 
             if dates:
-                print(f"Sample dates found:")
+                print("Sample dates found:")  # noqa: F541
                 for date in dates[:10]:
                     # Format: YYYYMMDD -> YYYY-MM-DD
                     formatted = f"{date[0:4]}-{date[4:6]}-{date[6:8]}"
                     print(f"  - {formatted}")
 
-except Exception as e:
-    print(f"Error: {e}")
+except Exception as _e:  # noqa: F841
+    print(f"Error: {_e}")
 
 # Try other sports too
 print("\n" + "=" * 70)
@@ -61,5 +61,5 @@ for sport in ["mens-basketball", "mens-lacrosse", "wten"]:
             print(f"✓ {sport}: {resp.status_code} - {resp.headers.get('content-type')}")
         else:
             print(f"✗ {sport}: {resp.status_code}")
-    except Exception as e:
+    except Exception:  # noqa: F841
         print(f"✗ {sport}: Error")

@@ -115,9 +115,8 @@ class GamedayChecker:
         try:
             # Use calendar AJAX endpoint
             # Extract base domain from schedule_url (remove /calendar path if present)
-            base_url = (
-                self.schedule_url.rstrip("/").split("/calendar")[0] if self.schedule_url else "https://haverfordathletics.com"
-            )
+            default_url = "https://haverfordathletics.com"
+            base_url = self.schedule_url.rstrip("/").split("/calendar")[0] if self.schedule_url else default_url
             url = f"{base_url}/services/responsive-calendar.ashx"
 
             # Format date as M/D/YYYY for API
@@ -277,7 +276,11 @@ class GamedayChecker:
 
             # Create Game object
             game = Game(
-                team=team, opponent=opponent_name.strip(), date=game_datetime, location=location, time=event_data.get("time")
+                team=team,
+                opponent=opponent_name.strip(),
+                date=game_datetime,
+                location=location,
+                time=event_data.get("time"),
             )
 
             return game

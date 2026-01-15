@@ -6,7 +6,6 @@ email:
   recipients:
   - mma@haverford.edu
   - hzhang3@haverford.edu
-  - cmccauley@haverford.edu
 database:
   type: sqlite
   path: data/stats.db
@@ -453,6 +452,24 @@ milestones:
     - 500
     - 750
     - 1000
+  squash_mens:
+    Wins:
+    - 10
+    - 20
+    - 30
+    - 40
+    - 50
+    - 75
+    - 100
+  squash_womens:
+    Wins:
+    - 10
+    - 20
+    - 30
+    - 40
+    - 50
+    - 75
+    - 100
 notifications:
   enabled: true
   proximity_threshold: 10
@@ -558,4 +575,12 @@ milestone_proximity:
     Block Assists: 10
     Block Solos: 10
     PTS: 10
-    S: 10
+  squash_mens:
+    Wins: 2
+  squash_womens:
+    Wins: 2
+  cricket:
+    Runs: 10
+    Wickets: 10
+    Catches: 10
+    Stumpings: 10

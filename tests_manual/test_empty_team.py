@@ -4,10 +4,10 @@ Test what the fetcher returns for a team with no stats yet.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
+import json  # noqa: E402
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
-import json
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def test_empty_team():
@@ -18,7 +18,7 @@ def test_empty_team():
     print()
 
     team_id = str(HAVERFORD_TEAMS["baseball"])
-    print(f"Team: Baseball")
+    print("Team: Baseball")
     print(f"Team ID: {team_id}")
     print(f"URL: https://stats.ncaa.org/teams/{team_id}/season_to_date_stats")
     print()

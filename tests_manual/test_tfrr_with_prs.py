@@ -4,9 +4,9 @@ Test TFRR fetcher with individual athlete PR scraping.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def test_mens_track_with_prs():
@@ -28,7 +28,7 @@ def test_mens_track_with_prs():
 
     if result.success:
         data = result.data
-        print(f"✓ Success!")
+        print("✓ Success!")
         print(f"  Team: {data['team_name']}")
         print(f"  Season: {data['season']}")
         print(f"  Athletes: {len(data['athletes'])}")
@@ -52,7 +52,7 @@ def test_mens_track_with_prs():
                 if len(athlete['events']) > 3:
                     print(f"      ... and {len(athlete['events']) - 3} more events")
             else:
-                print(f"      (No PRs found)")
+                print("      (No PRs found)")
         print()
     else:
         print(f"✗ Failed: {result.error}")

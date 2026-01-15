@@ -9,15 +9,15 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import pandas as pd
-import time
-from src.website_fetcher.cricket_urls import get_url
+from selenium import webdriver  # noqa: E402
+from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402
+from selenium.webdriver.support import expected_conditions as EC  # noqa: E402
+import pandas as pd  # noqa: E402
+import time  # noqa: E402
+from src.website_fetcher.cricket_urls import get_url  # noqa: E402
+
 
 def setup_driver():
     """Setup Chrome driver with options."""
@@ -26,34 +26,38 @@ def setup_driver():
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-    chrome_options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
 
     driver = webdriver.Chrome(options=chrome_options)
     return driver
+
 
 def fetch_table_with_selenium(url, stat_type):
     """Fetch cricket stats table using Selenium."""
     print(f"\n{'='*70}")
     print(f"Fetching {stat_type} statistics from:")
     print(f"{url}")
-    print('='*70)
+    print("=" * 70)
 
     driver = setup_driver()
 
     try:
         # Load page
-        print(f"Loading page...")
+        print("Loading page...")
         driver.get(url)
 
         # Wait for Cloudflare to load and table to appear
-        print(f"Waiting for Cloudflare and table to load...")
+        print("Waiting for Cloudflare and table to load...")
         wait = WebDriverWait(driver, 30)
-        table = wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
+        wait.until(EC.presence_of_element_located((By.TAG_NAME, "table")))
 
         # Give extra time for JavaScript to fully load
         time.sleep(3)
 
-        print(f"✅ Table found, extracting data...")
+        print("✅ Table found, extracting data...")
 
         # Get page source and parse with pandas
         page_source = driver.page_source
@@ -62,7 +66,7 @@ def fetch_table_with_selenium(url, stat_type):
         tables = pd.read_html(page_source)
 
         if not tables:
-            print(f"❌ No tables found in page")
+            print("❌ No tables found in page")
             return None
 
         # Usually the first or largest table contains the stats
@@ -80,11 +84,12 @@ def fetch_table_with_selenium(url, stat_type):
     finally:
         driver.quit()
 
+
 def main():
     """Fetch all cricket statistics and merge them."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("REAL CRICKET DATA FETCHER (Using Selenium)")
-    print("="*70)
+    print("=" * 70)
 
     # Fetch batting stats
     batting_url = get_url("batting")
@@ -96,7 +101,7 @@ def main():
 
     # Save batting to CSV
     batting_df.to_csv("csv_exports/batting_real.csv", index=False)
-    print(f"💾 Saved to batting_real.csv")
+    print("💾 Saved to batting_real.csv")
 
     # Fetch bowling stats
     bowling_url = get_url("bowling")
@@ -108,7 +113,7 @@ def main():
 
     # Save bowling to CSV
     bowling_df.to_csv("csv_exports/bowling_real.csv", index=False)
-    print(f"💾 Saved to bowling_real.csv")
+    print("💾 Saved to bowling_real.csv")
 
     # Fetch fielding stats
     fielding_url = get_url("fielding")
@@ -120,29 +125,38 @@ def main():
 
     # Save fielding to CSV
     fielding_df.to_csv("csv_exports/fielding_real.csv", index=False)
-    print(f"💾 Saved to fielding_real.csv")
+    print("💾 Saved to fielding_real.csv")
 
     # Now merge using the manual merge script
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("MERGING DATA")
-    print("="*70)
+    print("=" * 70)
 
     import subprocess
-    result = subprocess.run([
-        "python", "src/website_fetcher/merge_manual_cricket_data.py",
-        "--batting", "csv_exports/batting_real.csv",
-        "--bowling", "csv_exports/bowling_real.csv",
-        "--fielding", "csv_exports/fielding_real.csv",
-        "--output", "csv_exports/haverford_cricket_stats.csv"
-    ])
+
+    result = subprocess.run(
+        [
+            "python",
+            "src/website_fetcher/merge_manual_cricket_data.py",
+            "--batting",
+            "csv_exports/batting_real.csv",
+            "--bowling",
+            "csv_exports/bowling_real.csv",
+            "--fielding",
+            "csv_exports/fielding_real.csv",
+            "--output",
+            "csv_exports/haverford_cricket_stats.csv",
+        ]
+    )
 
     if result.returncode == 0:
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ SUCCESS! Real cricket data has been fetched and merged!")
-        print("="*70)
-        print(f"\n📁 Output file: haverford_cricket_stats.csv")
+        print("=" * 70)
+        print("\n📁 Output file: haverford_cricket_stats.csv")
     else:
         print("\n❌ Merge failed")
+
 
 if __name__ == "__main__":
     main()

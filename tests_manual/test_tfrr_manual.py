@@ -7,9 +7,9 @@ the TFRR website for Haverford teams.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def test_mens_track():
@@ -27,7 +27,7 @@ def test_mens_track():
 
     if result.success:
         data = result.data
-        print(f"✓ Success!")
+        print("✓ Success!")
         print(f"  Team: {data['team_name']}")
         print(f"  Season: {data['season']}")
         print(f"  Athletes: {len(data['athletes'])}")
@@ -63,7 +63,7 @@ def test_womens_track():
 
     if result.success:
         data = result.data
-        print(f"✓ Success!")
+        print("✓ Success!")
         print(f"  Team: {data['team_name']}")
         print(f"  Season: {data['season']}")
         print(f"  Athletes: {len(data['athletes'])}")

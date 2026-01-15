@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
-from datetime import date
-import logging
+from gameday_checker.checker import GamedayChecker  # noqa: E402
+from datetime import date  # noqa: E402
+import logging  # noqa: E402
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING)
@@ -47,7 +47,7 @@ for test_date, description, expected in test_dates:
     results.append((description, count, expected_str, status))
 
     print(f"\n{description}")
-    print(f"  Expected: {expected_str} games, Found: {count} games - {status}")
+    print(f"  Expected: {expected_str} games, Found: {count} games - {status}")  # noqa: F541
 
     if games and count <= 3:
         for game in games:

@@ -10,10 +10,9 @@ import logging
 import random
 import time
 from typing import Dict, Any, List, Optional
-from pathlib import Path
 import re
 
-from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeout
 from bs4 import BeautifulSoup
 
 from .base_fetcher import BaseFetcher, FetchResult

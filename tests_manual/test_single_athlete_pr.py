@@ -4,9 +4,9 @@ Test fetching a single athlete's PRs from TFRR.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher  # noqa: E402
 
 
 def test_single_athlete():
@@ -26,11 +26,11 @@ def test_single_athlete():
 
     if result.success:
         data = result.data
-        print(f"\n✓ Success!")
+        print("\n✓ Success!")
         print(f"  Name: {data.get('name', 'Unknown')}")
         print(f"  Year: {data.get('year', 'N/A')}")
         print(f"  Sport: {data.get('sport')}")
-        print(f"\n  Personal Records:")
+        print("\n  Personal Records:")
 
         if data.get('events'):
             for event, result_time in data['events'].items():

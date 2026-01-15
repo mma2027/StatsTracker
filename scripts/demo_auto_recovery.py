@@ -7,9 +7,10 @@ and use the correct team ID when it encounters an invalid one.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
+
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402
 
 
 def fetch_with_auto_recovery(sport_key, initial_team_id):
@@ -71,9 +72,9 @@ def fetch_with_auto_recovery(sport_key, initial_team_id):
             return None
 
         # Find the correct team ID
-        for team in discovery_result.data['teams']:
-            if team['sport'] == target_sport:
-                new_team_id = team['team_id']
+        for team in discovery_result.data["teams"]:
+            if team["sport"] == target_sport:
+                new_team_id = team["team_id"]
                 print(f"✓ Found correct team ID: {new_team_id}")
                 print(f"   (was: {initial_team_id}, should be: {new_team_id})")
                 print()
@@ -83,14 +84,14 @@ def fetch_with_auto_recovery(sport_key, initial_team_id):
                 result = fetcher.fetch_team_stats(new_team_id, sport_key)
 
                 if result.success:
-                    print(f"✅ SUCCESS!")
+                    print("✅ SUCCESS!")
                     print(f"   Fetched {len(result.data['players'])} players")
                     print()
                     print("⚠️  ACTION REQUIRED:")
                     print(f"   Update your config to use team ID: {new_team_id}")
                     print()
                 elif "No statistics available yet" in result.error:
-                    print(f"✅ ID IS VALID (but season hasn't started)")
+                    print("✅ ID IS VALID (but season hasn't started)")
                     print()
                     print("⚠️  ACTION REQUIRED:")
                     print(f"   Update your config to use team ID: {new_team_id}")
@@ -110,7 +111,7 @@ def fetch_with_auto_recovery(sport_key, initial_team_id):
 
     elif "No statistics available yet" in result.error:
         print(f"✅ Team ID {initial_team_id} is valid")
-        print(f"   (Season hasn't started yet)")
+        print("   (Season hasn't started yet)")
         return result
 
     else:

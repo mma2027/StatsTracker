@@ -50,9 +50,8 @@ class AnthropicClient:
 
         # Read from config.yaml first, then fall back to defaults
         llm_config = (config or {}).get("llm", {})
-        logger.info(
-            f"DEBUG: Config passed: {config is not None}, llm_config keys: {list(llm_config.keys()) if llm_config else 'None'}"
-        )
+        llm_keys = list(llm_config.keys()) if llm_config else "None"
+        logger.info(f"DEBUG: Config passed: {config is not None}, llm_config keys: {llm_keys}")
 
         # Priority: parameter > env var > config.yaml
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or llm_config.get("api_key")

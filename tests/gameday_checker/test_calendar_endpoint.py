@@ -5,7 +5,6 @@ Test the calendar AJAX endpoint that the browser uses
 import requests
 import re
 import json
-from bs4 import BeautifulSoup
 
 # Test the endpoint with March 2026
 url = "https://haverfordathletics.com/services/responsive-calendar.ashx"
@@ -39,7 +38,7 @@ try:
             print(f"First item type: {type(data[0])}")
             if isinstance(data[0], dict):
                 print(f"First item keys: {list(data[0].keys())[:10]}")
-except:
+except Exception:  # noqa: E722
     print("✗ Response is not JSON, likely HTML")
 
 # If HTML, check for embedded data
@@ -70,7 +69,7 @@ if "text/html" in response.headers.get("content-type", ""):
                         dates_found.add(date_str)
 
                 print(f"\n  Events object {events_found}: {len(games)} games")
-        except:
+        except Exception:  # noqa: E722
             pass
 
     print(f"\nTotal events objects: {events_found}")

@@ -7,9 +7,9 @@ real stats from Haverford Men's Basketball team.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def test_mens_basketball():
@@ -34,14 +34,14 @@ def test_mens_basketball():
 
     if result.success:
         data = result.data
-        print(f"✓ SUCCESS!")
+        print("✓ SUCCESS!")
         print(f"\nSeason: {data['season']}")
         print(f"Sport: {data['sport']}")
         print(f"Team ID: {data['team_id']}")
         print(f"Number of players: {len(data['players'])}")
         print(f"Stat categories ({len(data['stat_categories'])}): {', '.join(data['stat_categories'][:10])}...")
 
-        print(f"\n{'=' * 70}")
+        print("=" * 70)
         print("FIRST 3 PLAYERS:")
         print("=" * 70)
 
@@ -51,7 +51,7 @@ def test_mens_basketball():
 
         return True
     else:
-        print(f"✗ FAILED!")
+        print("✗ FAILED!")
         print(f"Error: {result.error}")
         return False
 

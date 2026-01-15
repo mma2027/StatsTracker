@@ -21,21 +21,21 @@ import yaml
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.gameday_checker.models import Game, Team
-from src.player_database import PlayerDatabase
-from src.milestone_detector import MilestoneDetector
-from src.email_notifier import EmailNotifier
+from src.gameday_checker.models import Game, Team  # noqa: E402
+from src.player_database import PlayerDatabase  # noqa: E402
+from src.milestone_detector import MilestoneDetector  # noqa: E402
+from src.email_notifier import EmailNotifier  # noqa: E402
 
 
 def main():
-    print("="*70)
+    print("=" * 70)
     print("Send Notification for January 14, 2026")
-    print("="*70)
+    print("=" * 70)
     print()
 
     # Load config
     try:
-        with open('config/config.yaml') as f:
+        with open("config/config.yaml") as f:
             config = yaml.safe_load(f)
     except FileNotFoundError:
         print("❌ Error: config/config.yaml not found")
@@ -52,15 +52,15 @@ def main():
             opponent="Ursinus",
             date=check_date,
             location="home",
-            time="7:00 PM"
+            time="7:00 PM",
         ),
         Game(
             team=Team(name="Haverford Men's Basketball", sport="Men's Basketball"),
             opponent="Ursinus",
             date=check_date,
             location="home",
-            time="5:00 PM"
-        )
+            time="5:00 PM",
+        ),
     ]
 
     print(f"📅 Games for {check_date}:")
@@ -70,8 +70,8 @@ def main():
 
     # Get milestones
     print("🔍 Checking milestone proximities...")
-    db = PlayerDatabase('data/stats.db')
-    milestones = config.get('milestones', {})
+    db = PlayerDatabase("data/stats.db")
+    milestones = config.get("milestones", {})
     detector = MilestoneDetector(db, milestones)
     all_proximities = detector.check_all_players_milestones(proximity_threshold=20)
 
@@ -80,7 +80,7 @@ def main():
     for player_id, prox_list in all_proximities.items():
         for prox in prox_list:
             # Filter out team totals
-            if 'Total' not in prox.player_name and 'Opponent' not in prox.player_name:
+            if "Total" not in prox.player_name and "Opponent" not in prox.player_name:
                 proximities_list.append(prox)
 
     # Sort by distance (closest first)
@@ -92,7 +92,9 @@ def main():
         print("   Top 5:")
         for prox in proximities_list[:5]:
             status = "✓" if prox.distance <= 0 else f"{abs(prox.distance)} away"
-            print(f"   • {prox.player_name}: {prox.current_value}/{prox.milestone.threshold} {prox.milestone.stat_name} ({status})")
+            threshold_val = prox.milestone.threshold
+            stat = prox.milestone.stat_name
+            print(f"   • {prox.player_name}: {prox.current_value}/{threshold_val} {stat} ({status})")
     print()
 
     # Check for PR breakthroughs
@@ -119,7 +121,7 @@ def main():
         print()
 
     # Send email
-    email_config = config.get('email', {})
+    email_config = config.get("email", {})
     notifier = EmailNotifier(email_config)
 
     # Check configuration
@@ -135,8 +137,8 @@ def main():
         return
 
     # Show what will be sent
-    recipients = email_config.get('recipients', [])
-    print(f"📧 Sending email...")
+    recipients = email_config.get("recipients", [])
+    print("📧 Sending email...")
     print(f"   To: {', '.join(recipients)}")
     print(f"   From: {email_config.get('sender_email')}")
     print(f"   Games: {len(games)}")
@@ -146,7 +148,7 @@ def main():
 
     # Confirm
     response = input("Send email now? (y/n): ")
-    if response.lower() != 'y':
+    if response.lower() != "y":
         print("❌ Cancelled")
         return
 
@@ -155,23 +157,20 @@ def main():
 
     # Send the email
     success = notifier.send_milestone_alert(
-        proximities=proximities_list[:10],
-        games=games,
-        date_for=check_date,
-        pr_breakthroughs=pr_breakthroughs
+        proximities=proximities_list[:10], games=games, date_for=check_date, pr_breakthroughs=pr_breakthroughs
     )
 
     print()
     if success:
-        print("="*70)
+        print("=" * 70)
         print("✅ Email sent successfully!")
-        print("="*70)
+        print("=" * 70)
         print()
         print(f"Check your inbox at {recipients[0]}")
     else:
-        print("="*70)
+        print("=" * 70)
         print("❌ Failed to send email")
-        print("="*70)
+        print("=" * 70)
         print()
         print("Common issues:")
         print("  - Invalid Gmail app password")

@@ -23,15 +23,13 @@ import pandas as pd
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.gameday_checker import GamedayChecker
-from src.website_fetcher import TFRRFetcher
-from src.website_fetcher.tfrr_fetcher import HAVERFORD_TEAMS as TFRR_TEAMS
-from src.player_database import PlayerDatabase, Player, StatEntry
-from src.milestone_detector import MilestoneDetector
-from src.email_notifier import EmailNotifier, EmailTemplate
-from src.llm_service import AnthropicClient, SemanticQueryBuilder
-from src.llm_service.cache import SemanticCache
-from main import load_config, generate_player_id
+from src.gameday_checker import GamedayChecker  # noqa: E402
+from src.player_database import PlayerDatabase, Player, StatEntry  # noqa: E402
+from src.milestone_detector import MilestoneDetector  # noqa: E402
+from src.email_notifier import EmailNotifier, EmailTemplate  # noqa: E402
+from src.llm_service import AnthropicClient, SemanticQueryBuilder  # noqa: E402
+from src.llm_service.cache import SemanticCache  # noqa: E402
+from main import load_config, generate_player_id  # noqa: E402
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "haverford-stats-tracker-2026"
@@ -80,9 +78,7 @@ def csv_browser():
     try:
         config = load_config(str(CONFIG_PATH))
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         # Get all players and organize by sport
         players = database.get_all_players()
@@ -129,9 +125,7 @@ def api_search_players():
 
         config = load_config(str(CONFIG_PATH))
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         # Get all players
         all_players = database.get_all_players()
@@ -188,9 +182,7 @@ def api_semantic_search():
         # Load database
         config = load_config(str(CONFIG_PATH))
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         # Check cache first
         cache = SemanticCache()
@@ -217,11 +209,13 @@ def api_semantic_search():
 
             # Check if ambiguous
             if structured_params.get("intent") == "ambiguous":
-                return jsonify({
-                    "status": "clarification_needed",
-                    "message": structured_params.get("interpretation"),
-                    "suggestions": []
-                })
+                return jsonify(
+                    {
+                        "status": "clarification_needed",
+                        "message": structured_params.get("interpretation"),
+                        "suggestions": [],
+                    }
+                )
 
             # Build and execute query
             query_builder = SemanticQueryBuilder(database)
@@ -241,7 +235,7 @@ def api_semantic_search():
                 "result_count": len(results),
                 "query_time_ms": query_time,
                 "llm_time_ms": llm_time,
-                "cached": False
+                "cached": False,
             }
 
             # Cache successful results
@@ -256,30 +250,34 @@ def api_semantic_search():
             players = database.search_players(query)
             fallback_results = []
             for player in players:
-                fallback_results.append({
-                    "player_id": player.player_id,
-                    "name": player.name,
-                    "sport": player.sport.replace("_", " ").title(),
-                    "sport_key": player.sport,
-                    "team": player.team,
-                    "position": player.position,
-                    "year": player.year,
-                    "stat_name": None,
-                    "stat_value": None,
-                    "season": None
-                })
+                fallback_results.append(
+                    {
+                        "player_id": player.player_id,
+                        "name": player.name,
+                        "sport": player.sport.replace("_", " ").title(),
+                        "sport_key": player.sport,
+                        "team": player.team,
+                        "position": player.position,
+                        "year": player.year,
+                        "stat_name": None,
+                        "stat_value": None,
+                        "season": None,
+                    }
+                )
 
             query_time = int((time.time() - start_time) * 1000)
 
-            return jsonify({
-                "status": "fallback",
-                "message": "AI search temporarily unavailable. Showing name matches.",
-                "query_interpretation": f"Searching for players matching '{query}'",
-                "results": fallback_results,
-                "result_count": len(fallback_results),
-                "query_time_ms": query_time,
-                "cached": False
-            })
+            return jsonify(
+                {
+                    "status": "fallback",
+                    "message": "AI search temporarily unavailable. Showing name matches.",
+                    "query_interpretation": f"Searching for players matching '{query}'",
+                    "results": fallback_results,
+                    "result_count": len(fallback_results),
+                    "query_time_ms": query_time,
+                    "cached": False,
+                }
+            )
 
     except Exception as e:
         logger.error(f"Semantic search error: {e}", exc_info=True)
@@ -296,9 +294,7 @@ def settings():
 
         # Get available stats from database for each sport
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         available_stats_by_sport = {}
         all_players = database.get_all_players()
@@ -318,9 +314,7 @@ def settings():
         for sport in available_stats_by_sport:
             available_stats_by_sport[sport] = sorted(list(available_stats_by_sport[sport]))
 
-        return render_template(
-            "settings.html", config=config, available_stats=available_stats_by_sport
-        )
+        return render_template("settings.html", config=config, available_stats=available_stats_by_sport)
 
     except Exception as e:
         logger.error(f"Error loading settings: {e}")
@@ -343,9 +337,7 @@ def api_save_settings():
             if "recipients" in data["email"]:
                 # Convert comma-separated string to list
                 recipients_str = data["email"]["recipients"]
-                config["email"]["recipients"] = [
-                    r.strip() for r in recipients_str.split(",") if r.strip()
-                ]
+                config["email"]["recipients"] = [r.strip() for r in recipients_str.split(",") if r.strip()]
             if "smtp_server" in data["email"]:
                 config["email"]["smtp_server"] = data["email"]["smtp_server"]
             if "smtp_port" in data["email"]:
@@ -359,9 +351,7 @@ def api_save_settings():
             if "enabled" in data["notifications"]:
                 config["notifications"]["enabled"] = data["notifications"]["enabled"]
             if "proximity_threshold" in data["notifications"]:
-                config["notifications"]["proximity_threshold"] = int(
-                    data["notifications"]["proximity_threshold"]
-                )
+                config["notifications"]["proximity_threshold"] = int(data["notifications"]["proximity_threshold"])
 
         # Update gameday settings
         if "gameday" in data:
@@ -377,14 +367,10 @@ def api_save_settings():
                 for stat_name, thresholds in stats.items():
                     # Convert string of comma-separated values to list of integers
                     if isinstance(thresholds, str):
-                        threshold_list = [
-                            int(t.strip()) for t in thresholds.split(",") if t.strip()
-                        ]
+                        threshold_list = [int(t.strip()) for t in thresholds.split(",") if t.strip()]
                         config["milestones"][sport][stat_name] = sorted(threshold_list)
                     elif isinstance(thresholds, list):
-                        config["milestones"][sport][stat_name] = sorted(
-                            [int(t) for t in thresholds]
-                        )
+                        config["milestones"][sport][stat_name] = sorted([int(t) for t in thresholds])
 
         # Update milestone proximity thresholds (per-sport, per-stat)
         if "milestone_proximity" in data:
@@ -411,9 +397,7 @@ def view_sport(sport_key):
     try:
         config = load_config(str(CONFIG_PATH))
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         # Get all players for this sport
         players = [p for p in database.get_all_players() if p.sport == sport_key]
@@ -459,9 +443,7 @@ def view_sport(sport_key):
             rows.append(row)
 
         sport_display = sport_key.replace("_", " ").title()
-        return render_template(
-            "csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows
-        )
+        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows)
 
     except Exception as e:
         logger.error(f"Error loading sport data: {e}")
@@ -531,16 +513,12 @@ def api_update_stats():
                 config = load_config(str(CONFIG_PATH))
                 fetcher_config = config.get("fetchers", {})
                 db_config = config.get("database", {})
-                database = PlayerDatabase(
-                    db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-                )
+                database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
                 season = "2024-25"
                 logger.info(f"[{session_id}] Database initialized")
 
                 # Update NCAA stats with progress
-                send_progress(
-                    session_id, {"type": "info", "message": "Starting NCAA stats update..."}
-                )
+                send_progress(session_id, {"type": "info", "message": "Starting NCAA stats update..."})
                 ncaa_config = fetcher_config.get("ncaa", {})
                 logger.info(f"[{session_id}] NCAA config loaded: {bool(ncaa_config)}")
                 if ncaa_config:
@@ -552,23 +530,20 @@ def api_update_stats():
                     )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     csv_exports_successful = 0
-                    logger.info(
-                        f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams"
-                    )
+                    logger.info(f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams")
                     for sport, team_id in haverford_teams.items():
+                        sport_title = sport.replace("_", " ").title()
                         logger.info(f"[{session_id}] Fetching {sport}")
                         send_progress(
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching {sport.replace("_", " ").title()} roster and career stats (optimized)...',
+                                "message": f"Fetching {sport_title} roster and career stats (optimized)...",
                             },
                         )
                         try:
                             # Use optimized method that reuses driver for entire team
-                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
-                                str(team_id), sport, "Haverford"
-                            )
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(str(team_id), sport, "Haverford")
 
                             if not team_result.success or not team_result.data:
                                 logger.warning(
@@ -578,20 +553,18 @@ def api_update_stats():
                                     session_id,
                                     {
                                         "type": "warning",
-                                        "message": f'Could not fetch data for {sport.replace("_", " ").title()}',
+                                        "message": f"Could not fetch data for {sport_title}",
                                     },
                                 )
                                 continue
 
                             players_with_stats = team_result.data.get("players", [])
-                            logger.info(
-                                f"[{session_id}] Found {len(players_with_stats)} players on {sport} roster"
-                            )
+                            logger.info(f"[{session_id}] Found {len(players_with_stats)} players on {sport} roster")
                             send_progress(
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
+                                    "message": f"Processing {len(players_with_stats)} {sport_title} players...",
                                 },
                             )
 
@@ -609,11 +582,12 @@ def api_update_stats():
 
                                 # Send progress every 5 players
                                 if idx % 5 == 0:
+                                    player_progress = f"{idx+1}/{len(players_with_stats)}"
                                     send_progress(
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
+                                            "message": f"Processing {sport_title} player {player_progress}...",
                                         },
                                     )
 
@@ -622,9 +596,7 @@ def api_update_stats():
 
                                 # Check if career stats were successfully fetched
                                 if not career_data:
-                                    logger.warning(
-                                        f"[{session_id}] No career stats available for {player_name}"
-                                    )
+                                    logger.warning(f"[{session_id}] No career stats available for {player_name}")
                                     continue
 
                                 seasons_data = career_data.get("seasons", [])
@@ -661,9 +633,7 @@ def api_update_stats():
                                             database.add_stat(stat_entry)
                                             stats_added += 1
 
-                            logger.info(
-                                f"[{session_id}] Updated {sport}: {players_added} players, {stats_added} stats"
-                            )
+                            logger.info(f"[{session_id}] Updated {sport}: {players_added} players, {stats_added} stats")
 
                             # Also fetch and export to CSV
                             send_progress(
@@ -712,12 +682,12 @@ def api_update_stats():
                 #             timeout=cricket_config.get('timeout', 30),
                 #             headless=cricket_config.get('headless', True)
                 #         )
-                #         send_progress(session_id, {'type': 'fetch', 'message': 'Fetching cricket stats from cricclubs.com (this may take 2-3 minutes)...'})
+                #         send_progress(session_id, {'type': 'fetch', 'message': 'Fetching cricket stats from cricclubs.com (this may take 2-3 minutes)...'})  # noqa: E501
                 #         result = cricket_fetcher.fetch_all_stats()
                 #
                 #         if result['success'] and result['data'] is not None:
                 #             df = result['data']
-                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket fetch complete! Processing {len(df)} players...'})
+                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket fetch complete! Processing {len(df)} players...'})  # noqa: E501
                 #
                 #             for idx, row in enumerate(df.iterrows()):
                 #                 _, row_data = row
@@ -725,7 +695,7 @@ def api_update_stats():
                 #
                 #                 # Send progress every 5 players to avoid too many messages
                 #                 if idx % 5 == 0 or idx == len(df) - 1:
-                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Processing cricket player {idx+1}/{len(df)}: {player_name}'})
+                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Processing cricket player {idx+1}/{len(df)}: {player_name}'})  # noqa: E501
                 #
                 #                 # Generate player ID
                 #                 player_id = generate_player_id(player_name, 'cricket')
@@ -764,17 +734,15 @@ def api_update_stats():
                 #                     )
                 #                     database.add_stat(stat_entry)
                 #
-                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket stats completed: {len(df)} players processed'})
+                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket stats completed: {len(df)} players processed'})  # noqa: E501
                 #         else:
-                #             send_progress(session_id, {'type': 'warning', 'message': f'Cricket fetch failed: {result.get("error", "Unknown error")}'})
+                #             send_progress(session_id, {'type': 'warning', 'message': f'Cricket fetch failed: {result.get("error", "Unknown error")}'})  # noqa: E501
                 #
                 #     except Exception as e:
-                #         send_progress(session_id, {'type': 'warning', 'message': f'Error updating cricket stats: {str(e)}'})
+                #         send_progress(session_id, {'type': 'warning', 'message': f'Error updating cricket stats: {str(e)}'})  # noqa: E501
 
                 # Update TFRR stats with progress using Playwright fetcher
-                send_progress(
-                    session_id, {"type": "info", "message": "Starting TFRR stats update..."}
-                )
+                send_progress(session_id, {"type": "info", "message": "Starting TFRR stats update..."})
 
                 # Import Playwright fetcher
                 from src.website_fetcher.tfrr_playwright_fetcher import (
@@ -805,9 +773,7 @@ def api_update_stats():
 
                         if result.success and result.data:
                             roster = result.data.get("roster", [])
-                            logger.info(
-                                f"[{session_id}] Fetched {len(roster)} athletes for {sport_key}"
-                            )
+                            logger.info(f"[{session_id}] Fetched {len(roster)} athletes for {sport_key}")
 
                             # Process each athlete
                             for idx, athlete in enumerate(roster):
@@ -818,11 +784,14 @@ def api_update_stats():
                                     continue
 
                                 # Send progress for EVERY athlete
+                                progress_msg = (
+                                    f"Fetching PRs for {sport_display}: {athlete_name} ({idx+1}/{len(roster)})"
+                                )
                                 send_progress(
                                     session_id,
                                     {
                                         "type": "fetch",
-                                        "message": f"Fetching PRs for {sport_display}: {athlete_name} ({idx+1}/{len(roster)})",
+                                        "message": progress_msg,
                                     },
                                 )
 
@@ -846,9 +815,7 @@ def api_update_stats():
 
                                 # Fetch athlete's PRs (Personal Records)
                                 try:
-                                    athlete_result = tfrr_fetcher.fetch_player_stats(
-                                        athlete_id_tfrr, sport_type
-                                    )
+                                    athlete_result = tfrr_fetcher.fetch_player_stats(athlete_id_tfrr, sport_type)
 
                                     if athlete_result.success and athlete_result.data:
                                         prs = athlete_result.data.get("personal_records", {})
@@ -866,22 +833,17 @@ def api_update_stats():
                                                 database.add_stat(stat_entry)
                                                 tfrr_stats_added += 1
 
-                                        logger.debug(
-                                            f"[{session_id}] Fetched {len(prs)} PRs for {athlete_name}"
-                                        )
+                                        logger.debug(f"[{session_id}] Fetched {len(prs)} PRs for {athlete_name}")
                                     else:
-                                        logger.warning(
-                                            f"[{session_id}] No PRs found for {athlete_name}"
-                                        )
+                                        logger.warning(f"[{session_id}] No PRs found for {athlete_name}")
 
                                 except Exception as e:
-                                    logger.warning(
-                                        f"[{session_id}] Error fetching PRs for {athlete_name}: {e}"
-                                    )
+                                    logger.warning(f"[{session_id}] Error fetching PRs for {athlete_name}: {e}")
                                     continue
 
                             logger.info(
-                                f"[{session_id}] Updated {sport_key}: {tfrr_athletes_added} athletes, {tfrr_stats_added} stats"
+                                f"[{session_id}] Updated {sport_key}: "
+                                f"{tfrr_athletes_added} athletes, {tfrr_stats_added} stats"
                             )
                         else:
                             send_progress(
@@ -931,9 +893,7 @@ def api_update_stats():
         thread.daemon = True
         thread.start()
 
-        return jsonify(
-            {"success": True, "message": "Stats update started", "session_id": session_id}
-        )
+        return jsonify({"success": True, "message": "Stats update started", "session_id": session_id})
 
     except Exception as e:
         logger.error(f"Stats update failed: {e}")
@@ -951,9 +911,7 @@ def api_update_cricket_stats():
         # Load config and database
         config = load_config(str(CONFIG_PATH))
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
         season = "2024-25"
 
         # Initialize cricket fetcher with Playwright
@@ -1014,9 +972,7 @@ def api_update_cricket_stats():
                     database.add_stat(stat_entry)
                     stats_added += 1
 
-        logger.info(
-            f"Cricket: {players_added} added, {players_updated} updated, {stats_added} stats"
-        )
+        logger.info(f"Cricket: {players_added} added, {players_updated} updated, {stats_added} stats")
 
         # Export to CSV (use the DataFrame we already have)
         output_path = str(CSV_EXPORTS_DIR / "haverford_cricket_stats.csv")
@@ -1068,9 +1024,7 @@ def api_update_tfrr_stats():
                 # Load config
                 config = load_config(str(CONFIG_PATH))
                 db_config = config.get("database", {})
-                database = PlayerDatabase(
-                    db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-                )
+                database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
                 season = "2024-25"
 
                 # Import TFRR Playwright fetcher
@@ -1111,9 +1065,7 @@ def api_update_tfrr_stats():
 
                         if result.success and result.data:
                             roster = result.data.get("roster", [])
-                            logger.info(
-                                f"[{session_id}] Fetched {len(roster)} athletes for {team_name}"
-                            )
+                            logger.info(f"[{session_id}] Fetched {len(roster)} athletes for {team_name}")
                             send_progress(
                                 session_id,
                                 {
@@ -1136,11 +1088,14 @@ def api_update_tfrr_stats():
 
                                 # Send progress every 5 athletes
                                 if idx % 5 == 0 or idx == len(roster) - 1:
+                                    progress_msg = (
+                                        f"Processing {sport_display} athlete {idx+1}/{len(roster)}: {athlete_name}"
+                                    )
                                     send_progress(
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f"Processing {sport_display} athlete {idx+1}/{len(roster)}: {athlete_name}",
+                                            "message": progress_msg,
                                         },
                                     )
 
@@ -1187,11 +1142,12 @@ def api_update_tfrr_stats():
                                 f"[{session_id}] {team_name}: {athletes_added_this_team} added, "
                                 f"{athletes_updated_this_team} updated, {prs_added_this_team} PRs"
                             )
+                            success_msg = f"✅ {sport_display}: {len(roster)} athletes, {prs_added_this_team} PRs added"
                             send_progress(
                                 session_id,
                                 {
                                     "type": "success",
-                                    "message": f"✅ {sport_display}: {len(roster)} athletes, {prs_added_this_team} PRs added",
+                                    "message": success_msg,
                                 },
                             )
                             teams_processed += 1
@@ -1249,9 +1205,7 @@ def api_update_tfrr_stats():
                                     {"type": "info", "message": f"✅ Exported {csv_filename}"},
                                 )
                             except Exception as e:
-                                logger.error(
-                                    f"[{session_id}] Error exporting CSV for {team_name}: {e}"
-                                )
+                                logger.error(f"[{session_id}] Error exporting CSV for {team_name}: {e}")
                                 send_progress(
                                     session_id,
                                     {
@@ -1272,9 +1226,7 @@ def api_update_tfrr_stats():
                             )
 
                     except Exception as e:
-                        logger.error(
-                            f"[{session_id}] Error processing {team_name}: {e}", exc_info=True
-                        )
+                        logger.error(f"[{session_id}] Error processing {team_name}: {e}", exc_info=True)
                         send_progress(
                             session_id,
                             {
@@ -1288,7 +1240,10 @@ def api_update_tfrr_stats():
                     session_id,
                     {
                         "type": "complete",
-                        "message": f"TFRR update complete! {teams_processed} teams, {total_athletes_added + total_athletes_updated} athletes, {total_prs_added} PRs",
+                        "message": (
+                            f"TFRR update complete! {teams_processed} teams, "
+                            f"{total_athletes_added + total_athletes_updated} athletes, {total_prs_added} PRs"
+                        ),
                         "teams_processed": teams_processed,
                         "athletes_added": total_athletes_added,
                         "athletes_updated": total_athletes_updated,
@@ -1343,9 +1298,7 @@ def api_update_squash_stats():
 
         if not clublocker_config:
             return (
-                jsonify(
-                    {"success": False, "error": "ClubLocker configuration not found in config.yaml"}
-                ),
+                jsonify({"success": False, "error": "ClubLocker configuration not found in config.yaml"}),
                 400,
             )
 
@@ -1357,9 +1310,7 @@ def api_update_squash_stats():
 
         # Initialize database
         db_config = config.get("database", {})
-        database = PlayerDatabase(
-            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-        )
+        database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
         # Get squash teams from config
         squash_teams = clublocker_config.get("teams", {})
@@ -1455,7 +1406,8 @@ def api_update_squash_stats():
             teams_processed += 1
 
         logger.info(
-            f"Squash stats update complete: {teams_processed} teams, {total_players_added} players added, {total_players_updated} players updated, {total_stats_added} stats added"
+            f"Squash stats update complete: {teams_processed} teams, {total_players_added} players added, "
+            f"{total_players_updated} players updated, {total_stats_added} stats added"
         )
 
         return jsonify(
@@ -1568,8 +1520,7 @@ def api_simulate_gameday():
             # Format numbers properly (remove .0 for whole numbers)
             current = (
                 int(prox.current_value)
-                if isinstance(prox.current_value, (int, float))
-                and prox.current_value == int(prox.current_value)
+                if isinstance(prox.current_value, (int, float)) and prox.current_value == int(prox.current_value)
                 else prox.current_value
             )
             target = (
@@ -1725,9 +1676,7 @@ def api_run_daily_workflow():
                 config = load_config(str(CONFIG_PATH))
                 fetcher_config = config.get("fetchers", {})
                 db_config = config.get("database", {})
-                database = PlayerDatabase(
-                    db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
-                )
+                database = PlayerDatabase(db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db")))
 
                 # Step 1: Update All Stats (NCAA, Cricket, TFRR)
                 send_progress(
@@ -1749,18 +1698,17 @@ def api_run_daily_workflow():
                     )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     for sport, team_id in haverford_teams.items():
+                        sport_title = sport.replace("_", " ").title()
                         send_progress(
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching NCAA {sport.replace("_", " ").title()} roster and career stats (optimized)...',
+                                "message": f"Fetching NCAA {sport_title} roster and career stats (optimized)...",
                             },
                         )
                         try:
                             # Use optimized method that reuses driver for entire team
-                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
-                                str(team_id), sport, "Haverford"
-                            )
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(str(team_id), sport, "Haverford")
                             if not team_result.success or not team_result.data:
                                 logger.warning(f"Failed to fetch team data for {sport}")
                                 continue
@@ -1770,7 +1718,7 @@ def api_run_daily_workflow():
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
+                                    "message": f"Processing {len(players_with_stats)} {sport_title} players...",
                                 },
                             )
 
@@ -1784,11 +1732,12 @@ def api_run_daily_workflow():
                                     continue
 
                                 if idx % 5 == 0:
+                                    player_progress = f"{idx+1}/{len(players_with_stats)}"
                                     send_progress(
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
+                                            "message": f"Processing {sport_title} player {player_progress}...",
                                         },
                                     )
 
@@ -1843,12 +1792,12 @@ def api_run_daily_workflow():
                 #             timeout=cricket_config.get('timeout', 30),
                 #             headless=cricket_config.get('headless', True)
                 #         )
-                #         send_progress(session_id, {'type': 'fetch', 'message': 'Fetching cricket stats from cricclubs.com (this may take 2-3 minutes)...'})
+                #         send_progress(session_id, {'type': 'fetch', 'message': 'Fetching cricket stats from cricclubs.com (this may take 2-3 minutes)...'})  # noqa: E501
                 #         result = cricket_fetcher.fetch_all_stats()
                 #
                 #         if result['success'] and result['data'] is not None:
                 #             df = result['data']
-                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket fetch complete! Processing {len(df)} players...'})
+                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket fetch complete! Processing {len(df)} players...'})  # noqa: E501
                 #
                 #             for idx, row in enumerate(df.iterrows()):
                 #                 _, row_data = row
@@ -1856,7 +1805,7 @@ def api_run_daily_workflow():
                 #
                 #                 # Send progress every 5 players to avoid too many messages
                 #                 if idx % 5 == 0 or idx == len(df) - 1:
-                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Processing cricket player {idx+1}/{len(df)}: {player_name}'})
+                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Processing cricket player {idx+1}/{len(df)}: {player_name}'})  # noqa: E501
                 #
                 #                 # Generate player ID
                 #                 player_id = generate_player_id(player_name, 'cricket')
@@ -1895,12 +1844,12 @@ def api_run_daily_workflow():
                 #                     )
                 #                     database.add_stat(stat_entry)
                 #
-                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket stats completed: {len(df)} players processed'})
+                #             send_progress(session_id, {'type': 'info', 'message': f'Cricket stats completed: {len(df)} players processed'})  # noqa: E501
                 #         else:
-                #             send_progress(session_id, {'type': 'warning', 'message': f'Cricket fetch failed: {result.get("error", "Unknown error")}'})
+                #             send_progress(session_id, {'type': 'warning', 'message': f'Cricket fetch failed: {result.get("error", "Unknown error")}'})  # noqa: E501
                 #
                 #     except Exception as e:
-                #         send_progress(session_id, {'type': 'warning', 'message': f'Error updating cricket stats: {str(e)}'})
+                #         send_progress(session_id, {'type': 'warning', 'message': f'Error updating cricket stats: {str(e)}'})  # noqa: E501
 
                 # TFRR Stats
                 # DISABLED: TFRR fetcher has aggressive rate limiting and takes too long (30+ minutes)
@@ -1925,7 +1874,7 @@ def api_run_daily_workflow():
                 #
                 #                 # Send progress every 10 athletes
                 #                 if idx % 10 == 0:
-                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Fetching PRs for {sport_display} athlete {idx+1}/{len(roster)}...'})
+                #                     send_progress(session_id, {'type': 'fetch', 'message': f'Fetching PRs for {sport_display} athlete {idx+1}/{len(roster)}...'})  # noqa: E501
                 #
                 #                 player_id = generate_player_id(athlete_name, sport_key)
                 #                 existing_player = database.get_player(player_id)
@@ -1963,9 +1912,9 @@ def api_run_daily_workflow():
                 #                     logger.warning(f"[{session_id}] Error fetching PRs for {athlete_name}: {e}")
                 #                     continue
                 #         else:
-                #             send_progress(session_id, {'type': 'warning', 'message': f'Error fetching {sport_display}: {result.error}'})
+                #             send_progress(session_id, {'type': 'warning', 'message': f'Error fetching {sport_display}: {result.error}'})  # noqa: E501
                 #     except Exception as e:
-                #         send_progress(session_id, {'type': 'warning', 'message': f'Error fetching {sport_display}: {str(e)}'})
+                #         send_progress(session_id, {'type': 'warning', 'message': f'Error fetching {sport_display}: {str(e)}'})  # noqa: E501
 
                 # Step 2: Check for games
                 send_progress(
@@ -1974,9 +1923,7 @@ def api_run_daily_workflow():
                 )
                 gameday_checker = GamedayChecker()
                 games = gameday_checker.get_games_for_date(check_date)
-                send_progress(
-                    session_id, {"type": "info", "message": f"Found {len(games)} games scheduled"}
-                )
+                send_progress(session_id, {"type": "info", "message": f"Found {len(games)} games scheduled"})
 
                 # Step 3: Check milestones
                 send_progress(
@@ -2001,9 +1948,7 @@ def api_run_daily_workflow():
 
                     milestone_config = config.get("milestones", {})
                     milestone_detector = MilestoneDetector(database, milestone_config)
-                    proximity_threshold = config.get("notifications", {}).get(
-                        "proximity_threshold", 10
-                    )
+                    proximity_threshold = config.get("notifications", {}).get("proximity_threshold", 10)
 
                     for sport_key in sports_with_games:
                         send_progress(
@@ -2055,24 +2000,16 @@ def api_run_daily_workflow():
                 notifier = EmailNotifier(email_config)
 
                 # Always send email (even if no games/milestones)
-                send_progress(
-                    session_id, {"type": "info", "message": "Preparing email notification..."}
-                )
-                success = notifier.send_milestone_alert(
-                    proximities=proximities_list, games=games, date_for=check_date
-                )
+                send_progress(session_id, {"type": "info", "message": "Preparing email notification..."})
+                success = notifier.send_milestone_alert(proximities=proximities_list, games=games, date_for=check_date)
 
                 if success:
-                    send_progress(
-                        session_id, {"type": "success", "message": "Email sent successfully!"}
-                    )
+                    send_progress(session_id, {"type": "success", "message": "Email sent successfully!"})
                 else:
                     send_progress(session_id, {"type": "error", "message": "Email send failed"})
 
                 # Final completion message
-                send_progress(
-                    session_id, {"type": "complete", "message": "Daily workflow complete!"}
-                )
+                send_progress(session_id, {"type": "complete", "message": "Daily workflow complete!"})
                 close_progress_stream(session_id)
 
             except Exception as e:
@@ -2085,9 +2022,7 @@ def api_run_daily_workflow():
         thread.daemon = True
         thread.start()
 
-        return jsonify(
-            {"success": True, "message": "Daily workflow started", "session_id": session_id}
-        )
+        return jsonify({"success": True, "message": "Daily workflow started", "session_id": session_id})
 
     except Exception as e:
         logger.error(f"Daily workflow failed: {e}", exc_info=True)
