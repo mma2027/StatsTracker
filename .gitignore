@@ -36,7 +36,8 @@ venv.bak/
 .DS_Store
 
 # Configuration files (contains sensitive data)
-config/config.yaml
+# Note: config.yaml now contains test/fake credentials and is committed to git
+# config/config.yaml  # Commented out - now tracked in git
 config/config.yml
 .env
 *.env
@@ -68,12 +69,12 @@ dmypy.json
 .ipynb_checkpoints/
 
 # Data files (if large)
-data/*.csv
+# data/*.csv  # Commented out - CSV files are now tracked in git
 data/*.json
 data/cache/
 
 # CSV exports (optional - uncomment to ignore CSV files)
-# csv_exports/*.csv
+# csv_exports/*.csv  # Commented out - CSV files are now tracked in git
 csv_exports/archive/
 
 # Output directory
