@@ -532,12 +532,13 @@ def api_update_stats():
                     csv_exports_successful = 0
                     logger.info(f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams")
                     for sport, team_id in haverford_teams.items():
+                        sport_title = sport.replace("_", " ").title()
                         logger.info(f"[{session_id}] Fetching {sport}")
                         send_progress(
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching {sport.replace("_", " ").title()} roster and career stats (optimized)...',
+                                "message": f"Fetching {sport_title} roster and career stats (optimized)...",
                             },
                         )
                         try:
@@ -552,7 +553,7 @@ def api_update_stats():
                                     session_id,
                                     {
                                         "type": "warning",
-                                        "message": f'Could not fetch data for {sport.replace("_", " ").title()}',
+                                        "message": f"Could not fetch data for {sport_title}",
                                     },
                                 )
                                 continue
@@ -563,7 +564,7 @@ def api_update_stats():
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
+                                    "message": f"Processing {len(players_with_stats)} {sport_title} players...",
                                 },
                             )
 
@@ -581,11 +582,12 @@ def api_update_stats():
 
                                 # Send progress every 5 players
                                 if idx % 5 == 0:
+                                    player_progress = f"{idx+1}/{len(players_with_stats)}"
                                     send_progress(
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
+                                            "message": f"Processing {sport_title} player {player_progress}...",
                                         },
                                     )
 
@@ -1696,11 +1698,12 @@ def api_run_daily_workflow():
                     )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     for sport, team_id in haverford_teams.items():
+                        sport_title = sport.replace("_", " ").title()
                         send_progress(
                             session_id,
                             {
                                 "type": "fetch",
-                                "message": f'Fetching NCAA {sport.replace("_", " ").title()} roster and career stats (optimized)...',
+                                "message": f"Fetching NCAA {sport_title} roster and career stats (optimized)...",
                             },
                         )
                         try:
@@ -1715,7 +1718,7 @@ def api_run_daily_workflow():
                                 session_id,
                                 {
                                     "type": "info",
-                                    "message": f'Processing {len(players_with_stats)} {sport.replace("_", " ").title()} players...',
+                                    "message": f"Processing {len(players_with_stats)} {sport_title} players...",
                                 },
                             )
 
@@ -1729,11 +1732,12 @@ def api_run_daily_workflow():
                                     continue
 
                                 if idx % 5 == 0:
+                                    player_progress = f"{idx+1}/{len(players_with_stats)}"
                                     send_progress(
                                         session_id,
                                         {
                                             "type": "fetch",
-                                            "message": f'Processing {sport.replace("_", " ").title()} player {idx+1}/{len(players_with_stats)}...',
+                                            "message": f"Processing {sport_title} player {player_progress}...",
                                         },
                                     )
 
