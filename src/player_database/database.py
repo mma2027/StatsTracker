@@ -471,7 +471,7 @@ class PlayerDatabase:
             conn = self._get_connection()
             cursor = conn.cursor()
 
-            # Base query
+            # Base query - use GROUP BY to deduplicate stats
             query = """
                 SELECT p.player_id, p.name, p.sport, p.team, p.position, p.year,
                        s.stat_name, s.stat_value, s.season
@@ -512,7 +512,8 @@ class PlayerDatabase:
                 query += " AND p.year = ?"
                 params.append(filters["year"])
 
-            # Order and limit
+            # Group by to remove duplicates, then order and limit
+            query += " GROUP BY p.player_id, s.stat_name, s.season"
             if stat_name:
                 query += f" ORDER BY CAST(s.stat_value AS REAL) {ordering}"
             query += " LIMIT ?"
