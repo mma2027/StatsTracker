@@ -1,0 +1,569 @@
+email:
+  smtp_server: smtp.gmail.com
+  smtp_port: 587
+  sender_email: mma@haverford.edu
+  sender_password: oenp drlw zixn wdjr
+  recipients:
+  - mma@haverford.edu
+database:
+  type: sqlite
+  path: data/stats.db
+gameday:
+  haverford_schedule_url: https://haverfordathletics.com/calendar
+  check_days_ahead: 7
+  timezone: America/New_York
+fetchers:
+  ncaa:
+    base_url: https://stats.ncaa.org
+    timeout: 30
+    haverford_school_id: 276
+    haverford_teams:
+      mens_basketball: 611523
+      womens_basketball: 611724
+      mens_soccer: 604522
+      womens_soccer: 603609
+      field_hockey: 603834
+      womens_volleyball: 605677
+      baseball: 615223
+      mens_lacrosse: 612459
+      womens_lacrosse: 613103
+      softball: 614273
+    selenium:
+      headless: true
+      timeout: 10
+      page_load_timeout: 15
+  tfrr:
+    base_url: https://www.tfrrs.org
+    timeout: 30
+  clublocker:
+    base_url: https://clublocker.com
+    timeout: 30
+    teams:
+      squash_mens_2024_25: 40879
+      squash_mens_2025_26: 44989
+      squash_womens_2024_25: 40967
+      squash_womens_2025_26: 45078
+    selenium:
+      headless: true
+      timeout: 10
+      page_load_timeout: 15
+      wait_for_render: 8
+milestones:
+  mens_basketball:
+    PTS:
+    - 250
+    - 500
+    - 750
+    - 1000
+    - 1500
+    - 2000
+    - 2500
+    - 3000
+    Tot Reb:
+    - 100
+    - 250
+    - 500
+    - 750
+    - 1000
+    AST:
+    - 150
+    - 300
+    - 500
+    - 750
+    STL:
+    - 75
+    - 150
+    - 225
+    - 300
+    BLK:
+    - 50
+    - 100
+    - 150
+    - 200
+    FGM:
+    - 250
+    - 500
+    - 750
+    - 1000
+    3FG:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 250
+    - 300
+    FT:
+    - 150
+    - 300
+    - 450
+    - 600
+  womens_basketball:
+    PTS:
+    - 250
+    - 500
+    - 750
+    - 1000
+    - 1500
+    - 2000
+    - 2500
+    - 3000
+    Tot Reb:
+    - 100
+    - 250
+    - 500
+    - 750
+    - 1000
+    AST:
+    - 150
+    - 300
+    - 500
+    - 750
+    STL:
+    - 75
+    - 150
+    - 225
+    - 300
+    BLK:
+    - 50
+    - 100
+    - 150
+    - 200
+    FGM:
+    - 250
+    - 500
+    - 750
+    - 1000
+    3FG:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 250
+    - 300
+    FT:
+    - 150
+    - 300
+    - 450
+    - 600
+  mens_soccer:
+    Goals:
+    - 10
+    - 20
+    - 35
+    - 50
+    Assists:
+    - 10
+    - 20
+    - 35
+    - 50
+    ShAtt:
+    - 50
+    - 100
+    - 150
+    - 200
+    SoG:
+    - 25
+    - 50
+    - 75
+    - 100
+    GWG:
+    - 3
+    - 5
+    - 8
+    - 10
+  womens_soccer:
+    Goals:
+    - 10
+    - 20
+    - 35
+    - 50
+    Assists:
+    - 10
+    - 20
+    - 35
+    - 50
+    Points:
+    - 25
+    - 50
+    - 75
+    - 100
+    ShAtt:
+    - 50
+    - 100
+    - 150
+    - 200
+    SoG:
+    - 25
+    - 50
+    - 75
+    - 100
+  field_hockey:
+    Goals:
+    - 15
+    - 30
+    - 45
+    - 60
+    AST:
+    - 12
+    - 25
+    - 40
+    - 55
+    PTS:
+    - 30
+    - 60
+    - 90
+    - 120
+    ShAtt:
+    - 40
+    - 80
+    - 120
+    - 160
+    DSv:
+    - 20
+    - 40
+    - 60
+    - 80
+  mens_lacrosse:
+    Goals:
+    - 25
+    - 50
+    - 75
+    - 100
+    - 150
+    Assists:
+    - 20
+    - 40
+    - 60
+    - 80
+    - 120
+    Points:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 300
+    GB:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 300
+    FO Won:
+    - 100
+    - 200
+    - 300
+    - 400
+    Shots:
+    - 100
+    - 200
+    - 300
+    - 400
+    SOG:
+    - 75
+    - 150
+    - 225
+    - 300
+  womens_lacrosse:
+    Goals:
+    - 25
+    - 50
+    - 75
+    - 100
+    - 150
+    Assists:
+    - 20
+    - 40
+    - 60
+    - 80
+    - 120
+    Points:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 300
+    Ground Balls:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 300
+    Draw Controls:
+    - 50
+    - 100
+    - 150
+    - 200
+    Shots:
+    - 100
+    - 200
+    - 300
+    - 400
+    SOG:
+    - 75
+    - 150
+    - 225
+    - 300
+    Freepos Goals:
+    - 15
+    - 30
+    - 45
+    - 60
+  baseball:
+    H:
+    - 50
+    - 100
+    - 150
+    - 200
+    HR:
+    - 5
+    - 10
+    - 15
+    - 20
+    - 30
+    RBI:
+    - 50
+    - 100
+    - 150
+    - 200
+    R:
+    - 50
+    - 100
+    - 150
+    - 200
+    2B:
+    - 20
+    - 40
+    - 60
+    - 80
+    3B:
+    - 5
+    - 10
+    - 15
+    - 20
+    BB:
+    - 40
+    - 80
+    - 120
+    - 160
+    SB:
+    - 20
+    - 40
+    - 60
+    - 80
+    TB:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 250
+    - 300
+  softball:
+    H:
+    - 50
+    - 100
+    - 150
+    - 200
+    HR:
+    - 5
+    - 10
+    - 15
+    - 20
+    - 30
+    RBI:
+    - 50
+    - 100
+    - 150
+    - 200
+    R:
+    - 50
+    - 100
+    - 150
+    - 200
+    2B:
+    - 20
+    - 40
+    - 60
+    - 80
+    3B:
+    - 5
+    - 10
+    - 15
+    - 20
+    BB:
+    - 40
+    - 80
+    - 120
+    - 160
+    SB:
+    - 20
+    - 40
+    - 60
+    - 80
+    TB:
+    - 50
+    - 100
+    - 150
+    - 200
+    - 250
+    - 300
+  womens_volleyball:
+    Kills:
+    - 250
+    - 500
+    - 750
+    - 1000
+    - 1500
+    Assists:
+    - 500
+    - 1000
+    - 1500
+    - 2000
+    - 3000
+    Aces:
+    - 50
+    - 100
+    - 150
+    - 200
+    Digs:
+    - 250
+    - 500
+    - 750
+    - 1000
+    - 1500
+    Block Assists:
+    - 75
+    - 150
+    - 225
+    - 300
+    Block Solos:
+    - 20
+    - 40
+    - 60
+    - 80
+    PTS:
+    - 300
+    - 600
+    - 900
+    - 1200
+    - 1800
+    S:
+    - 250
+    - 500
+    - 750
+    - 1000
+notifications:
+  enabled: true
+  proximity_threshold: 10
+  send_time: 08:00
+  include_historical: false
+  auto_update_stats: false
+logging:
+  level: INFO
+  file: logs/statstrack.log
+  console: true
+cache:
+  enabled: true
+  ttl: 3600
+  directory: data/cache
+llm:
+  model: claude-3-haiku-20240307
+  timeout: 10
+  max_tokens: 1024
+  temperature: 0.1
+  api_key: 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
+semantic_search:
+  enabled: true
+  cache_ttl: 3600
+milestone_proximity:
+  mens_basketball:
+    PTS: 30
+    Tot Reb: 30
+    AST: 30
+    STL: 30
+    BLK: 30
+    FGM: 30
+    3FG: 30
+    FT: 30
+  womens_basketball:
+    PTS: 30
+    Tot Reb: 30
+    AST: 30
+    STL: 30
+    BLK: 30
+    FGM: 30
+    3FG: 30
+    FT: 30
+  mens_soccer:
+    Goals: 10
+    Assists: 10
+    ShAtt: 10
+    SoG: 10
+    GWG: 10
+  womens_soccer:
+    Goals: 10
+    Assists: 10
+    Points: 10
+    ShAtt: 10
+    SoG: 10
+  field_hockey:
+    Goals: 10
+    AST: 10
+    PTS: 10
+    ShAtt: 10
+    DSv: 10
+  mens_lacrosse:
+    Goals: 10
+    Assists: 10
+    Points: 10
+    GB: 10
+    FO Won: 10
+    Shots: 10
+    SOG: 10
+  womens_lacrosse:
+    Goals: 10
+    Assists: 10
+    Points: 10
+    Ground Balls: 10
+    Draw Controls: 10
+    Shots: 10
+    SOG: 10
+    Freepos Goals: 10
+  baseball:
+    H: 10
+    HR: 10
+    RBI: 10
+    R: 10
+    2B: 10
+    3B: 10
+    BB: 10
+    SB: 10
+    TB: 10
+  softball:
+    H: 10
+    HR: 10
+    RBI: 10
+    R: 10
+    2B: 10
+    3B: 10
+    BB: 10
+    SB: 10
+    TB: 10
+  womens_volleyball:
+    Kills: 10
+    Assists: 10
+    Aces: 10
+    Digs: 10
+    Block Assists: 10
+    Block Solos: 10
+    PTS: 10
+  squash_mens:
+    Wins: 2
+    Games Won: 2
+  squash_womens:
+    Wins: 2
+    Games Won: 2
+  cricket:
+    Runs: 10
+    Wickets: 10
+    Catches: 10
+    Stumpings: 10

@@ -32,33 +32,36 @@ class AnthropicClient:
         timeout: Optional[int] = None,
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
+        config: Optional[Dict] = None,
     ):
         """
         Initialize Anthropic client.
 
         Args:
-            api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var)
-            model: Claude model to use (defaults to LLM_MODEL env var)
-            timeout: Request timeout in seconds (defaults to LLM_TIMEOUT env var)
-            max_tokens: Maximum tokens in response (defaults to LLM_MAX_TOKENS env var)
-            temperature: Sampling temperature (defaults to LLM_TEMPERATURE env var)
+            api_key: Anthropic API key (defaults to config.yaml llm.api_key)
+            model: Claude model to use (defaults to config.yaml llm.model)
+            timeout: Request timeout in seconds (defaults to config.yaml llm.timeout)
+            max_tokens: Maximum tokens in response (defaults to config.yaml llm.max_tokens)
+            temperature: Sampling temperature (defaults to config.yaml llm.temperature)
+            config: Configuration dict from config.yaml (optional)
         """
         if Anthropic is None:
             raise ImportError("anthropic package not installed. Run: pip install anthropic")
 
-        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+        # Read from config.yaml first, then fall back to defaults
+        llm_config = (config or {}).get("llm", {})
+        self.api_key = api_key or llm_config.get("api_key")
         if not self.api_key:
-            raise ValueError("Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable.")
+            raise ValueError("Anthropic API key not found in config.yaml llm.api_key")
 
-        # Read from environment variables with defaults
-        self.model = model or os.getenv("LLM_MODEL", "claude-3-5-sonnet-20240620")
-        timeout_val = timeout if timeout is not None else int(os.getenv("LLM_TIMEOUT", "10"))
-        self.max_tokens = max_tokens if max_tokens is not None else int(os.getenv("LLM_MAX_TOKENS", "1024"))
-        self.temperature = temperature if temperature is not None else float(os.getenv("LLM_TEMPERATURE", "0.1"))
+        self.model = model or llm_config.get("model", "claude-3-haiku-20240307")
+        timeout_val = timeout if timeout is not None else llm_config.get("timeout", 10)
+        self.max_tokens = max_tokens if max_tokens is not None else llm_config.get("max_tokens", 1024)
+        self.temperature = temperature if temperature is not None else llm_config.get("temperature", 0.1)
 
         self.client = Anthropic(api_key=self.api_key, timeout=timeout_val)
 
-        logger.info(f"Initialized Anthropic client with model: {model}")
+        logger.info(f"Initialized Anthropic client with model: {self.model}")
 
     def query_to_structured_search(self, query: str, retry_count: int = 1) -> Dict:
         """
