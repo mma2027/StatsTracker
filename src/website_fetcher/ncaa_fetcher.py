@@ -436,7 +436,12 @@ class NCAAFetcher(BaseFetcher):
                     logger.warning(f"Failed to fetch career stats for {player_name}: {career_result.error}")
                     # Still include player in list but without career stats
                     players_with_stats.append(
-                        {"name": player_name, "player_id": player_id, "career_stats": None, "error": career_result.error}
+                        {
+                            "name": player_name,
+                            "player_id": player_id,
+                            "career_stats": None,
+                            "error": career_result.error,
+                        }
                     )
 
             data = {"team_id": team_id, "sport": sport, "players": players_with_stats}

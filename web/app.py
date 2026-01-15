@@ -542,9 +542,7 @@ def api_update_stats():
                         )
                         try:
                             # Use optimized method that reuses driver for entire team
-                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
-                                str(team_id), sport, "Haverford"
-                            )
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(str(team_id), sport, "Haverford")
 
                             if not team_result.success or not team_result.data:
                                 logger.warning(
@@ -560,9 +558,7 @@ def api_update_stats():
                                 continue
 
                             players_with_stats = team_result.data.get("players", [])
-                            logger.info(
-                                f"[{session_id}] Found {len(players_with_stats)} players on {sport} roster"
-                            )
+                            logger.info(f"[{session_id}] Found {len(players_with_stats)} players on {sport} roster")
                             send_progress(
                                 session_id,
                                 {
@@ -598,9 +594,7 @@ def api_update_stats():
 
                                 # Check if career stats were successfully fetched
                                 if not career_data:
-                                    logger.warning(
-                                        f"[{session_id}] No career stats available for {player_name}"
-                                    )
+                                    logger.warning(f"[{session_id}] No career stats available for {player_name}")
                                     continue
 
                                 seasons_data = career_data.get("seasons", [])
@@ -1711,9 +1705,7 @@ def api_run_daily_workflow():
                         )
                         try:
                             # Use optimized method that reuses driver for entire team
-                            team_result = ncaa_fetcher.fetch_team_with_career_stats(
-                                str(team_id), sport, "Haverford"
-                            )
+                            team_result = ncaa_fetcher.fetch_team_with_career_stats(str(team_id), sport, "Haverford")
                             if not team_result.success or not team_result.data:
                                 logger.warning(f"Failed to fetch team data for {sport}")
                                 continue
