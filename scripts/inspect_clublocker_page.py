@@ -97,7 +97,9 @@ def inspect_clublocker_page(team_id="40879"):
 
         roster_keywords = ["roster", "player", "squad", "team"]
         for keyword in roster_keywords:
-            elements = soup.find_all(["div", "section"], class_=lambda x: x and keyword in str(x).lower() if x else False)
+            elements = soup.find_all(
+                ["div", "section"], class_=lambda x: x and keyword in str(x).lower() if x else False
+            )
             if elements:
                 print(f"\n  Elements with '{keyword}' in class ({len(elements)}):")
                 for elem in elements[:3]:
@@ -114,7 +116,9 @@ def inspect_clublocker_page(team_id="40879"):
 
         win_keywords = ["win", "record", "w-l", "match"]
         for keyword in win_keywords:
-            elements = soup.find_all(["span", "div", "td"], class_=lambda x: x and keyword in str(x).lower() if x else False)
+            elements = soup.find_all(
+                ["span", "div", "td"], class_=lambda x: x and keyword in str(x).lower() if x else False
+            )
             if elements:
                 print(f"\n  Elements with '{keyword}' in class ({len(elements)}):")
                 for elem in elements[:5]:

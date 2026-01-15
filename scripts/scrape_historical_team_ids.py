@@ -80,7 +80,10 @@ def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
                     value = option.get("value")
                     if value:
                         year_links.append(
-                            {"year": text.strip(), "url": f"https://stats.ncaa.org/team/{school_id}?academic_year={value}"}
+                            {
+                                "year": text.strip(),
+                                "url": f"https://stats.ncaa.org/team/{school_id}?academic_year={value}",
+                            }
                         )
 
         # Method 2: Look for links with year patterns
@@ -232,7 +235,9 @@ if __name__ == "__main__":
         "--school-id", type=int, default=HAVERFORD_SCHOOL_ID, help=f"NCAA school ID (default: {HAVERFORD_SCHOOL_ID})"
     )
     parser.add_argument(
-        "--output", default="data/historical_team_ids.json", help="Output JSON file (default: data/historical_team_ids.json)"
+        "--output",
+        default="data/historical_team_ids.json",
+        help="Output JSON file (default: data/historical_team_ids.json)",
     )
 
     args = parser.parse_args()

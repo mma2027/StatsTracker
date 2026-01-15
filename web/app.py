@@ -99,7 +99,10 @@ def csv_browser():
             player_stats = database.get_player_stats(player.player_id)
             if player_stats and player_stats.recent_entries:
                 latest_stat = max(player_stats.recent_entries, key=lambda s: s.date_recorded)
-                if not sports_data[sport]["last_updated"] or latest_stat.date_recorded > sports_data[sport]["last_updated"]:
+                if (
+                    not sports_data[sport]["last_updated"]
+                    or latest_stat.date_recorded > sports_data[sport]["last_updated"]
+                ):
                     sports_data[sport]["last_updated"] = latest_stat.date_recorded
 
         # Convert to sorted list
@@ -207,7 +210,11 @@ def api_semantic_search():
             # Check if ambiguous
             if structured_params.get("intent") == "ambiguous":
                 return jsonify(
-                    {"status": "clarification_needed", "message": structured_params.get("interpretation"), "suggestions": []}
+                    {
+                        "status": "clarification_needed",
+                        "message": structured_params.get("interpretation"),
+                        "suggestions": [],
+                    }
                 )
 
             # Build and execute query
@@ -518,7 +525,9 @@ def api_update_stats():
                     from src.website_fetcher.ncaa_fetcher import NCAAFetcher
                     import csv
 
-                    ncaa_fetcher = NCAAFetcher(base_url=ncaa_config.get("base_url"), timeout=ncaa_config.get("timeout", 30))
+                    ncaa_fetcher = NCAAFetcher(
+                        base_url=ncaa_config.get("base_url"), timeout=ncaa_config.get("timeout", 30)
+                    )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     csv_exports_successful = 0
                     logger.info(f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams")
@@ -536,7 +545,9 @@ def api_update_stats():
                             roster_result = ncaa_fetcher.fetch_team_roster_with_ids(str(team_id), sport)
 
                             if not roster_result.success or not roster_result.data:
-                                logger.warning(f"[{session_id}] Failed to fetch roster for {sport}: {roster_result.error}")
+                                logger.warning(
+                                    f"[{session_id}] Failed to fetch roster for {sport}: {roster_result.error}"
+                                )
                                 send_progress(
                                     session_id,
                                     {
@@ -582,7 +593,9 @@ def api_update_stats():
                                 player_id = generate_player_id(player_name, sport)
 
                                 # Fetch career stats for this player
-                                career_result = ncaa_fetcher.fetch_player_career_stats(player_ncaa_id, sport, "Haverford")
+                                career_result = ncaa_fetcher.fetch_player_career_stats(
+                                    player_ncaa_id, sport, "Haverford"
+                                )
 
                                 if not career_result.success or not career_result.data:
                                     logger.warning(f"[{session_id}] Failed to fetch career stats for {player_name}")
@@ -774,7 +787,9 @@ def api_update_stats():
                                     continue
 
                                 # Send progress for EVERY athlete
-                                progress_msg = f"Fetching PRs for {sport_display}: {athlete_name} ({idx+1}/{len(roster)})"
+                                progress_msg = (
+                                    f"Fetching PRs for {sport_display}: {athlete_name} ({idx+1}/{len(roster)})"
+                                )
                                 send_progress(
                                     session_id,
                                     {
@@ -1076,7 +1091,9 @@ def api_update_tfrr_stats():
 
                                 # Send progress every 5 athletes
                                 if idx % 5 == 0 or idx == len(roster) - 1:
-                                    progress_msg = f"Processing {sport_display} athlete {idx+1}/{len(roster)}: {athlete_name}"
+                                    progress_msg = (
+                                        f"Processing {sport_display} athlete {idx+1}/{len(roster)}: {athlete_name}"
+                                    )
                                     send_progress(
                                         session_id,
                                         {
@@ -1679,7 +1696,9 @@ def api_run_daily_workflow():
                 if ncaa_config:
                     from src.website_fetcher.ncaa_fetcher import NCAAFetcher
 
-                    ncaa_fetcher = NCAAFetcher(base_url=ncaa_config.get("base_url"), timeout=ncaa_config.get("timeout", 30))
+                    ncaa_fetcher = NCAAFetcher(
+                        base_url=ncaa_config.get("base_url"), timeout=ncaa_config.get("timeout", 30)
+                    )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     for sport, team_id in haverford_teams.items():
                         send_progress(
@@ -1723,7 +1742,9 @@ def api_run_daily_workflow():
                                     )
 
                                 player_id = generate_player_id(player_name, sport)
-                                career_result = ncaa_fetcher.fetch_player_career_stats(player_ncaa_id, sport, "Haverford")
+                                career_result = ncaa_fetcher.fetch_player_career_stats(
+                                    player_ncaa_id, sport, "Haverford"
+                                )
 
                                 if not career_result.success or not career_result.data:
                                     continue

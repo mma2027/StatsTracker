@@ -161,7 +161,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Fetch all Haverford NCAA team stats and save to CSV files")
-    parser.add_argument("--output-dir", default="csv_exports", help="Directory to save CSV files (default: csv_exports)")
+    parser.add_argument(
+        "--output-dir", default="csv_exports", help="Directory to save CSV files (default: csv_exports)"
+    )
 
     args = parser.parse_args()
 

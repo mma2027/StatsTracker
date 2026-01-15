@@ -232,7 +232,9 @@ def fetch_all_teams_prs(output_dir="csv_exports/tfrr"):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Fetch TFRR athlete PRs for Haverford teams (individual athlete approach)")
+    parser = argparse.ArgumentParser(
+        description="Fetch TFRR athlete PRs for Haverford teams (individual athlete approach)"
+    )
     parser.add_argument(
         "--output-dir", default="csv_exports/tfrr", help="Directory to save CSV files (default: csv_exports/tfrr)"
     )

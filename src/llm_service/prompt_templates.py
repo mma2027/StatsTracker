@@ -37,7 +37,8 @@ QUERY_SCHEMA = {
         "stat_name": {
             "type": "string",
             "description": (
-                "Primary statistic to search by (e.g., PTS, Goals, Assists). " "Must match exact stat name from database."
+                "Primary statistic to search by (e.g., PTS, Goals, Assists). "
+                "Must match exact stat name from database."
             ),
         },
         "filters": {

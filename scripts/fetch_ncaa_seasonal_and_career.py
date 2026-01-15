@@ -232,7 +232,9 @@ if __name__ == "__main__":
         "--output-dir", default="csv_exports/ncaa", help="Directory to save CSV files (default: csv_exports/ncaa)"
     )
     parser.add_argument(
-        "--team", default=None, help="Specific team to fetch (e.g., mens_basketball). If not specified, fetches all teams."
+        "--team",
+        default=None,
+        help="Specific team to fetch (e.g., mens_basketball). If not specified, fetches all teams.",
     )
 
     args = parser.parse_args()
