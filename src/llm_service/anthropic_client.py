@@ -31,7 +31,7 @@ class AnthropicClient:
         model: Optional[str] = None,
         timeout: Optional[int] = None,
         max_tokens: Optional[int] = None,
-        temperature: Optional[float] = None
+        temperature: Optional[float] = None,
     ):
         """
         Initialize Anthropic client.
@@ -44,15 +44,11 @@ class AnthropicClient:
             temperature: Sampling temperature (defaults to LLM_TEMPERATURE env var)
         """
         if Anthropic is None:
-            raise ImportError(
-                "anthropic package not installed. Run: pip install anthropic"
-            )
+            raise ImportError("anthropic package not installed. Run: pip install anthropic")
 
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError(
-                "Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable."
-            )
+            raise ValueError("Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable.")
 
         # Read from environment variables with defaults
         self.model = model or os.getenv("LLM_MODEL", "claude-3-5-sonnet-20240620")
@@ -64,9 +60,7 @@ class AnthropicClient:
 
         logger.info(f"Initialized Anthropic client with model: {model}")
 
-    def query_to_structured_search(
-        self, query: str, retry_count: int = 1
-    ) -> Dict:
+    def query_to_structured_search(self, query: str, retry_count: int = 1) -> Dict:
         """
         Convert natural language query to structured search parameters.
 
@@ -106,20 +100,15 @@ class AnthropicClient:
                     max_tokens=self.max_tokens,
                     temperature=self.temperature,
                     system=SYSTEM_PROMPT,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": user_prompt
-                        }
-                    ],
+                    messages=[{"role": "user", "content": user_prompt}],
                     tools=[
                         {
                             "name": "structured_search_query",
                             "description": "Convert natural language query to structured search parameters",
-                            "input_schema": QUERY_SCHEMA
+                            "input_schema": QUERY_SCHEMA,
                         }
                     ],
-                    tool_choice={"type": "tool", "name": "structured_search_query"}
+                    tool_choice={"type": "tool", "name": "structured_search_query"},
                 )
 
                 # Extract tool use result
@@ -131,9 +120,7 @@ class AnthropicClient:
 
                         # Validate required fields
                         if "intent" not in result or "interpretation" not in result:
-                            raise ValueError(
-                                "Response missing required fields: intent or interpretation"
-                            )
+                            raise ValueError("Response missing required fields: intent or interpretation")
 
                         # Set defaults
                         result.setdefault("ordering", "DESC")
@@ -147,10 +134,7 @@ class AnthropicClient:
                         return result
 
                 # If no tool use found in response
-                raise ValueError(
-                    "Claude did not return structured output. Response: " +
-                    str(response.content)
-                )
+                raise ValueError("Claude did not return structured output. Response: " + str(response.content))
 
             except APITimeoutError as e:
                 logger.error(f"Claude API timeout (attempt {attempt + 1}/{retry_count + 1}): {e}")
@@ -178,8 +162,4 @@ class AnthropicClient:
         Returns:
             True if API key is set and anthropic package is available
         """
-        return (
-            Anthropic is not None and
-            self.api_key is not None and
-            len(self.api_key) > 0
-        )
+        return Anthropic is not None and self.api_key is not None and len(self.api_key) > 0

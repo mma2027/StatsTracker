@@ -513,7 +513,7 @@ class PlayerDatabase:
                     "year": row[5],
                     "stat_name": row[6],
                     "stat_value": row[7],
-                    "season": row[8]
+                    "season": row[8],
                 }
                 for row in rows
             ]

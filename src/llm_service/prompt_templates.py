@@ -8,14 +8,8 @@ QUERY_SCHEMA = {
     "properties": {
         "intent": {
             "type": "string",
-            "enum": [
-                "rank_by_stat",
-                "filter_threshold",
-                "search_name",
-                "compare_players",
-                "ambiguous"
-            ],
-            "description": "The type of query intent"
+            "enum": ["rank_by_stat", "filter_threshold", "search_name", "compare_players", "ambiguous"],
+            "description": "The type of query intent",
         },
         "sport": {
             "type": "string",
@@ -36,57 +30,40 @@ QUERY_SCHEMA = {
                 "womens_cross_country",
                 "squash_mens",
                 "squash_womens",
-                "all"
+                "all",
             ],
-            "description": "Sport to filter by, 'all' for all sports, null if ambiguous"
+            "description": "Sport to filter by, 'all' for all sports, null if ambiguous",
         },
         "stat_name": {
             "type": "string",
-            "description": "Primary statistic to search by (e.g., PTS, Goals, Assists). Must match exact stat name from database."
+            "description": "Primary statistic to search by (e.g., PTS, Goals, Assists). Must match exact stat name from database.",
         },
         "filters": {
             "type": "object",
             "properties": {
-                "min_value": {
-                    "type": "number",
-                    "description": "Minimum stat value for filtering"
-                },
-                "max_value": {
-                    "type": "number",
-                    "description": "Maximum stat value for filtering"
-                },
+                "min_value": {"type": "number", "description": "Minimum stat value for filtering"},
+                "max_value": {"type": "number", "description": "Maximum stat value for filtering"},
                 "season": {
                     "type": "string",
-                    "description": "Season filter (e.g., '2024-25', 'Career'). Default to 'Career' if not specified."
+                    "description": "Season filter (e.g., '2024-25', 'Career'). Default to 'Career' if not specified.",
                 },
-                "position": {
-                    "type": "string",
-                    "description": "Player position filter"
-                },
+                "position": {"type": "string", "description": "Player position filter"},
                 "year": {
                     "type": "string",
-                    "description": "Player year filter (e.g., 'Freshman', 'Sophomore', 'Junior', 'Senior')"
-                }
+                    "description": "Player year filter (e.g., 'Freshman', 'Sophomore', 'Junior', 'Senior')",
+                },
             },
-            "description": "Additional filters to apply"
+            "description": "Additional filters to apply",
         },
         "ordering": {
             "type": "string",
             "enum": ["DESC", "ASC"],
-            "description": "Sort order for results. DESC for highest first (default), ASC for lowest first."
+            "description": "Sort order for results. DESC for highest first (default), ASC for lowest first.",
         },
-        "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100,
-            "description": "Maximum number of results to return"
-        },
-        "interpretation": {
-            "type": "string",
-            "description": "Human-readable explanation of what the query is looking for"
-        }
+        "limit": {"type": "integer", "minimum": 1, "maximum": 100, "description": "Maximum number of results to return"},
+        "interpretation": {"type": "string", "description": "Human-readable explanation of what the query is looking for"},
     },
-    "required": ["intent", "interpretation"]
+    "required": ["intent", "interpretation"],
 }
 
 # System prompt for the LLM

@@ -41,7 +41,8 @@ class SemanticCache:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS cache (
                     query_hash TEXT PRIMARY KEY,
                     query_text TEXT NOT NULL,
@@ -49,13 +50,16 @@ class SemanticCache:
                     created_at TIMESTAMP NOT NULL,
                     expires_at TIMESTAMP NOT NULL
                 )
-            """)
+            """
+            )
 
             # Create index on expiry for cleanup
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE INDEX IF NOT EXISTS idx_expires_at
                 ON cache(expires_at)
-            """)
+            """
+            )
 
             conn.commit()
             conn.close()
@@ -102,11 +106,14 @@ class SemanticCache:
             cursor = conn.cursor()
 
             # Check if cached result exists and is not expired
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT result_json, expires_at
                 FROM cache
                 WHERE query_hash = ?
-            """, (query_hash,))
+            """,
+                (query_hash,),
+            )
 
             row = cursor.fetchone()
             conn.close()
@@ -131,13 +138,7 @@ class SemanticCache:
             logger.error(f"Error reading from cache: {e}")
             return None
 
-    def set(
-        self,
-        query: str,
-        result: Dict,
-        ttl: Optional[int] = None,
-        filters: Optional[Dict] = None
-    ):
+    def set(self, query: str, result: Dict, ttl: Optional[int] = None, filters: Optional[Dict] = None):
         """
         Store result in cache.
 
@@ -157,17 +158,20 @@ class SemanticCache:
             cursor = conn.cursor()
 
             # Insert or replace
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT OR REPLACE INTO cache
                 (query_hash, query_text, result_json, created_at, expires_at)
                 VALUES (?, ?, ?, ?, ?)
-            """, (
-                query_hash,
-                query[:200],  # Truncate query for storage
-                result_json,
-                created_at.isoformat(),
-                expires_at.isoformat()
-            ))
+            """,
+                (
+                    query_hash,
+                    query[:200],  # Truncate query for storage
+                    result_json,
+                    created_at.isoformat(),
+                    expires_at.isoformat(),
+                ),
+            )
 
             conn.commit()
             conn.close()
@@ -207,10 +211,13 @@ class SemanticCache:
             conn = sqlite3.connect(str(self.db_path))
             cursor = conn.cursor()
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 DELETE FROM cache
                 WHERE expires_at < ?
-            """, (datetime.now().isoformat(),))
+            """,
+                (datetime.now().isoformat(),),
+            )
 
             deleted_count = cursor.rowcount
             conn.commit()
@@ -252,19 +259,18 @@ class SemanticCache:
             cursor.execute("SELECT COUNT(*) FROM cache")
             total = cursor.fetchone()[0]
 
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT COUNT(*) FROM cache
                 WHERE expires_at < ?
-            """, (datetime.now().isoformat(),))
+            """,
+                (datetime.now().isoformat(),),
+            )
             expired = cursor.fetchone()[0]
 
             conn.close()
 
-            return {
-                "total_entries": total,
-                "expired_entries": expired,
-                "valid_entries": total - expired
-            }
+            return {"total_entries": total, "expired_entries": expired, "valid_entries": total - expired}
 
         except Exception as e:
             logger.error(f"Error getting cache stats: {e}")

@@ -80,14 +80,16 @@ class SemanticQueryBuilder:
             return []
 
         # Use database's semantic_query method
-        results = self.database.semantic_query({
-            "intent": "rank_by_stat",
-            "sport": sport if sport != "all" else None,
-            "stat_name": stat_name,
-            "filters": filters,
-            "ordering": ordering,
-            "limit": limit
-        })
+        results = self.database.semantic_query(
+            {
+                "intent": "rank_by_stat",
+                "sport": sport if sport != "all" else None,
+                "stat_name": stat_name,
+                "filters": filters,
+                "ordering": ordering,
+                "limit": limit,
+            }
+        )
 
         logger.info(f"Ranking query returned {len(results)} results")
         return results
@@ -113,14 +115,16 @@ class SemanticQueryBuilder:
             return []
 
         # Use database's semantic_query method
-        results = self.database.semantic_query({
-            "intent": "filter_threshold",
-            "sport": sport if sport != "all" else None,
-            "stat_name": stat_name,
-            "filters": filters,
-            "ordering": ordering,
-            "limit": limit
-        })
+        results = self.database.semantic_query(
+            {
+                "intent": "filter_threshold",
+                "sport": sport if sport != "all" else None,
+                "stat_name": stat_name,
+                "filters": filters,
+                "ordering": ordering,
+                "limit": limit,
+            }
+        )
 
         logger.info(f"Threshold query returned {len(results)} results")
         return results
@@ -153,18 +157,20 @@ class SemanticQueryBuilder:
         # Convert to result format
         results = []
         for player in players:
-            results.append({
-                "player_id": player.player_id,
-                "name": player.name,
-                "sport": player.sport.replace("_", " ").title(),
-                "sport_key": player.sport,
-                "team": player.team,
-                "position": player.position,
-                "year": player.year,
-                "stat_name": None,
-                "stat_value": None,
-                "season": None
-            })
+            results.append(
+                {
+                    "player_id": player.player_id,
+                    "name": player.name,
+                    "sport": player.sport.replace("_", " ").title(),
+                    "sport_key": player.sport,
+                    "team": player.team,
+                    "position": player.position,
+                    "year": player.year,
+                    "stat_name": None,
+                    "stat_value": None,
+                    "season": None,
+                }
+            )
 
         logger.info(f"Name search returned {len(results)} results")
         return results
