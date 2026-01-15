@@ -29,6 +29,8 @@ from src.website_fetcher.tfrr_fetcher import HAVERFORD_TEAMS as TFRR_TEAMS
 from src.player_database import PlayerDatabase, Player, StatEntry
 from src.milestone_detector import MilestoneDetector
 from src.email_notifier import EmailNotifier, EmailTemplate
+from src.llm_service import AnthropicClient, SemanticQueryBuilder
+from src.llm_service.cache import SemanticCache
 from main import load_config, generate_player_id
 
 app = Flask(__name__)
@@ -162,6 +164,126 @@ def api_search_players():
     except Exception as e:
         logger.error(f"Error searching players: {e}")
         return jsonify({"error": str(e), "results": []}), 500
+
+
+@app.route("/api/semantic-search", methods=["POST"])
+def api_semantic_search():
+    """Semantic natural language search endpoint powered by Claude."""
+    import time
+
+    try:
+        start_time = time.time()
+        data = request.get_json()
+        query = data.get("query", "").strip()
+
+        if not query:
+            return jsonify({"error": "Query required"}), 400
+
+        # Limit query length
+        if len(query) > 200:
+            return jsonify({"error": "Query too long (max 200 characters)"}), 400
+
+        logger.info(f"Semantic search query: {query}")
+
+        # Load database
+        config = load_config(str(CONFIG_PATH))
+        db_config = config.get("database", {})
+        database = PlayerDatabase(
+            db_path=str(PROJECT_ROOT / db_config.get("path", "data/stats.db"))
+        )
+
+        # Check cache first
+        cache = SemanticCache()
+        cached_result = cache.get(query)
+        if cached_result:
+            logger.info("Returning cached result")
+            cached_result["cached"] = True
+            return jsonify(cached_result)
+
+        # Try LLM-powered semantic search
+        try:
+            # Initialize LLM client
+            llm_client = AnthropicClient()
+
+            if not llm_client.is_available():
+                raise Exception("Anthropic API not configured")
+
+            # Get structured parameters from LLM
+            llm_start = time.time()
+            structured_params = llm_client.query_to_structured_search(query)
+            llm_time = int((time.time() - llm_start) * 1000)
+
+            logger.info(f"LLM returned intent: {structured_params.get('intent')}")
+
+            # Check if ambiguous
+            if structured_params.get("intent") == "ambiguous":
+                return jsonify({
+                    "status": "clarification_needed",
+                    "message": structured_params.get("interpretation"),
+                    "suggestions": []
+                })
+
+            # Build and execute query
+            query_builder = SemanticQueryBuilder(database)
+            results = query_builder.execute(structured_params)
+
+            query_time = int((time.time() - start_time) * 1000)
+
+            response = {
+                "status": "success",
+                "query_interpretation": structured_params.get("interpretation"),
+                "filters_applied": {
+                    "sport": structured_params.get("sport"),
+                    "stat_name": structured_params.get("stat_name"),
+                    "ordering": structured_params.get("ordering"),
+                },
+                "results": results,
+                "result_count": len(results),
+                "query_time_ms": query_time,
+                "llm_time_ms": llm_time,
+                "cached": False
+            }
+
+            # Cache successful results
+            cache.set(query, response)
+
+            return jsonify(response)
+
+        except Exception as e:
+            # Fallback to simple name search
+            logger.warning(f"LLM search failed, falling back to name search: {e}")
+
+            players = database.search_players(query)
+            fallback_results = []
+            for player in players:
+                fallback_results.append({
+                    "player_id": player.player_id,
+                    "name": player.name,
+                    "sport": player.sport.replace("_", " ").title(),
+                    "sport_key": player.sport,
+                    "team": player.team,
+                    "position": player.position,
+                    "year": player.year,
+                    "stat_name": None,
+                    "stat_value": None,
+                    "season": None
+                })
+
+            query_time = int((time.time() - start_time) * 1000)
+
+            return jsonify({
+                "status": "fallback",
+                "message": "AI search temporarily unavailable. Showing name matches.",
+                "query_interpretation": f"Searching for players matching '{query}'",
+                "results": fallback_results,
+                "result_count": len(fallback_results),
+                "query_time_ms": query_time,
+                "cached": False
+            })
+
+    except Exception as e:
+        logger.error(f"Semantic search error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/settings")
@@ -653,15 +775,26 @@ def api_update_stats():
                 #     except Exception as e:
                 #         send_progress(session_id, {'type': 'warning', 'message': f'Error updating cricket stats: {str(e)}'})
 
-                # Update TFRR stats with progress
+                # Update TFRR stats with progress using Playwright fetcher
                 send_progress(
                     session_id, {"type": "info", "message": "Starting TFRR stats update..."}
                 )
-                tfrr_fetcher = TFRRFetcher()
+
+                # Import Playwright fetcher
+                from src.website_fetcher.tfrr_playwright_fetcher import (
+                    TFRRPlaywrightFetcher,
+                    HAVERFORD_TEAMS,
+                )
+
+                tfrr_fetcher = TFRRPlaywrightFetcher(
+                    base_url="https://www.tfrrs.org",
+                    timeout=30,
+                    headless=True,
+                )
                 tfrr_athletes_added = 0
                 tfrr_stats_added = 0
 
-                for sport_key, team_code in TFRR_TEAMS.items():
+                for sport_key, team_code in HAVERFORD_TEAMS.items():
                     sport_display = sport_key.replace("_", " ").title()
                     send_progress(
                         session_id,
@@ -688,15 +821,14 @@ def api_update_stats():
                                 if not athlete_name or not athlete_id_tfrr:
                                     continue
 
-                                # Send progress every 10 athletes
-                                if idx % 10 == 0:
-                                    send_progress(
-                                        session_id,
-                                        {
-                                            "type": "fetch",
-                                            "message": f"Fetching PRs for {sport_display} athlete {idx+1}/{len(roster)}...",
-                                        },
-                                    )
+                                # Send progress for EVERY athlete
+                                send_progress(
+                                    session_id,
+                                    {
+                                        "type": "fetch",
+                                        "message": f"Fetching PRs for {sport_display}: {athlete_name} ({idx+1}/{len(roster)})",
+                                    },
+                                )
 
                                 # Generate player ID
                                 player_id = generate_player_id(athlete_name, sport_key)
@@ -773,6 +905,9 @@ def api_update_stats():
                                 "message": f"Error fetching {sport_display}: {str(e)}",
                             },
                         )
+
+                # Clean up Playwright fetcher
+                tfrr_fetcher.close()
 
                 # Final success message
                 if csv_exports_successful > 0:
