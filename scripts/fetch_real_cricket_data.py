@@ -40,7 +40,7 @@ def fetch_table_with_selenium(url, stat_type):
     print(f"\n{'='*70}")
     print(f"Fetching {stat_type} statistics from:")
     print(f"{url}")
-    print('='*70)
+    print("=" * 70)
 
     driver = setup_driver()
 
@@ -87,9 +87,9 @@ def fetch_table_with_selenium(url, stat_type):
 
 def main():
     """Fetch all cricket statistics and merge them."""
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("REAL CRICKET DATA FETCHER (Using Selenium)")
-    print("="*70)
+    print("=" * 70)
 
     # Fetch batting stats
     batting_url = get_url("batting")
@@ -128,23 +128,31 @@ def main():
     print("💾 Saved to fielding_real.csv")
 
     # Now merge using the manual merge script
-    print("\n" + "="*70)
+    print("\n" + "=" * 70)
     print("MERGING DATA")
-    print("="*70)
+    print("=" * 70)
 
     import subprocess
-    result = subprocess.run([
-        "python", "src/website_fetcher/merge_manual_cricket_data.py",
-        "--batting", "csv_exports/batting_real.csv",
-        "--bowling", "csv_exports/bowling_real.csv",
-        "--fielding", "csv_exports/fielding_real.csv",
-        "--output", "csv_exports/haverford_cricket_stats.csv"
-    ])
+
+    result = subprocess.run(
+        [
+            "python",
+            "src/website_fetcher/merge_manual_cricket_data.py",
+            "--batting",
+            "csv_exports/batting_real.csv",
+            "--bowling",
+            "csv_exports/bowling_real.csv",
+            "--fielding",
+            "csv_exports/fielding_real.csv",
+            "--output",
+            "csv_exports/haverford_cricket_stats.csv",
+        ]
+    )
 
     if result.returncode == 0:
-        print("\n" + "="*70)
+        print("\n" + "=" * 70)
         print("✅ SUCCESS! Real cricket data has been fetched and merged!")
-        print("="*70)
+        print("=" * 70)
         print("\n📁 Output file: haverford_cricket_stats.csv")
     else:
         print("\n❌ Merge failed")

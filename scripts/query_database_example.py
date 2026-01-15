@@ -6,7 +6,8 @@ Demonstrates how to query stats from the database after updating from NCAA.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
 from src.player_database.database import PlayerDatabase  # noqa: E402
 

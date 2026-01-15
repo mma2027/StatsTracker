@@ -8,7 +8,8 @@ each academic year to update team IDs in the config.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402
 
@@ -32,7 +33,7 @@ def main():
         return False
 
     data = result.data
-    teams = data['teams']
+    teams = data["teams"]
 
     print(f"✓ Found {len(teams)} Haverford teams!")
     print()
@@ -42,7 +43,7 @@ def main():
     print()
 
     # Sort teams by sport name for easier reading
-    sorted_teams = sorted(teams, key=lambda x: x['sport'])
+    sorted_teams = sorted(teams, key=lambda x: x["sport"])
 
     for team in sorted_teams:
         print(f"  {team['sport']:<25} ID: {team['team_id']:<10} {team['url']}")
@@ -57,7 +58,7 @@ def main():
     # Convert sport names to config keys (lowercase, underscores)
     for team in sorted_teams:
         # Simple conversion: lowercase and replace spaces/apostrophes
-        config_key = team['sport'].lower().replace("'", "").replace(" ", "_")
+        config_key = team["sport"].lower().replace("'", "").replace(" ", "_")
         print(f"  {config_key}: {team['team_id']}")
 
     print()
@@ -75,5 +76,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n✗ Exception occurred: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

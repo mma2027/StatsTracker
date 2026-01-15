@@ -7,7 +7,8 @@ and use the correct team ID when it encounters an invalid one.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402
 
@@ -71,9 +72,9 @@ def fetch_with_auto_recovery(sport_key, initial_team_id):
             return None
 
         # Find the correct team ID
-        for team in discovery_result.data['teams']:
-            if team['sport'] == target_sport:
-                new_team_id = team['team_id']
+        for team in discovery_result.data["teams"]:
+            if team["sport"] == target_sport:
+                new_team_id = team["team_id"]
                 print(f"✓ Found correct team ID: {new_team_id}")
                 print(f"   (was: {initial_team_id}, should be: {new_team_id})")
                 print()

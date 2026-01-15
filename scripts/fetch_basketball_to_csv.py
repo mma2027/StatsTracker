@@ -7,7 +7,7 @@ import sys
 import csv
 
 # Add project root to path
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
@@ -51,17 +51,17 @@ def fetch_basketball_to_csv(output_file="csv_exports/haverford_mens_basketball_s
     # Write to CSV
     print(f"\nWriting to {output_file}...")
 
-    with open(output_file, 'w', newline='', encoding='utf-8') as csvfile:
+    with open(output_file, "w", newline="", encoding="utf-8") as csvfile:
         # Prepare headers
-        headers = ['Player Name'] + data['stat_categories']
+        headers = ["Player Name"] + data["stat_categories"]
 
         writer = csv.DictWriter(csvfile, fieldnames=headers)
         writer.writeheader()
 
         # Write player data
-        for player in data['players']:
-            row = {'Player Name': player['name']}
-            row.update(player['stats'])
+        for player in data["players"]:
+            row = {"Player Name": player["name"]}
+            row.update(player["stats"])
             writer.writerow(row)
 
     print(f"✓ Saved {len(data['players'])} players to {output_file}")
@@ -71,13 +71,13 @@ def fetch_basketball_to_csv(output_file="csv_exports/haverford_mens_basketball_s
     print("PREVIEW (First 5 players):")
     print("=" * 70)
 
-    for i, player in enumerate(data['players'][:5], 1):
+    for i, player in enumerate(data["players"][:5], 1):
         print(f"\n{i}. {player['name']}")
         # Show first 5 stats
-        stats_preview = list(player['stats'].items())[:5]
+        stats_preview = list(player["stats"].items())[:5]
         for stat_name, stat_value in stats_preview:
             print(f"   {stat_name}: {stat_value}")
-        if len(player['stats']) > 5:
+        if len(player["stats"]) > 5:
             print(f"   ... and {len(player['stats']) - 5} more stats")
 
     print("\n" + "=" * 70)
@@ -94,5 +94,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n✗ Exception occurred: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

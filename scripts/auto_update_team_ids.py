@@ -31,7 +31,7 @@ def discover_and_map_teams():
         print(f"✗ Failed to discover teams: {result.error}")
         return None
 
-    teams = result.data['teams']
+    teams = result.data["teams"]
     print(f"✓ Discovered {len(teams)} teams from NCAA")
     print()
 
@@ -52,10 +52,10 @@ def discover_and_map_teams():
     # Build new team ID mapping
     new_team_ids = {}
     for team in teams:
-        sport_name = team['sport']
+        sport_name = team["sport"]
         if sport_name in sport_name_to_key:
             config_key = sport_name_to_key[sport_name]
-            new_team_ids[config_key] = team['team_id']
+            new_team_ids[config_key] = team["team_id"]
             print(f"  {sport_name:<25} → {config_key:<25} ID: {team['team_id']}")
 
     print()
@@ -86,7 +86,7 @@ def check_and_update_if_needed(force_check=False):
     print()
 
     for sport_key, team_id in HAVERFORD_TEAMS.items():
-        sport_display = sport_key.replace('_', ' ').title()
+        sport_display = sport_key.replace("_", " ").title()
 
         # Quick test - just check if page is valid
         result = fetcher.fetch_team_stats(str(team_id), sport_key)
@@ -147,20 +147,12 @@ def check_and_update_if_needed(force_check=False):
             print("  Copy the team IDs above to update your config.")
             print("=" * 70)
 
-            return {
-                'needs_update': True,
-                'invalid_count': len(invalid_teams),
-                'new_team_ids': new_team_ids
-            }
+            return {"needs_update": True, "invalid_count": len(invalid_teams), "new_team_ids": new_team_ids}
     else:
         print("✓ All team IDs are valid!")
         print()
 
-        return {
-            'needs_update': False,
-            'invalid_count': 0,
-            'new_team_ids': None
-        }
+        return {"needs_update": False, "invalid_count": 0, "new_team_ids": None}
 
 
 def fetch_with_auto_recovery(team_id, sport):
@@ -207,9 +199,9 @@ def fetch_with_auto_recovery(team_id, sport):
 
             target_sport = sport_names.get(sport)
             if target_sport:
-                for team in discovery_result.data['teams']:
-                    if team['sport'] == target_sport:
-                        new_team_id = team['team_id']
+                for team in discovery_result.data["teams"]:
+                    if team["sport"] == target_sport:
+                        new_team_id = team["team_id"]
                         print(f"✓ Found new team ID: {new_team_id}")
                         print("🔄 Retrying with new ID...")
 
@@ -231,21 +223,15 @@ def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Check and auto-update Haverford team IDs'
-    )
-    parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force check all teams and discover new IDs'
-    )
+    parser = argparse.ArgumentParser(description="Check and auto-update Haverford team IDs")
+    parser.add_argument("--force", action="store_true", help="Force check all teams and discover new IDs")
 
     args = parser.parse_args()
 
     try:
         result = check_and_update_if_needed(force_check=args.force)
 
-        if result['needs_update']:
+        if result["needs_update"]:
             print()
             print("⚠️  Action required: Update your config file with new team IDs")
             sys.exit(1)
@@ -256,6 +242,7 @@ def main():
     except Exception as e:
         print(f"\n✗ Error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

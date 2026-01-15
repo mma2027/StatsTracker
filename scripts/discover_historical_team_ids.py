@@ -9,7 +9,7 @@ school's main page and looking at different academic years.
 import sys
 import json
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
 from src.website_fetcher.ncaa_fetcher import NCAAFetcher  # noqa: E402, F401
 
@@ -64,7 +64,8 @@ def discover_historical_ids(years_back=6):
     print("3. Update it each season with current IDs")
     print()
     print("Example JSON format:")
-    print("""
+    print(
+        """
 {
   "mens_basketball": {
     "2025-26": 611523,
@@ -76,7 +77,8 @@ def discover_historical_ids(years_back=6):
     "2024-25": 123458
   }
 }
-""")
+"""
+    )
 
     return historical_ids
 
@@ -84,15 +86,8 @@ def discover_historical_ids(years_back=6):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Discover historical team IDs for Haverford teams'
-    )
-    parser.add_argument(
-        '--years-back',
-        type=int,
-        default=6,
-        help='How many years to look back (default: 6)'
-    )
+    parser = argparse.ArgumentParser(description="Discover historical team IDs for Haverford teams")
+    parser.add_argument("--years-back", type=int, default=6, help="How many years to look back (default: 6)")
 
     args = parser.parse_args()
 

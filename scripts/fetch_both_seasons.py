@@ -4,6 +4,7 @@ Fetch squash data from both 2024-25 and 2025-26 seasons and create CSV
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import csv  # noqa: E402
@@ -12,19 +13,16 @@ import logging  # noqa: E402
 from src.website_fetcher import SquashFetcher  # noqa: E402
 
 # Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 def fetch_both_seasons():
     """Fetch data from both seasons and create combined CSV"""
 
-    print("="*80)
+    print("=" * 80)
     print("FETCHING HAVERFORD SQUASH DATA FROM BOTH SEASONS")
-    print("="*80)
+    print("=" * 80)
 
     # Team IDs
     team_2024_25 = "40879"  # 2024-25 season
@@ -58,15 +56,15 @@ def fetch_both_seasons():
     player_stats = defaultdict(lambda: {"2024-25": 0, "2025-26": 0})
 
     # Add 2024-25 wins
-    for player in result_24_25.data['players']:
-        name = player['name']
-        wins = int(player['stats']['wins'])
+    for player in result_24_25.data["players"]:
+        name = player["name"]
+        wins = int(player["stats"]["wins"])
         player_stats[name]["2024-25"] = wins
 
     # Add 2025-26 wins
-    for player in result_25_26.data['players']:
-        name = player['name']
-        wins = int(player['stats']['wins'])
+    for player in result_25_26.data["players"]:
+        name = player["name"]
+        wins = int(player["stats"]["wins"])
         player_stats[name]["2025-26"] = wins
 
     # Calculate totals
@@ -82,36 +80,31 @@ def fetch_both_seasons():
     output_file = output_dir / "haverford_squash_combined_seasons.csv"
 
     print(f"\n4. Writing CSV to {output_file}...")
-    with open(output_file, 'w', newline='') as f:
+    with open(output_file, "w", newline="") as f:
         writer = csv.writer(f)
 
         # Write header
-        writer.writerow(['Player Name', 'Wins 2024-25', 'Wins 2025-26', 'Total Wins'])
+        writer.writerow(["Player Name", "Wins 2024-25", "Wins 2025-26", "Total Wins"])
 
         # Write data
         for name, stats in sorted_players:
-            writer.writerow([
-                name,
-                stats["2024-25"],
-                stats["2025-26"],
-                stats["total"]
-            ])
+            writer.writerow([name, stats["2024-25"], stats["2025-26"], stats["total"]])
 
     print("   ✓ CSV file created successfully!")
 
     # Display summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("COMBINED RESULTS")
-    print("="*80)
+    print("=" * 80)
     print(f"{'Player Name':<30} {'2024-25':<12} {'2025-26':<12} {'Total':<10}")
-    print("-"*80)
+    print("-" * 80)
 
     for name, stats in sorted_players:
         print(f"{name:<30} {stats['2024-25']:<12} {stats['2025-26']:<12} {stats['total']:<10}")
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("SUMMARY STATISTICS")
-    print("="*80)
+    print("=" * 80)
     total_24_25 = sum(s["2024-25"] for s in player_stats.values())
     total_25_26 = sum(s["2025-26"] for s in player_stats.values())
     total_combined = sum(s["total"] for s in player_stats.values())

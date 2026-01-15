@@ -22,9 +22,7 @@ class MilestoneDetector:
     configured milestone thresholds.
     """
 
-    def __init__(
-        self, database: PlayerDatabase, milestone_config: Dict[str, Any], proximity_config: Dict[str, Any] = None
-    ):
+    def __init__(self, database: PlayerDatabase, milestone_config: Dict[str, Any], proximity_config: Dict[str, Any] = None):
         """
         Initialize the milestone detector.
 
@@ -241,9 +239,7 @@ class MilestoneDetector:
         """
         return proximity.current_value >= proximity.milestone.threshold
 
-    def _estimate_games_to_milestone(
-        self, current_value: Any, threshold: Any, player_stats: PlayerStats
-    ) -> Optional[int]:
+    def _estimate_games_to_milestone(self, current_value: Any, threshold: Any, player_stats: PlayerStats) -> Optional[int]:
         """
         Estimate how many games until milestone is reached.
 

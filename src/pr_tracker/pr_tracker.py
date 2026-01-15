@@ -136,9 +136,7 @@ class PRTracker:
                     logger.warning(f"Error fetching PRs for {athlete_name}: {e}")
                     continue  # Continue with next athlete even if this one fails
 
-            logger.info(
-                f"Successfully fetched PRs for {len(current_prs)} out of {len(roster)} athletes from {team_code}"
-            )
+            logger.info(f"Successfully fetched PRs for {len(current_prs)} out of {len(roster)} athletes from {team_code}")
             return current_prs
 
         except Exception as e:
