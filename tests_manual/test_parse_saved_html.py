@@ -4,10 +4,10 @@ Test parsing PRs from saved HTML to demonstrate the parser works.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
+import re  # noqa: E402
 
-from bs4 import BeautifulSoup
-import re
+from bs4 import BeautifulSoup  # noqa: E402
 
 # Read the saved HTML
 with open("jory_lee_page.html", "r") as f:

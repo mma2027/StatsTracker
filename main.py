@@ -23,13 +23,13 @@ import pandas as pd
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.gameday_checker import GamedayChecker
-from src.website_fetcher import NCAAFetcher, SquashFetcher
-from src.website_fetcher.cricket_fetcher import CricketFetcher
-from src.player_database import PlayerDatabase, Player, StatEntry
-from src.milestone_detector import MilestoneDetector
-from src.email_notifier import EmailNotifier
-from scripts.auto_update_team_ids import fetch_with_auto_recovery
+from src.gameday_checker import GamedayChecker  # noqa: E402
+from src.website_fetcher import NCAAFetcher, SquashFetcher  # noqa: E402
+from src.website_fetcher.cricket_fetcher import CricketFetcher  # noqa: E402
+from src.player_database import PlayerDatabase, Player, StatEntry  # noqa: E402
+from src.milestone_detector import MilestoneDetector  # noqa: E402
+from src.email_notifier import EmailNotifier  # noqa: E402
+from scripts.auto_update_team_ids import fetch_with_auto_recovery  # noqa: E402
 
 
 def setup_logging(log_level: str = "INFO", log_file: str = None):

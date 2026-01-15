@@ -4,11 +4,11 @@ Fetch Jory Lee's PRs and save HTML for debugging.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
+import time  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher
-from bs4 import BeautifulSoup
-import time
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
 
 # First, let's get the roster and find Jory Lee's athlete ID
 fetcher = TFRRFetcher()

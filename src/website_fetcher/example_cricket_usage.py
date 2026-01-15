@@ -11,7 +11,6 @@ The fetcher uses Selenium WebDriver to bypass website protection.
 """
 
 import logging
-from pathlib import Path
 from cricket_fetcher import CricketFetcher
 
 # Setup logging

@@ -7,7 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Run the update_stats function directly
-from main import update_stats
+from main import update_stats  # noqa: E402
 
 print("=" * 80)
 print("TESTING SQUASH INTEGRATION")

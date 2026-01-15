@@ -4,15 +4,11 @@ Fetch Jory Lee's PRs from TFRR.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
+import time  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
-import time
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402, F401
 
 # First, let's get the roster and find Jory Lee's athlete ID
 fetcher = TFRRFetcher()

@@ -7,9 +7,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from gameday_checker.checker import GamedayChecker
-from datetime import date
-import logging
+from gameday_checker.checker import GamedayChecker  # noqa: E402
+from datetime import date  # noqa: E402
+import logging  # noqa: E402
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s - %(message)s")

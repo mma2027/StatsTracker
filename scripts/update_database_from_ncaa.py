@@ -14,10 +14,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
-from src.player_database.database import PlayerDatabase
-from src.player_database.models import Player, StatEntry
-from auto_update_team_ids import fetch_with_auto_recovery
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
+from src.player_database.database import PlayerDatabase  # noqa: E402
+from src.player_database.models import Player, StatEntry  # noqa: E402
+from auto_update_team_ids import fetch_with_auto_recovery  # noqa: E402
 
 
 def generate_player_id(name: str, sport: str) -> str:
@@ -48,22 +48,17 @@ def extract_player_info(player_data: Dict[str, Any], sport: str) -> Dict[str, st
     Returns:
         Dict with position, year, etc.
     """
-    stats = player_data.get('stats', {})
+    stats = player_data.get("stats", {})
 
     return {
-        'position': stats.get('Pos', stats.get('Position', '')),
-        'year': stats.get('Yr', stats.get('Year', stats.get('Class', ''))),
-        'number': stats.get('#', stats.get('No', stats.get('Jersey', ''))),
+        "position": stats.get("Pos", stats.get("Position", "")),
+        "year": stats.get("Yr", stats.get("Year", stats.get("Class", ""))),
+        "number": stats.get("#", stats.get("No", stats.get("Jersey", ""))),
     }
 
 
 def update_database_for_team(
-    fetcher: NCAAFetcher,
-    db: PlayerDatabase,
-    sport_key: str,
-    team_id: str,
-    season: str,
-    dry_run: bool = False
+    fetcher: NCAAFetcher, db: PlayerDatabase, sport_key: str, team_id: str, season: str, dry_run: bool = False
 ) -> Dict[str, Any]:
     """
     Fetch stats for one team and update database.
@@ -79,7 +74,7 @@ def update_database_for_team(
     Returns:
         Dict with results (players_added, stats_added, errors)
     """
-    sport_display = sport_key.replace('_', ' ').title()
+    sport_display = sport_key.replace("_", " ").title()
 
     print(f"\n{'=' * 60}")
     print(f"{sport_display} (ID: {team_id})")
@@ -89,20 +84,20 @@ def update_database_for_team(
     result = fetch_with_auto_recovery(team_id, sport_key)
 
     if not result:
-        return {'error': 'Auto-recovery failed', 'players_added': 0, 'stats_added': 0}
+        return {"error": "Auto-recovery failed", "players_added": 0, "stats_added": 0}
 
     if not result.success:
         if "No statistics available yet" in result.error:
-            print(f"  ⚠️  Season not started yet - skipping")
-            return {'skipped': True, 'players_added': 0, 'stats_added': 0}
+            print("  ⚠️  Season not started yet - skipping")
+            return {"skipped": True, "players_added": 0, "stats_added": 0}
         else:
             print(f"  ✗ Error: {result.error}")
-            return {'error': result.error, 'players_added': 0, 'stats_added': 0}
+            return {"error": result.error, "players_added": 0, "stats_added": 0}
 
     # Process players
     data = result.data
-    players = data['players']
-    stat_categories = data['stat_categories']
+    players = data["players"]
+    stat_categories = data["stat_categories"]
 
     print(f"  Found {len(players)} players with {len(stat_categories)} stat categories")
 
@@ -112,7 +107,7 @@ def update_database_for_team(
     errors = []
 
     for player_data in players:
-        player_name = player_data['name']
+        player_name = player_data["name"]
 
         try:
             # Generate player ID
@@ -127,8 +122,8 @@ def update_database_for_team(
             if existing_player:
                 # Update player info if needed
                 if not dry_run:
-                    existing_player.position = player_info['position'] or existing_player.position
-                    existing_player.year = player_info['year'] or existing_player.year
+                    existing_player.position = player_info["position"] or existing_player.position
+                    existing_player.year = player_info["year"] or existing_player.year
                     db.update_player(existing_player)
                 players_updated += 1
             else:
@@ -137,10 +132,10 @@ def update_database_for_team(
                     player_id=player_id,
                     name=player_name,
                     sport=sport_key,
-                    team='Haverford',
-                    position=player_info['position'],
-                    year=player_info['year'],
-                    active=True
+                    team="Haverford",
+                    position=player_info["position"],
+                    year=player_info["year"],
+                    active=True,
                 )
 
                 if not dry_run:
@@ -152,9 +147,9 @@ def update_database_for_team(
                 db.clear_player_stats(player_id, season)
 
             # Add stats
-            for stat_name, stat_value in player_data['stats'].items():
+            for stat_name, stat_value in player_data["stats"].items():
                 # Skip empty stats
-                if stat_value == '' or stat_value is None:
+                if stat_value == "" or stat_value is None:
                     continue
 
                 stat_entry = StatEntry(
@@ -162,7 +157,7 @@ def update_database_for_team(
                     stat_name=stat_name,
                     stat_value=stat_value,
                     season=season,
-                    date_recorded=datetime.now()
+                    date_recorded=datetime.now(),
                 )
 
                 if not dry_run:
@@ -186,19 +181,16 @@ def update_database_for_team(
         print(f"  ⚠️  {len(errors)} errors occurred")
 
     return {
-        'success': True,
-        'players_added': players_added,
-        'players_updated': players_updated,
-        'stats_added': stats_added,
-        'errors': errors
+        "success": True,
+        "players_added": players_added,
+        "players_updated": players_updated,
+        "stats_added": stats_added,
+        "errors": errors,
     }
 
 
 def update_all_teams(
-    db_path: str = "data/stats.db",
-    season: str = "2025-26",
-    dry_run: bool = False,
-    sports_filter: List[str] = None
+    db_path: str = "data/stats.db", season: str = "2025-26", dry_run: bool = False, sports_filter: List[str] = None
 ):
     """
     Update database with stats from all Haverford teams.
@@ -224,12 +216,12 @@ def update_all_teams(
 
     # Track results
     total_results = {
-        'teams_processed': 0,
-        'teams_skipped': 0,
-        'teams_failed': 0,
-        'players_added': 0,
-        'players_updated': 0,
-        'stats_added': 0
+        "teams_processed": 0,
+        "teams_skipped": 0,
+        "teams_failed": 0,
+        "players_added": 0,
+        "players_updated": 0,
+        "stats_added": 0,
     }
 
     # Process each team
@@ -238,19 +230,17 @@ def update_all_teams(
         teams_to_process = [(k, v) for k, v in teams_to_process if k in sports_filter]
 
     for sport_key, team_id in teams_to_process:
-        result = update_database_for_team(
-            fetcher, db, sport_key, str(team_id), season, dry_run
-        )
+        result = update_database_for_team(fetcher, db, sport_key, str(team_id), season, dry_run)
 
-        if result.get('skipped'):
-            total_results['teams_skipped'] += 1
-        elif result.get('error'):
-            total_results['teams_failed'] += 1
+        if result.get("skipped"):
+            total_results["teams_skipped"] += 1
+        elif result.get("error"):
+            total_results["teams_failed"] += 1
         else:
-            total_results['teams_processed'] += 1
-            total_results['players_added'] += result.get('players_added', 0)
-            total_results['players_updated'] += result.get('players_updated', 0)
-            total_results['stats_added'] += result.get('stats_added', 0)
+            total_results["teams_processed"] += 1
+            total_results["players_added"] += result.get("players_added", 0)
+            total_results["players_updated"] += result.get("players_updated", 0)
+            total_results["stats_added"] += result.get("stats_added", 0)
 
     # Final summary
     print()
@@ -282,44 +272,22 @@ def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Update player database with stats from NCAA'
-    )
-    parser.add_argument(
-        '--db-path',
-        default='data/stats.db',
-        help='Path to database file (default: data/stats.db)'
-    )
-    parser.add_argument(
-        '--season',
-        default='2025-26',
-        help='Season string (default: 2025-26)'
-    )
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview changes without updating database'
-    )
-    parser.add_argument(
-        '--sports',
-        nargs='+',
-        help='Only update specific sports (e.g., mens_basketball womens_soccer)'
-    )
+    parser = argparse.ArgumentParser(description="Update player database with stats from NCAA")
+    parser.add_argument("--db-path", default="data/stats.db", help="Path to database file (default: data/stats.db)")
+    parser.add_argument("--season", default="2025-26", help="Season string (default: 2025-26)")
+    parser.add_argument("--dry-run", action="store_true", help="Preview changes without updating database")
+    parser.add_argument("--sports", nargs="+", help="Only update specific sports (e.g., mens_basketball womens_soccer)")
 
     args = parser.parse_args()
 
     try:
-        update_all_teams(
-            db_path=args.db_path,
-            season=args.season,
-            dry_run=args.dry_run,
-            sports_filter=args.sports
-        )
+        update_all_teams(db_path=args.db_path, season=args.season, dry_run=args.dry_run, sports_filter=args.sports)
         sys.exit(0)
 
     except Exception as e:
         print(f"\n✗ Fatal error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

@@ -32,38 +32,32 @@ def run_command(cmd, description):
 
 def main():
     """Run all linter tests"""
-    print("="*80)
+    print("=" * 80)
     print("SQUASH FETCHER LINTER TEST SUITE")
-    print("="*80)
+    print("=" * 80)
 
     # Files to check
-    files_to_check = [
-        "src/website_fetcher/squash_fetcher.py",
-        "main.py",
-        "src/website_fetcher/__init__.py"
-    ]
+    files_to_check = ["src/website_fetcher/squash_fetcher.py", "main.py", "src/website_fetcher/__init__.py"]
 
     results = {}
 
     # 1. Black formatting check
-    results['black'] = run_command(
-        ["black", "--check"] + files_to_check,
-        "Black code formatting check"
-    )
+    results["black"] = run_command(["black", "--check"] + files_to_check, "Black code formatting check")
 
     # 2. Flake8 linting
-    results['flake8'] = run_command(
+    results["flake8"] = run_command(
         [
             "flake8",
             "--max-line-length=127",
             "--extend-ignore=E402",  # Ignore imports not at top (needed for main.py)
             "--exclude=venv",
-        ] + files_to_check,
-        "Flake8 linting"
+        ]
+        + files_to_check,
+        "Flake8 linting",
     )
 
     # 3. MyPy type checking (just squash_fetcher to avoid noise from existing code)
-    results['mypy'] = run_command(
+    results["mypy"] = run_command(
         [
             "mypy",
             "src/website_fetcher/squash_fetcher.py",
@@ -72,13 +66,13 @@ def main():
             "--disable-error-code=attr-defined",  # Ignore false positives about None
             "--follow-imports=skip",  # Don't check imported modules
         ],
-        "MyPy type checking (squash_fetcher.py only)"
+        "MyPy type checking (squash_fetcher.py only)",
     )
 
     # Summary
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print("LINTER TEST RESULTS SUMMARY")
-    print("="*80)
+    print("=" * 80)
 
     all_passed = True
     for test_name, passed in results.items():
@@ -87,7 +81,7 @@ def main():
         if not passed:
             all_passed = False
 
-    print("="*80)
+    print("=" * 80)
 
     if all_passed:
         print("\n🎉 All linter tests passed!")

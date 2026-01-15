@@ -12,9 +12,9 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
@@ -33,23 +33,23 @@ def save_team_to_csv(team_data, sport_name, output_dir="csv_exports"):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # Generate filename
-    safe_sport_name = sport_name.replace(' ', '_').lower()
-    timestamp = datetime.now().strftime('%Y%m%d')
+    safe_sport_name = sport_name.replace(" ", "_").lower()
+    timestamp = datetime.now().strftime("%Y%m%d")
     filename = f"haverford_{safe_sport_name}_{timestamp}.csv"
     filepath = os.path.join(output_dir, filename)
 
     try:
-        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
             # Prepare headers: Player Name + all stat categories
-            headers = ['Player Name'] + team_data['stat_categories']
+            headers = ["Player Name"] + team_data["stat_categories"]
 
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             writer.writeheader()
 
             # Write player data
-            for player in team_data['players']:
-                row = {'Player Name': player['name']}
-                row.update(player['stats'])
+            for player in team_data["players"]:
+                row = {"Player Name": player["name"]}
+                row.update(player["stats"])
                 writer.writerow(row)
 
         return filepath
@@ -72,16 +72,12 @@ def fetch_all_to_csv(output_dir="csv_exports"):
     print()
 
     fetcher = NCAAFetcher()
-    results = {
-        'successful': [],
-        'no_stats': [],
-        'failed': []
-    }
+    results = {"successful": [], "no_stats": [], "failed": []}
 
     total_teams = len(HAVERFORD_TEAMS)
 
     for i, (sport_key, team_id) in enumerate(HAVERFORD_TEAMS.items(), 1):
-        sport_display = sport_key.replace('_', ' ').title()
+        sport_display = sport_key.replace("_", " ").title()
 
         print(f"[{i}/{total_teams}] {sport_display}...")
 
@@ -91,42 +87,29 @@ def fetch_all_to_csv(output_dir="csv_exports"):
 
             if result.success:
                 data = result.data
-                num_players = len(data['players'])
+                num_players = len(data["players"])
 
                 # Save to CSV
                 csv_path = save_team_to_csv(data, sport_display, output_dir)
 
                 if csv_path:
                     print(f"  ✓ Saved {num_players} players to {csv_path}")
-                    results['successful'].append({
-                        'sport': sport_display,
-                        'players': num_players,
-                        'file': csv_path
-                    })
+                    results["successful"].append({"sport": sport_display, "players": num_players, "file": csv_path})
                 else:
-                    print(f"  ⚠️  Fetched data but failed to save CSV")
-                    results['failed'].append({
-                        'sport': sport_display,
-                        'error': 'CSV save failed'
-                    })
+                    print("  ⚠️  Fetched data but failed to save CSV")
+                    results["failed"].append({"sport": sport_display, "error": "CSV save failed"})
 
             elif "No player statistics found" in result.error:
-                print(f"  ⚠️  No stats yet (season hasn't started)")
-                results['no_stats'].append(sport_display)
+                print("  ⚠️  No stats yet (season hasn't started)")
+                results["no_stats"].append(sport_display)
 
             else:
                 print(f"  ✗ Error: {result.error}")
-                results['failed'].append({
-                    'sport': sport_display,
-                    'error': result.error
-                })
+                results["failed"].append({"sport": sport_display, "error": result.error})
 
         except Exception as e:
             print(f"  ✗ Exception: {e}")
-            results['failed'].append({
-                'sport': sport_display,
-                'error': str(e)
-            })
+            results["failed"].append({"sport": sport_display, "error": str(e)})
 
         print()
 
@@ -142,28 +125,28 @@ def fetch_all_to_csv(output_dir="csv_exports"):
     print(f"✗ Failed: {len(results['failed'])}")
     print()
 
-    if results['successful']:
+    if results["successful"]:
         print("=" * 70)
         print("SAVED FILES:")
         print("=" * 70)
-        for item in results['successful']:
+        for item in results["successful"]:
             print(f"  • {item['sport']:<25} {item['players']} players")
             print(f"    → {item['file']}")
         print()
 
-    if results['no_stats']:
+    if results["no_stats"]:
         print("=" * 70)
         print("NO STATS YET (Season not started):")
         print("=" * 70)
-        for sport in results['no_stats']:
+        for sport in results["no_stats"]:
             print(f"  • {sport}")
         print()
 
-    if results['failed']:
+    if results["failed"]:
         print("=" * 70)
         print("FAILED:")
         print("=" * 70)
-        for item in results['failed']:
+        for item in results["failed"]:
             print(f"  • {item['sport']}: {item['error']}")
         print()
 
@@ -171,19 +154,15 @@ def fetch_all_to_csv(output_dir="csv_exports"):
     print(f"✓ Complete! CSV files saved to: {output_dir}/")
     print("=" * 70)
 
-    return len(results['successful']) > 0
+    return len(results["successful"]) > 0
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Fetch all Haverford NCAA team stats and save to CSV files'
-    )
+    parser = argparse.ArgumentParser(description="Fetch all Haverford NCAA team stats and save to CSV files")
     parser.add_argument(
-        '--output-dir',
-        default='csv_exports',
-        help='Directory to save CSV files (default: csv_exports)'
+        "--output-dir", default="csv_exports", help="Directory to save CSV files (default: csv_exports)"
     )
 
     args = parser.parse_args()
@@ -194,5 +173,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n✗ Fatal exception: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

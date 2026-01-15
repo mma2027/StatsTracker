@@ -3,7 +3,7 @@ Unit tests for EmailNotifier class
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 import smtplib
 from datetime import date
 
@@ -74,14 +74,22 @@ class TestEmailNotifier:
 
     def test_init_default_port(self):
         """Test initialization with default port"""
-        config = {"smtp_server": "smtp.example.com", "sender_email": "sender@example.com", "sender_password": "password"}
+        config = {
+            "smtp_server": "smtp.example.com",
+            "sender_email": "sender@example.com",
+            "sender_password": "password",
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.smtp_port == 587
 
     def test_init_empty_recipients(self):
         """Test initialization with no recipients"""
-        config = {"smtp_server": "smtp.example.com", "sender_email": "sender@example.com", "sender_password": "password"}
+        config = {
+            "smtp_server": "smtp.example.com",
+            "sender_email": "sender@example.com",
+            "sender_password": "password",
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.recipients == []
@@ -92,28 +100,44 @@ class TestEmailNotifier:
 
     def test_validate_config_no_smtp_server(self):
         """Test validation fails without SMTP server"""
-        config = {"sender_email": "sender@example.com", "sender_password": "password", "recipients": ["test@example.com"]}
+        config = {
+            "sender_email": "sender@example.com",
+            "sender_password": "password",
+            "recipients": ["test@example.com"],
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.validate_config() is False
 
     def test_validate_config_no_sender_email(self):
         """Test validation fails without sender email"""
-        config = {"smtp_server": "smtp.example.com", "sender_password": "password", "recipients": ["test@example.com"]}
+        config = {
+            "smtp_server": "smtp.example.com",
+            "sender_password": "password",
+            "recipients": ["test@example.com"],
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.validate_config() is False
 
     def test_validate_config_no_password(self):
         """Test validation fails without password"""
-        config = {"smtp_server": "smtp.example.com", "sender_email": "sender@example.com", "recipients": ["test@example.com"]}
+        config = {
+            "smtp_server": "smtp.example.com",
+            "sender_email": "sender@example.com",
+            "recipients": ["test@example.com"],
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.validate_config() is False
 
     def test_validate_config_no_recipients(self):
         """Test validation fails without recipients"""
-        config = {"smtp_server": "smtp.example.com", "sender_email": "sender@example.com", "sender_password": "password"}
+        config = {
+            "smtp_server": "smtp.example.com",
+            "sender_email": "sender@example.com",
+            "sender_password": "password",
+        }
         notifier = EmailNotifier(config)
 
         assert notifier.validate_config() is False
@@ -240,7 +264,9 @@ class TestEmailNotifier:
     @patch("src.email_notifier.notifier.EmailTemplate.generate_subject")
     @patch("src.email_notifier.notifier.EmailTemplate.generate_milestone_email")
     @patch("src.email_notifier.notifier.EmailTemplate.generate_text_version")
-    def test_send_milestone_alert_empty_lists(self, mock_text_gen, mock_html_gen, mock_subject_gen, mock_smtp, notifier):
+    def test_send_milestone_alert_empty_lists(
+        self, mock_text_gen, mock_html_gen, mock_subject_gen, mock_smtp, notifier
+    ):
         """Test sending milestone alert with empty proximities and games"""
         # Setup mocks
         mock_server = MagicMock()

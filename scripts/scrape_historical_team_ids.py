@@ -14,17 +14,17 @@ import time
 import re
 from datetime import datetime
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_SCHOOL_ID
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
-from bs4 import BeautifulSoup
+from src.website_fetcher.ncaa_fetcher import HAVERFORD_SCHOOL_ID  # noqa: E402, F401
+from selenium import webdriver  # noqa: E402
+from selenium.webdriver.chrome.service import Service  # noqa: E402
+from selenium.webdriver.chrome.options import Options  # noqa: E402
+from selenium.webdriver.common.by import By  # noqa: E402, F401
+from selenium.webdriver.support.ui import WebDriverWait  # noqa: E402, F401
+from selenium.webdriver.support import expected_conditions as EC  # noqa: E402, F401
+from webdriver_manager.chrome import ChromeDriverManager  # noqa: E402
+from bs4 import BeautifulSoup  # noqa: E402
 
 
 def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
@@ -47,9 +47,7 @@ def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument(
-        "--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
-    )
+    chrome_options.add_argument("--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
@@ -78,24 +76,25 @@ def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
             options = select.find_all("option")
             for option in options:
                 text = option.get_text()
-                if re.search(r'\d{4}-\d{2}', text):  # Match "2024-25" format
-                    value = option.get('value')
+                if re.search(r"\d{4}-\d{2}", text):  # Match "2024-25" format
+                    value = option.get("value")
                     if value:
-                        year_links.append({
-                            'year': text.strip(),
-                            'url': f"https://stats.ncaa.org/team/{school_id}?academic_year={value}"
-                        })
+                        year_links.append(
+                            {
+                                "year": text.strip(),
+                                "url": f"https://stats.ncaa.org/team/{school_id}?academic_year={value}",
+                            }
+                        )
 
         # Method 2: Look for links with year patterns
         links = soup.find_all("a", href=True)
         for link in links:
             text = link.get_text()
-            href = link.get('href')
-            if re.search(r'\d{4}-\d{2}', text) and 'academic_year' in href:
-                year_links.append({
-                    'year': text.strip(),
-                    'url': f"https://stats.ncaa.org{href}" if href.startswith('/') else href
-                })
+            href = link.get("href")
+            if re.search(r"\d{4}-\d{2}", text) and "academic_year" in href:
+                year_links.append(
+                    {"year": text.strip(), "url": f"https://stats.ncaa.org{href}" if href.startswith("/") else href}
+                )
 
         if not year_links:
             print("⚠️  No year selector found - can only get current year")
@@ -113,10 +112,10 @@ def scrape_historical_ids(school_id=HAVERFORD_SCHOOL_ID):
 
             # Visit each year and extract team IDs
             for year_info in year_links[:6]:  # Last 6 years
-                year = year_info['year']
-                url = year_info['url']
+                year = year_info["year"]
+                url = year_info["url"]
 
-                print(f"\nFetching {year}... ", end='', flush=True)
+                print(f"\nFetching {year}... ", end="", flush=True)
 
                 try:
                     driver.get(url)
@@ -164,20 +163,17 @@ def extract_teams_from_page(soup):
         text = link.get_text().strip()
 
         # Extract team ID from URL
-        match = re.search(r'/teams/(\d+)', href)
+        match = re.search(r"/teams/(\d+)", href)
         if match:
             team_id = int(match.group(1))
 
             # Clean up sport name (remove season year and record)
-            sport_name = re.sub(r'^\d{4}-\d{2}\s+', '', text)
-            sport_name = re.sub(r'\s*\(\d+-\d+(-\d+)?\)\s*$', '', sport_name)
+            sport_name = re.sub(r"^\d{4}-\d{2}\s+", "", text)
+            sport_name = re.sub(r"\s*\(\d+-\d+(-\d+)?\)\s*$", "", sport_name)
             sport_name = sport_name.strip()
 
             if sport_name and team_id:
-                teams.append({
-                    'sport': sport_name,
-                    'team_id': team_id
-                })
+                teams.append({"sport": sport_name, "team_id": team_id})
 
     return teams
 
@@ -199,16 +195,16 @@ def organize_by_sport(teams, year):
         "Baseball": "baseball",
         "Men's Lacrosse": "mens_lacrosse",
         "Women's Lacrosse": "womens_lacrosse",
-        "Softball": "softball"
+        "Softball": "softball",
     }
 
     organized = {}
 
     for team in teams:
-        sport_name = team['sport']
+        sport_name = team["sport"]
         if sport_name in sport_mapping:
             sport_key = sport_mapping[sport_name]
-            organized[sport_key] = team['team_id']
+            organized[sport_key] = team["team_id"]
 
     return organized
 
@@ -222,7 +218,7 @@ def save_to_json(data, output_file="data/historical_team_ids.json"):
         output_file: Output file path
     """
     try:
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(data, f, indent=2)
         print(f"\n✓ Saved to: {output_file}")
         return True
@@ -234,19 +230,14 @@ def save_to_json(data, output_file="data/historical_team_ids.json"):
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Scrape historical team IDs from NCAA website'
+    parser = argparse.ArgumentParser(description="Scrape historical team IDs from NCAA website")
+    parser.add_argument(
+        "--school-id", type=int, default=HAVERFORD_SCHOOL_ID, help=f"NCAA school ID (default: {HAVERFORD_SCHOOL_ID})"
     )
     parser.add_argument(
-        '--school-id',
-        type=int,
-        default=HAVERFORD_SCHOOL_ID,
-        help=f'NCAA school ID (default: {HAVERFORD_SCHOOL_ID})'
-    )
-    parser.add_argument(
-        '--output',
-        default='data/historical_team_ids.json',
-        help='Output JSON file (default: data/historical_team_ids.json)'
+        "--output",
+        default="data/historical_team_ids.json",
+        help="Output JSON file (default: data/historical_team_ids.json)",
     )
 
     args = parser.parse_args()

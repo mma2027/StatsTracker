@@ -20,6 +20,7 @@ print("=" * 60)
 print("\n1. Checking Playwright installation...")
 try:
     import playwright
+
     try:
         version = playwright.__version__
     except AttributeError:
@@ -38,6 +39,7 @@ except ImportError:
 print("\n2. Checking Playwright async API...")
 try:
     from playwright.async_api import async_playwright
+
     print("   ✅ Playwright async API available")
 except ImportError as e:
     print(f"   ❌ Playwright async API NOT available: {e}")
@@ -46,7 +48,8 @@ except ImportError as e:
 # Check 3: TFRR Playwright Fetcher import
 print("\n3. Checking TFRR Playwright Fetcher...")
 try:
-    from src.website_fetcher.tfrr_playwright_fetcher import TFRRPlaywrightFetcher, HAVERFORD_TEAMS
+    from src.website_fetcher.tfrr_playwright_fetcher import HAVERFORD_TEAMS  # noqa: F401
+
     print("   ✅ TFRRPlaywrightFetcher can be imported")
     print(f"   → Teams configured: {list(HAVERFORD_TEAMS.keys())}")
 except ImportError as e:
@@ -57,7 +60,7 @@ except ImportError as e:
 print("\n4. Checking Chromium browser...")
 try:
     import asyncio
-    from playwright.async_api import async_playwright
+    from playwright.async_api import async_playwright  # noqa: F811
 
     async def check_browser():
         try:

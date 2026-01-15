@@ -18,9 +18,9 @@ from pathlib import Path
 from datetime import datetime
 import time
 
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, "/Users/maxfieldma/CS/projects/StatsTracker")
 
-from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS
+from src.website_fetcher.ncaa_fetcher import NCAAFetcher, HAVERFORD_TEAMS  # noqa: E402
 
 
 def save_player_career_csv(player_data, sport_name, player_name_override=None, output_dir="csv_exports/ncaa"):
@@ -45,28 +45,28 @@ def save_player_career_csv(player_data, sport_name, player_name_override=None, o
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     # Use override if provided, otherwise use data player_name
-    player_name = player_name_override if player_name_override else player_data.get('player_name', 'Unknown')
-    safe_player_name = player_name.replace(' ', '_').replace('.', '')
-    safe_sport_name = sport_name.replace(' ', '_').lower()
-    timestamp = datetime.now().strftime('%Y%m%d')
+    player_name = player_name_override if player_name_override else player_data.get("player_name", "Unknown")
+    safe_player_name = player_name.replace(" ", "_").replace(".", "")
+    safe_sport_name = sport_name.replace(" ", "_").lower()
+    timestamp = datetime.now().strftime("%Y%m%d")
 
     filename = f"{safe_sport_name}_{safe_player_name}_career_{timestamp}.csv"
     filepath = os.path.join(output_dir, filename)
 
     try:
-        with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+        with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
             # Build headers: Player Name + all stat categories
-            headers = ['Player Name'] + player_data['stat_categories']
+            headers = ["Player Name"] + player_data["stat_categories"]
             writer = csv.DictWriter(csvfile, fieldnames=headers)
             writer.writeheader()
 
             # Write one row per season
-            for season in player_data['seasons']:
-                row = {'Player Name': player_name}
-                row.update(season['stats'])
+            for season in player_data["seasons"]:
+                row = {"Player Name": player_name}
+                row.update(season["stats"])
                 # Override Year column with our season year value (fixes "Totals" -> "Career")
-                if 'Year' in row:
-                    row['Year'] = season['year']
+                if "Year" in row:
+                    row["Year"] = season["year"]
                 writer.writerow(row)
 
         return filepath
@@ -96,26 +96,26 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
     print(f"{'='*70}")
 
     # Step 1: Fetch roster with player IDs
-    print(f"\n[1/2] Fetching roster with player IDs...")
+    print("\n[1/2] Fetching roster with player IDs...")
     roster_result = fetcher.fetch_team_roster_with_ids(str(team_id), sport_key)
 
     if not roster_result.success:
         print(f"  ✗ Failed to fetch roster: {roster_result.error}")
-        return {'success': False, 'error': roster_result.error}
+        return {"success": False, "error": roster_result.error}
 
-    roster = roster_result.data['players']
+    roster = roster_result.data["players"]
     print(f"  ✓ Found {len(roster)} players on roster\n")
 
     # Step 2: Fetch career stats for each player
-    print(f"[2/2] Fetching career stats for each player...")
+    print("[2/2] Fetching career stats for each player...")
     successful_files = []
     failed_players = []
 
     for i, player in enumerate(roster, 1):
-        player_name = player['name']
-        player_id = player['player_id']
+        player_name = player["name"]
+        player_id = player["player_id"]
 
-        print(f"  [{i}/{len(roster)}] {player_name}... ", end='', flush=True)
+        print(f"  [{i}/{len(roster)}] {player_name}... ", end="", flush=True)
 
         try:
             # Fetch career stats for this player
@@ -123,7 +123,7 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
 
             if career_result.success:
                 player_data = career_result.data
-                num_seasons = len(player_data['seasons'])
+                num_seasons = len(player_data["seasons"])
 
                 # Save CSV (pass player_name from roster to override "Unknown")
                 csv_path = save_player_career_csv(player_data, sport_display, player_name, output_dir)
@@ -132,8 +132,8 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
                     print(f"✓ ({num_seasons} seasons)")
                     successful_files.append(csv_path)
                 else:
-                    print(f"✗ (failed to save CSV)")
-                    failed_players.append({'name': player_name, 'error': 'CSV save failed'})
+                    print("✗ (failed to save CSV)")
+                    failed_players.append({"name": player_name, "error": "CSV save failed"})
             else:
                 print(f"⊘ ({career_result.error})")
                 # This is common - some players may not have Haverford history yet
@@ -144,14 +144,9 @@ def fetch_team_career_stats(team_id, sport_key, sport_display, output_dir="csv_e
 
         except Exception as e:
             print(f"✗ ({str(e)})")
-            failed_players.append({'name': player_name, 'error': str(e)})
+            failed_players.append({"name": player_name, "error": str(e)})
 
-    return {
-        'success': True,
-        'files': successful_files,
-        'failed': failed_players,
-        'num_players': len(roster)
-    }
+    return {"success": True, "files": successful_files, "failed": failed_players, "num_players": len(roster)}
 
 
 def fetch_all_teams_career_stats(output_dir="csv_exports/ncaa"):
@@ -166,45 +161,33 @@ def fetch_all_teams_career_stats(output_dir="csv_exports/ncaa"):
     print("Using Player-Level Approach (No Historical Team IDs Required!)")
     print("=" * 70)
 
-    results = {
-        'successful': [],
-        'failed': []
-    }
+    results = {"successful": [], "failed": []}
 
     total_teams = len(HAVERFORD_TEAMS)
 
     for i, (sport_key, team_id) in enumerate(HAVERFORD_TEAMS.items(), 1):
-        sport_display = sport_key.replace('_', ' ').title()
+        sport_display = sport_key.replace("_", " ").title()
 
         print(f"\n[{i}/{total_teams}] {sport_display}")
 
         try:
-            result = fetch_team_career_stats(
-                team_id,
-                sport_key,
-                sport_display,
-                output_dir
-            )
+            result = fetch_team_career_stats(team_id, sport_key, sport_display, output_dir)
 
-            if result['success']:
-                results['successful'].append({
-                    'sport': sport_display,
-                    'files': result['files'],
-                    'failed_players': result['failed'],
-                    'num_players': result['num_players']
-                })
+            if result["success"]:
+                results["successful"].append(
+                    {
+                        "sport": sport_display,
+                        "files": result["files"],
+                        "failed_players": result["failed"],
+                        "num_players": result["num_players"],
+                    }
+                )
             else:
-                results['failed'].append({
-                    'sport': sport_display,
-                    'error': result['error']
-                })
+                results["failed"].append({"sport": sport_display, "error": result["error"]})
 
         except Exception as e:
             print(f"  ✗ Exception: {e}")
-            results['failed'].append({
-                'sport': sport_display,
-                'error': str(e)
-            })
+            results["failed"].append({"sport": sport_display, "error": str(e)})
 
     # Summary
     print("\n" + "=" * 70)
@@ -214,48 +197,44 @@ def fetch_all_teams_career_stats(output_dir="csv_exports/ncaa"):
     print(f"✓ Successful: {len(results['successful'])}")
     print(f"✗ Failed: {len(results['failed'])}")
 
-    if results['successful']:
+    if results["successful"]:
         print("\n" + "=" * 70)
         print("SUCCESSFULLY PROCESSED:")
         print("=" * 70)
-        for item in results['successful']:
-            num_files = len(item['files'])
-            num_failed = len(item['failed_players'])
-            total_players = item['num_players']
+        for item in results["successful"]:
+            num_files = len(item["files"])
+            num_failed = len(item["failed_players"])
+            total_players = item["num_players"]
             print(f"\n  • {item['sport']} ({total_players} players)")
             print(f"    CSV files: {num_files}")
             if num_failed > 0:
                 print(f"    Failed: {num_failed} players")
 
-    if results['failed']:
+    if results["failed"]:
         print("\n" + "=" * 70)
         print("FAILED:")
         print("=" * 70)
-        for item in results['failed']:
+        for item in results["failed"]:
             print(f"  • {item['sport']}: {item['error']}")
 
     print("\n" + "=" * 70)
     print(f"✓ Complete! Files saved to: {output_dir}/")
     print("=" * 70)
 
-    return len(results['successful']) > 0
+    return len(results["successful"]) > 0
 
 
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Fetch career NCAA stats for Haverford teams (player-level approach)'
+    parser = argparse.ArgumentParser(description="Fetch career NCAA stats for Haverford teams (player-level approach)")
+    parser.add_argument(
+        "--output-dir", default="csv_exports/ncaa", help="Directory to save CSV files (default: csv_exports/ncaa)"
     )
     parser.add_argument(
-        '--output-dir',
-        default='csv_exports/ncaa',
-        help='Directory to save CSV files (default: csv_exports/ncaa)'
-    )
-    parser.add_argument(
-        '--team',
+        "--team",
         default=None,
-        help='Specific team to fetch (e.g., mens_basketball). If not specified, fetches all teams.'
+        help="Specific team to fetch (e.g., mens_basketball). If not specified, fetches all teams.",
     )
 
     args = parser.parse_args()
@@ -269,16 +248,11 @@ if __name__ == "__main__":
                 sys.exit(1)
 
             team_id = HAVERFORD_TEAMS[args.team]
-            sport_display = args.team.replace('_', ' ').title()
+            sport_display = args.team.replace("_", " ").title()
 
-            result = fetch_team_career_stats(
-                team_id,
-                args.team,
-                sport_display,
-                args.output_dir
-            )
+            result = fetch_team_career_stats(team_id, args.team, sport_display, args.output_dir)
 
-            success = result['success']
+            success = result["success"]
         else:
             # Fetch all teams
             success = fetch_all_teams_career_stats(output_dir=args.output_dir)
@@ -288,5 +262,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n✗ Fatal exception: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

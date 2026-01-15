@@ -36,7 +36,10 @@ QUERY_SCHEMA = {
         },
         "stat_name": {
             "type": "string",
-            "description": "Primary statistic to search by (e.g., PTS, Goals, Assists). Must match exact stat name from database.",
+            "description": (
+                "Primary statistic to search by (e.g., PTS, Goals, Assists). "
+                "Must match exact stat name from database."
+            ),
         },
         "player_name": {
             "type": "string",
@@ -64,14 +67,24 @@ QUERY_SCHEMA = {
             "enum": ["DESC", "ASC"],
             "description": "Sort order for results. DESC for highest first (default), ASC for lowest first.",
         },
-        "limit": {"type": "integer", "minimum": 1, "maximum": 100, "description": "Maximum number of results to return"},
-        "interpretation": {"type": "string", "description": "Human-readable explanation of what the query is looking for"},
+        "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Maximum number of results to return",
+        },
+        "interpretation": {
+            "type": "string",
+            "description": "Human-readable explanation of what the query is looking for",
+        },
     },
     "required": ["intent", "interpretation"],
 }
 
 # System prompt for the LLM
-SYSTEM_PROMPT = """You are a sports statistics query assistant for Haverford College athletics. Your job is to interpret natural language queries about player statistics and convert them into structured search parameters.
+SYSTEM_PROMPT = """You are a sports statistics query assistant for Haverford College athletics. \
+Your job is to interpret natural language queries about player statistics and convert them into structured search \
+parameters.
 
 ## Available Sports and Common Statistics
 
@@ -208,7 +221,9 @@ Query: "who has the most assists this season"
   },
   "ordering": "DESC",
   "limit": 1,
-  "interpretation": "Finding player with most assists in 2024-25 season"
+  "interpretation": (
+      "Finding player with most assists in 2024-25 season"
+  )
 }
 ```
 
@@ -216,7 +231,10 @@ Query: "best performers"
 ```json
 {
   "intent": "ambiguous",
-  "interpretation": "Query is ambiguous: need to specify which sport and which statistic to rank by. Options: points, goals, assists, etc."
+  "interpretation": (
+      "Query is ambiguous: need to specify which sport and which statistic to rank by. "
+      "Options: points, goals, assists, etc."
+  )
 }
 ```
 

@@ -4,9 +4,9 @@ Test final Jory Lee PR parsing.
 """
 
 import sys
-sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')
+sys.path.insert(0, '/Users/maxfieldma/CS/projects/StatsTracker')  # noqa: E402
 
-from src.website_fetcher.tfrr_fetcher import TFRRFetcher
+from src.website_fetcher.tfrr_fetcher import TFRRFetcher  # noqa: E402
 
 fetcher = TFRRFetcher()
 
@@ -15,7 +15,7 @@ result = fetcher.fetch_player_stats("8317912", "track")
 
 if result.success:
     data = result.data
-    print(f"\n✅ SUCCESS!")
+    print("\n✅ SUCCESS!")
     print(f"\nAthlete: {data['name']}")
     print(f"Sport: {data['sport']}")
     print(f"\nPersonal Records ({len(data['events'])} events):")
