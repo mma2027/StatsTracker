@@ -171,7 +171,7 @@ class SemanticQueryBuilder:
                 sorted_stats = sorted(
                     player_stats.career_stats.items(),
                     key=lambda x: x[1] if isinstance(x[1], (int, float)) else 0,
-                    reverse=True
+                    reverse=True,
                 )[:3]
                 top_stats = dict(sorted_stats)
 
