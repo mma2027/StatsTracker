@@ -19,9 +19,13 @@ from queue import Queue, Empty
 from threading import Thread
 import yaml
 import pandas as pd
+from dotenv import load_dotenv
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Load environment variables from .env file
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from src.gameday_checker import GamedayChecker
 from src.website_fetcher import TFRRFetcher
