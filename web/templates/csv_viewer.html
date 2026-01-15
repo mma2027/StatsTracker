@@ -8,11 +8,47 @@
     <a href="{{ url_for('csv_browser') }}" class="btn btn-secondary">← Back to Browser</a>
 </div>
 
-<!-- Search Bar -->
+<!-- AI Semantic Search Container -->
+<div class="search-container semantic-search" style="margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; color: white;">
+    <h3 style="margin-top: 0; margin-bottom: 10px;">🔍 Ask About These Players</h3>
+    <p style="font-size: 14px; opacity: 0.9; margin-bottom: 15px;">
+        Try: "best scorers", "top 5 by assists", "players with over 100 points"
+    </p>
+
+    <div style="position: relative;">
+        <input type="text"
+               id="semantic-search"
+               placeholder="Ask a question about these players..."
+               style="width: 100%; padding: 15px; font-size: 16px; border: none; border-radius: 8px; box-sizing: border-box;"
+               autocomplete="off">
+
+        <div id="search-loading" style="display: none; position: absolute; right: 15px; top: 15px;">
+            <div class="spinner" style="border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite;"></div>
+        </div>
+    </div>
+
+    <div id="query-interpretation" style="display: none; margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; font-size: 14px;">
+        <strong>Understanding:</strong> <span id="interpretation-text"></span>
+    </div>
+
+    <div id="semantic-search-results" style="margin-top: 15px; display: none;">
+        <p id="semantic-search-count" style="margin-bottom: 10px; font-size: 14px;"></p>
+        <div id="semantic-results-list" style="max-height: 500px; overflow-y: auto; background: white; border-radius: 8px; padding: 10px;"></div>
+    </div>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<!-- Basic Search Bar -->
 <div class="search-container" style="margin-bottom: 20px;">
     <input type="text"
            id="player-search"
-           placeholder="🔍 Search players or stats..."
+           placeholder="🔍 Filter table by player name or stats..."
            style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
     <p id="search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
 </div>
@@ -47,8 +83,141 @@
 
 {% block extra_js %}
 <script>
-// Search functionality for players and stats
 document.addEventListener('DOMContentLoaded', function() {
+    // AI Semantic Search
+    const semanticInput = document.getElementById('semantic-search');
+    const searchLoading = document.getElementById('search-loading');
+    const queryInterpretation = document.getElementById('query-interpretation');
+    const interpretationText = document.getElementById('interpretation-text');
+    const semanticResults = document.getElementById('semantic-search-results');
+    const semanticCount = document.getElementById('semantic-search-count');
+    const semanticList = document.getElementById('semantic-results-list');
+    let searchTimeout;
+
+    const sportKey = '{{ sport_key }}'; // Current sport being viewed
+
+    semanticInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(searchTimeout);
+
+        if (!query) {
+            semanticResults.style.display = 'none';
+            queryInterpretation.style.display = 'none';
+            return;
+        }
+
+        searchTimeout = setTimeout(async () => {
+            searchLoading.style.display = 'block';
+            semanticResults.style.display = 'block';
+            queryInterpretation.style.display = 'none';
+            semanticList.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">Thinking...</p>';
+
+            try {
+                // Append sport context to query if not already specified
+                let enhancedQuery = query;
+                // Only auto-add sport if query doesn't mention sport-specific terms
+                const sportTerms = ['basketball', 'soccer', 'lacrosse', 'track', 'baseball', 'softball', 'cricket', 'squash', 'volleyball', 'field hockey'];
+                const hasSportMention = sportTerms.some(term => query.toLowerCase().includes(term));
+
+                if (!hasSportMention) {
+                    enhancedQuery = query + ' in {{ filename }}';
+                }
+
+                const response = await fetch('/api/semantic-search', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query: enhancedQuery})
+                });
+
+                const data = await response.json();
+                searchLoading.style.display = 'none';
+
+                if (data.status === 'success' || data.status === 'fallback') {
+                    displayResults(data);
+                } else if (data.status === 'clarification_needed') {
+                    showClarification(data);
+                } else {
+                    showError(data.message || 'Search failed');
+                }
+            } catch (error) {
+                searchLoading.style.display = 'none';
+                showError('Network error. Please try again.');
+            }
+        }, 500);
+    });
+
+    function displayResults(data) {
+        // Show interpretation
+        if (data.query_interpretation) {
+            queryInterpretation.style.display = 'block';
+            interpretationText.textContent = data.query_interpretation;
+        }
+
+        // Show count
+        let countText = `Found ${data.result_count} player(s)`;
+        if (data.status === 'fallback') {
+            countText += ' (basic search - AI temporarily unavailable)';
+        }
+        if (data.cached) {
+            countText += ' ⚡ cached';
+        } else if (data.query_time_ms) {
+            countText += ` (${data.query_time_ms}ms)`;
+        }
+        semanticCount.textContent = countText;
+
+        // Build results
+        let html = '<div style="color: #333;">';
+        if (data.results && data.results.length > 0) {
+            data.results.forEach((result, idx) => {
+                html += `
+                    <div style="padding: 12px; margin-bottom: 8px; background: ${idx % 2 === 0 ? '#f8f9fa' : 'white'}; border-radius: 5px; border-left: 4px solid #667eea;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="font-size: 16px;">
+                                    <a href="/player/${result.player_id}" style="color: #333; text-decoration: none;">${result.name}</a>
+                                </strong>
+                                ${result.year ? `<span style="color: #999; margin-left: 10px;">${result.year}</span>` : ''}
+                            </div>
+                            ${result.stat_value ? `
+                                <div style="text-align: right;">
+                                    <div style="font-size: 20px; font-weight: bold; color: #667eea;">
+                                        ${result.stat_value}
+                                    </div>
+                                    <div style="font-size: 12px; color: #666;">
+                                        ${result.stat_name}${result.season ? ' (' + result.season + ')' : ''}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="margin-top: 8px;">
+                            <a href="/player/${result.player_id}" style="font-size: 12px; color: #667eea; text-decoration: none;">
+                                View full profile →
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            html += '<p style="padding: 20px; text-align: center; color: #666;">No results found</p>';
+        }
+        html += '</div>';
+        semanticList.innerHTML = html;
+    }
+
+    function showClarification(data) {
+        queryInterpretation.style.display = 'block';
+        interpretationText.textContent = data.message;
+        semanticCount.textContent = 'Please clarify your query';
+        semanticList.innerHTML = '<p style="padding: 20px; text-align: center; color: #666;">Try being more specific about the statistic you\'re interested in.</p>';
+    }
+
+    function showError(message) {
+        queryInterpretation.style.display = 'none';
+        semanticCount.textContent = 'Error';
+        semanticList.innerHTML = `<p style="padding: 20px; text-align: center; color: #cc0000;">${message}</p>`;
+    }
+
+    // Basic table filter search
     const searchInput = document.getElementById('player-search');
     const searchResults = document.getElementById('search-results');
     const tableBody = document.querySelector('.data-table tbody');

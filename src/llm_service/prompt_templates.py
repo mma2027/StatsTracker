@@ -24,12 +24,11 @@ QUERY_SCHEMA = {
                 "softball",
                 "mens_lacrosse",
                 "womens_lacrosse",
-                "mens_track",
-                "womens_track",
-                "mens_cross_country",
-                "womens_cross_country",
+                "mens_track_xc",
+                "womens_track_xc",
                 "squash_mens",
                 "squash_womens",
+                "cricket",
                 "all",
             ],
             "description": "Sport to filter by, 'all' for all sports, null if ambiguous",
@@ -112,12 +111,28 @@ parameters.
 **Volleyball** (womens_volleyball):
 - Kills, Assists, Aces, Digs, Block Assists, Block Solos, PTS (points), S (service attempts)
 
-**Track & Field / Cross Country** (mens_track, womens_track, mens_cross_country, womens_cross_country):
-- Event names as stat names (e.g., "800", "MILE", "5000", "100H", "HJ", "LJ", "SP", etc.)
-- Times and distances are stored as values
+**Track & Field / Cross Country** (mens_track_xc, womens_track_xc):
+- Running events: "100H", "200", "300", "400", "400H", "800", "MILE", "1500", "3000", "3000S", "5000", "10,000"
+- Hurdles: "60H", "100H", "400H"
+- Cross Country: "3 MILE (XC)", "4 MILE (XC)", "5K (XC)", "6K (XC)", "8K (XC)"
+  - CRITICAL: Cross country stat names MUST include " (XC)" suffix with space
+  - User says "5k" or "5K" → YOU MUST USE "5K (XC)" (capital K, space, parentheses)
+  - User says "6k" or "6K" → YOU MUST USE "6K (XC)"
+  - NEVER use "5K" or "5k" alone - ALWAYS add " (XC)"
+- Field events: "HJ" (high jump), "LJ" (long jump), "TJ" (triple jump), "PV" (pole vault), "SP" (shot put), "DT" (discus), "JT" (javelin), "HT" (hammer)
+- Multi-events: "PENT" (pentathlon)
+- Use EXACT event names as shown above (case-sensitive)
+- NOTE: Track & Field data is seasonal only (2024-25), not Career
 
 **Squash** (squash_mens, squash_womens):
-- wins, losses (and other match statistics)
+- wins (lowercase 'w')
+- NOTE: Squash data is seasonal only (2024-25, 2025-26), not Career
+
+**Cricket** (cricket):
+- Batting: "Batting_Runs", "Batting_Avg", "Batting_HS", "Batting_SR", "Batting_4's", "Batting_6's", "Batting_50's", "Batting_100's"
+- Bowling: "Bowling_Wkts", "Bowling_Avg", "Bowling_Econ", "Bowling_SR", "Bowling_4w", "Bowling_5w"
+- Fielding: "Fielding_Catches", "Fielding_Stumpings", "Fielding_Total"
+- NOTE: Cricket data is seasonal only (2024-25), not Career
 
 ## Query Interpretation Guidelines
 
@@ -148,12 +163,30 @@ parameters.
 - "rebounds" or "rebounding" → "Tot Reb"
 - "assists" → "AST" for field hockey, "Assists" for others
 - "goals" → "Goals" (capitalize first letter)
+- Track & Field: Use exact event codes (e.g., "800" not "800m", "HJ" not "high jump")
+  - CRITICAL: "5k" or "5K" or "5000m" → MUST USE "5K (XC)" (include the space and parentheses)
+  - "6k" or "6K" or "6000m" → "6K (XC)"
+  - "8k" or "8K" or "8000m" → "8K (XC)"
+  - "3 mile" → "3 MILE (XC)"
+  - "4 mile" → "4 MILE (XC)"
+  - For track (non-XC) events: "5000" (without XC suffix)
+  - ALWAYS check: Does this look like cross country distance? Add " (XC)" suffix!
+- Squash: Use lowercase "wins" not "Wins"
+- Cricket:
+  - "runs" or "batting runs" → "Batting_Runs"
+  - "wickets" or "wickets taken" → "Bowling_Wkts"
+  - "catches" → "Fielding_Catches"
+  - "stumpings" → "Fielding_Stumpings"
+  - "batting average" → "Batting_Avg"
+  - "bowling average" → "Bowling_Avg"
 
 **Default Behaviors:**
-- Season: Default to "Career" if not specified
-- Ordering: Default to "DESC" (highest first) unless query implies lowest
+- Season: Default to "Career" for most sports, BUT use "2024-25" for track/cross country, squash, and cricket (they don't have Career stats)
+- Ordering: Default to "DESC" (highest first) EXCEPT for track/cross country running events where lower times are better (use "ASC")
+- Field events (HJ, LJ, TJ, PV, SP, DT, JT, HT) use "DESC" (higher/farther is better)
 - Limit: Default to 20 unless user specifies (e.g., "top 5")
 - Sport: If ambiguous, set to "all" and note in interpretation
+- Track/Cross Country Gender: If user doesn't specify "men's" or "women's", use "all" to search across both
 
 **Threshold Queries:**
 - "close to [N]" → min: N*0.95, max: N*1.05
@@ -255,6 +288,126 @@ Query: "find Seth Anderson basketball"
   "player_name": "Seth Anderson",
   "sport": "mens_basketball",
   "interpretation": "Searching for player named Seth Anderson in basketball"
+}
+```
+
+Query: "best 800 meter runners"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "mens_track_xc",
+  "stat_name": "800",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "ASC",
+  "limit": 20,
+  "interpretation": "Finding fastest 800 meter runners (lower times are better)"
+}
+```
+
+Query: "top high jumpers"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "mens_track_xc",
+  "stat_name": "HJ",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding best high jumpers (higher is better)"
+}
+```
+
+Query: "squash players with most wins"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "squash_mens",
+  "stat_name": "wins",
+  "filters": {
+    "season": "2025-26"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding squash players with most wins in 2025-26 season"
+}
+```
+
+Query: "top cricket batsmen"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "cricket",
+  "stat_name": "Batting_Runs",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding top run scorers in cricket"
+}
+```
+
+Query: "fastest 5k runners"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "all",
+  "stat_name": "5K (XC)",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "ASC",
+  "limit": 20,
+  "interpretation": "Finding fastest 5K cross country runners across all genders (lower times are better)"
+}
+```
+
+Query: "fastest 5k"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "all",
+  "stat_name": "5K (XC)",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "ASC",
+  "limit": 20,
+  "interpretation": "Finding fastest 5K cross country times"
+}
+```
+
+Query: "fastest 5k runner"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "all",
+  "stat_name": "5K (XC)",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "ASC",
+  "limit": 1,
+  "interpretation": "Finding fastest 5K cross country runner (singular implies limit 1)"
+}
+```
+
+Query: "best cricket bowler by wickets taken"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "cricket",
+  "stat_name": "Bowling_Wkts",
+  "filters": {
+    "season": "2024-25"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding bowlers with most wickets taken"
 }
 ```"""
 

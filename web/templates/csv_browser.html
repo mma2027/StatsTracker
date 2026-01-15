@@ -56,15 +56,6 @@
         <p class="section-description">View all players in a specific sport</p>
 
         {% if sports %}
-        <!-- Team Filter Search Bar -->
-        <div class="search-container" style="margin-bottom: 20px;">
-            <input type="text"
-                   id="sport-search"
-                   placeholder="🔍 Filter teams/sports..."
-                   style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
-            <p id="sport-search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
-        </div>
-
         <div class="file-list" id="sports-list">
             {% for sport in sports %}
             <div class="file-item">
@@ -279,37 +270,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
         }, 300);
     });
-
-    // Sport/team filter functionality
-    const sportSearchInput = document.getElementById('sport-search');
-    const sportsList = document.getElementById('sports-list');
-    const sportSearchResults = document.getElementById('sport-search-results');
-    const fileItems = sportsList ? sportsList.querySelectorAll('.file-item') : [];
-
-    if (sportSearchInput && fileItems.length > 0) {
-        sportSearchInput.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            fileItems.forEach(function(item) {
-                const sportName = item.querySelector('.file-name').textContent.toLowerCase();
-
-                if (sportName.includes(searchTerm)) {
-                    item.style.display = '';
-                    visibleCount++;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-
-            // Update results text
-            if (searchTerm === '') {
-                sportSearchResults.textContent = '';
-            } else {
-                sportSearchResults.textContent = `Showing ${visibleCount} of ${fileItems.length} teams`;
-            }
-        });
-    }
 });
 </script>
 {% endblock %}

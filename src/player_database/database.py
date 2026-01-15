@@ -16,6 +16,20 @@ from .models import Player, PlayerStats, StatEntry
 logger = logging.getLogger(__name__)
 
 
+# Sport display name mapping
+SPORT_DISPLAY_NAMES = {
+    "mens_track_xc": "Men's Track & Field / Cross Country",
+    "womens_track_xc": "Women's Track & Field / Cross Country",
+}
+
+
+def get_sport_display_name(sport_key: str) -> str:
+    """Convert sport key to display name."""
+    if sport_key in SPORT_DISPLAY_NAMES:
+        return SPORT_DISPLAY_NAMES[sport_key]
+    return sport_key.replace("_", " ").title()
+
+
 class PlayerDatabase:
     """
     Manages player statistics database.
@@ -555,7 +569,7 @@ class PlayerDatabase:
             params = []
 
             # Add filters
-            if sport:
+            if sport and sport != "all":
                 query += " AND p.sport = ?"
                 params.append(sport)
 
@@ -600,7 +614,7 @@ class PlayerDatabase:
                 {
                     "player_id": row[0],
                     "name": row[1],
-                    "sport": row[2].replace("_", " ").title(),
+                    "sport": get_sport_display_name(row[2]),
                     "sport_key": row[2],
                     "team": row[3],
                     "position": row[4],

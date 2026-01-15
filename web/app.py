@@ -47,6 +47,19 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
 # Progress tracking
 progress_queues = {}  # session_id -> Queue
 
+# Sport display name mapping
+SPORT_DISPLAY_NAMES = {
+    "mens_track_xc": "Men's Track & Field / Cross Country",
+    "womens_track_xc": "Women's Track & Field / Cross Country",
+}
+
+
+def get_sport_display_name(sport_key):
+    """Convert sport key to display name."""
+    if sport_key in SPORT_DISPLAY_NAMES:
+        return SPORT_DISPLAY_NAMES[sport_key]
+    return sport_key.replace("_", " ").title()
+
 
 def create_progress_stream(session_id):
     """Create a new progress queue for a session."""
@@ -89,7 +102,7 @@ def csv_browser():
             sport = player.sport
             if sport not in sports_data:
                 sports_data[sport] = {
-                    "name": sport.replace("_", " ").title(),
+                    "name": get_sport_display_name(sport),
                     "sport_key": sport,
                     "player_count": 0,
                     "last_updated": None,
@@ -145,7 +158,7 @@ def api_search_players():
                 matching_players.append(
                     {
                         "name": player.name,
-                        "sport": player.sport.replace("_", " ").title(),
+                        "sport": get_sport_display_name(player.sport),
                         "sport_key": player.sport,
                         "last_updated": last_updated,
                     }
@@ -255,7 +268,7 @@ def api_semantic_search():
                     {
                         "player_id": player.player_id,
                         "name": player.name,
-                        "sport": player.sport.replace("_", " ").title(),
+                        "sport": get_sport_display_name(player.sport),
                         "sport_key": player.sport,
                         "team": player.team,
                         "position": player.position,
@@ -313,7 +326,7 @@ def api_ask_about_player():
             return jsonify({"error": "No stats found for player"}), 404
 
         # Prepare context for Claude
-        sport_display = player.sport.replace("_", " ").title()
+        sport_display = get_sport_display_name(player.sport)
         context = f"""Player Information:
 Name: {player.name}
 Sport: {sport_display}
@@ -541,8 +554,8 @@ def view_sport(sport_key):
                 row[stat_name] = entry["stats"].get(stat_name, "-")
             rows.append(row)
 
-        sport_display = sport_key.replace("_", " ").title()
-        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows)
+        sport_display = get_sport_display_name(sport_key)
+        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows, sport_key=sport_key)
 
     except Exception as e:
         logger.error(f"Error loading sport data: {e}")
@@ -570,7 +583,7 @@ def player_detail(player_id):
             return jsonify({"error": "No stats found for player"}), 404
 
         # Prepare data for template
-        sport_display = player.sport.replace("_", " ").title()
+        sport_display = get_sport_display_name(player.sport)
 
         # Get season stats sorted by season
         seasons_data = []
@@ -676,7 +689,7 @@ def api_update_stats():
                     csv_exports_successful = 0
                     logger.info(f"[{session_id}] Starting NCAA fetch for {len(haverford_teams)} teams")
                     for sport, team_id in haverford_teams.items():
-                        sport_title = sport.replace("_", " ").title()
+                        sport_title = get_sport_display_name(sport)
                         logger.info(f"[{session_id}] Fetching {sport}")
                         send_progress(
                             session_id,
@@ -784,14 +797,14 @@ def api_update_stats():
                                 session_id,
                                 {
                                     "type": "fetch",
-                                    "message": f'Exporting {sport.replace("_", " ").title()} to CSV...',
+                                    "message": f'Exporting {get_sport_display_name(sport)} to CSV...',
                                 },
                             )
                             result = ncaa_fetcher.fetch_team_stats(str(team_id), sport)
 
                             if result.success and result.data:
                                 # Save to CSV
-                                sport_display = sport.replace("_", " ").title()
+                                sport_display = get_sport_display_name(sport)
                                 safe_sport_name = sport.replace(" ", "_").lower()
                                 timestamp = datetime.now().strftime("%Y%m%d")
                                 filename = f"haverford_{safe_sport_name}_{timestamp}.csv"
@@ -903,7 +916,7 @@ def api_update_stats():
                 tfrr_stats_added = 0
 
                 for sport_key, team_code in HAVERFORD_TEAMS.items():
-                    sport_display = sport_key.replace("_", " ").title()
+                    sport_display = get_sport_display_name(sport_key)
                     send_progress(
                         session_id,
                         {"type": "fetch", "message": f"Fetching TFRR {sport_display}..."},
@@ -1193,7 +1206,7 @@ def api_update_tfrr_stats():
 
                 # Process each Haverford team
                 for team_name, team_code in HAVERFORD_TEAMS.items():
-                    sport_display = team_name.replace("_", " ").title()
+                    sport_display = get_sport_display_name(team_name)
                     logger.info(f"[{session_id}] Processing {team_name}: {team_code}")
                     send_progress(
                         session_id,
@@ -1842,7 +1855,7 @@ def api_run_daily_workflow():
                     )
                     haverford_teams = ncaa_config.get("haverford_teams", {})
                     for sport, team_id in haverford_teams.items():
-                        sport_title = sport.replace("_", " ").title()
+                        sport_title = get_sport_display_name(sport)
                         send_progress(
                             session_id,
                             {
@@ -2099,7 +2112,7 @@ def api_run_daily_workflow():
                             session_id,
                             {
                                 "type": "info",
-                                "message": f'Checking milestones for {sport_key.replace("_", " ").title()}...',
+                                "message": f'Checking milestones for {get_sport_display_name(sport_key)}...',
                             },
                         )
                         sport_proximities = milestone_detector.check_all_players_milestones(

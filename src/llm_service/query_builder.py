@@ -7,6 +7,27 @@ from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
+# Sport name migration mapping (old -> new)
+SPORT_MIGRATION = {
+    "mens_track": "mens_track_xc",
+    "mens_cross_country": "mens_track_xc",
+    "womens_track": "womens_track_xc",
+    "womens_cross_country": "womens_track_xc",
+}
+
+# Sport display names
+SPORT_DISPLAY_NAMES = {
+    "mens_track_xc": "Men's Track & Field / Cross Country",
+    "womens_track_xc": "Women's Track & Field / Cross Country",
+}
+
+
+def get_sport_display_name(sport_key: str) -> str:
+    """Convert sport key to display name."""
+    if sport_key in SPORT_DISPLAY_NAMES:
+        return SPORT_DISPLAY_NAMES[sport_key]
+    return sport_key.replace("_", " ").title()
+
 
 class SemanticQueryBuilder:
     """
@@ -22,6 +43,22 @@ class SemanticQueryBuilder:
         """
         self.database = database
 
+    def _migrate_sport_name(self, sport: str) -> str:
+        """
+        Migrate old sport names to new merged names.
+
+        Args:
+            sport: Sport name (possibly old)
+
+        Returns:
+            Migrated sport name
+        """
+        if sport in SPORT_MIGRATION:
+            new_sport = SPORT_MIGRATION[sport]
+            logger.info(f"Migrating sport name: {sport} -> {new_sport}")
+            return new_sport
+        return sport
+
     def execute(self, structured_params: Dict) -> List[Dict]:
         """
         Execute semantic search query from LLM-generated parameters.
@@ -32,6 +69,10 @@ class SemanticQueryBuilder:
         Returns:
             List of result dicts with player info and stat values
         """
+        # Migrate old sport names to new ones
+        if "sport" in structured_params and structured_params["sport"]:
+            structured_params["sport"] = self._migrate_sport_name(structured_params["sport"])
+
         intent = structured_params.get("intent")
 
         logger.info(f"Executing query with intent: {intent}")
@@ -179,7 +220,7 @@ class SemanticQueryBuilder:
                 {
                     "player_id": player.player_id,
                     "name": player.name,
-                    "sport": player.sport.replace("_", " ").title(),
+                    "sport": get_sport_display_name(player.sport),
                     "sport_key": player.sport,
                     "team": player.team,
                     "position": player.position,
