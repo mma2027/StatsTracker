@@ -190,7 +190,7 @@ def update_team_stats(
                 db.add_player(player)
                 players_added += 1
 
-            # Add stats
+            # Add or update stats (upsert to avoid duplicates)
             for stat_name, stat_value in player_data["stats"].items():
                 if stat_value == "" or stat_value is None:
                     continue
@@ -202,7 +202,7 @@ def update_team_stats(
                     season=season,
                     date_recorded=datetime.now(),
                 )
-                db.add_stat(stat_entry)
+                db.upsert_stat(stat_entry)
                 stats_added += 1
 
         except Exception as e:
@@ -395,7 +395,7 @@ def update_cricket_stats(db: PlayerDatabase, cricket_config: dict, season: str, 
                     db.add_player(player)
                     players_added += 1
 
-                # Add stats for all columns except Player name
+                # Add or update stats for all columns except Player name (upsert to avoid duplicates)
                 for col in df.columns:
                     if col == "Player":
                         continue
@@ -413,7 +413,7 @@ def update_cricket_stats(db: PlayerDatabase, cricket_config: dict, season: str, 
                         season=season,
                         date_recorded=datetime.now(),
                     )
-                    db.add_stat(stat_entry)
+                    db.upsert_stat(stat_entry)
                     stats_added += 1
 
             except Exception as e:

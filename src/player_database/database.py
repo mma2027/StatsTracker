@@ -330,6 +330,79 @@ class PlayerDatabase:
             logger.error(f"Error adding stat: {e}")
             return False
 
+    def upsert_stat(self, stat_entry: StatEntry) -> bool:
+        """
+        Add or update a stat entry in the database (upsert).
+        If a stat with the same player_id, stat_name, and season exists, update it.
+        Otherwise, insert a new stat.
+
+        Args:
+            stat_entry: StatEntry object
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+
+            # Check if stat already exists
+            cursor.execute(
+                """
+                SELECT COUNT(*) FROM stats
+                WHERE player_id = ? AND stat_name = ? AND season = ?
+                """,
+                (stat_entry.player_id, stat_entry.stat_name, stat_entry.season),
+            )
+            exists = cursor.fetchone()[0] > 0
+
+            if exists:
+                # Update existing stat
+                cursor.execute(
+                    """
+                    UPDATE stats
+                    SET stat_value = ?, date_recorded = ?, game_id = ?, notes = ?
+                    WHERE player_id = ? AND stat_name = ? AND season = ?
+                    """,
+                    (
+                        str(stat_entry.stat_value),
+                        stat_entry.date_recorded,
+                        stat_entry.game_id,
+                        stat_entry.notes,
+                        stat_entry.player_id,
+                        stat_entry.stat_name,
+                        stat_entry.season,
+                    ),
+                )
+                logger.debug(f"Updated stat: {stat_entry.stat_name} for player {stat_entry.player_id}")
+            else:
+                # Insert new stat
+                cursor.execute(
+                    """
+                    INSERT INTO stats (player_id, stat_name, stat_value, season,
+                                       date_recorded, game_id, notes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        stat_entry.player_id,
+                        stat_entry.stat_name,
+                        str(stat_entry.stat_value),
+                        stat_entry.season,
+                        stat_entry.date_recorded,
+                        stat_entry.game_id,
+                        stat_entry.notes,
+                    ),
+                )
+                logger.debug(f"Inserted stat: {stat_entry.stat_name} for player {stat_entry.player_id}")
+
+            conn.commit()
+            conn.close()
+            return True
+
+        except Exception as e:
+            logger.error(f"Error upserting stat: {e}")
+            return False
+
     def get_player_stats(self, player_id: str, season: Optional[str] = None) -> Optional[PlayerStats]:
         """
         Get aggregated statistics for a player.
