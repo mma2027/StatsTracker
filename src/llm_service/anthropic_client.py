@@ -50,11 +50,16 @@ class AnthropicClient:
 
         # Read from config.yaml first, then fall back to defaults
         llm_config = (config or {}).get("llm", {})
-        self.api_key = api_key or llm_config.get("api_key")
-        if not self.api_key:
-            raise ValueError("Anthropic API key not found in config.yaml llm.api_key")
+        logger.info(f"DEBUG: Config passed: {config is not None}, llm_config keys: {list(llm_config.keys()) if llm_config else 'None'}")
 
-        self.model = model or llm_config.get("model", "claude-3-haiku-20240307")
+        # Priority: parameter > env var > config.yaml
+        self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or llm_config.get("api_key")
+        if not self.api_key:
+            raise ValueError("Anthropic API key not found. Set ANTHROPIC_API_KEY environment variable or llm.api_key in config.yaml")
+
+        model_from_config = llm_config.get("model", "claude-3-haiku-20240307")
+        logger.info(f"DEBUG: model param: {model}, model_from_config: {model_from_config}")
+        self.model = model or model_from_config
         timeout_val = timeout if timeout is not None else llm_config.get("timeout", 10)
         self.max_tokens = max_tokens if max_tokens is not None else llm_config.get("max_tokens", 1024)
         self.temperature = temperature if temperature is not None else llm_config.get("temperature", 0.1)

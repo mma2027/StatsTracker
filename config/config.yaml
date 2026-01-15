@@ -5,6 +5,8 @@ email:
   sender_password: oenp drlw zixn wdjr
   recipients:
   - mma@haverford.edu
+  - hzhang3@haverford.edu
+  - cmccauley@haverford.edu
 database:
   type: sqlite
   path: data/stats.db
@@ -470,7 +472,7 @@ llm:
   timeout: 10
   max_tokens: 1024
   temperature: 0.1
-  api_key: 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
+  # api_key stored in .env as ANTHROPIC_API_KEY for security
 semantic_search:
   enabled: true
   cache_ttl: 3600
@@ -556,14 +558,4 @@ milestone_proximity:
     Block Assists: 10
     Block Solos: 10
     PTS: 10
-  squash_mens:
-    Wins: 2
-    Games Won: 2
-  squash_womens:
-    Wins: 2
-    Games Won: 2
-  cricket:
-    Runs: 10
-    Wickets: 10
-    Catches: 10
-    Stumpings: 10
+    S: 10
