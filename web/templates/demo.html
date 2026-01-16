@@ -53,6 +53,9 @@
                     <strong>Milestone Alerts:</strong> <span id="milestones-count">0</span>
                 </div>
                 <div class="summary-item">
+                    <strong>PR Breakthroughs:</strong> <span id="pr-count">0</span>
+                </div>
+                <div class="summary-item">
                     <strong>Sports:</strong> <span id="sports-list">-</span>
                 </div>
             </div>
@@ -65,6 +68,11 @@
             <div class="results-section">
                 <h4>Milestone Proximities:</h4>
                 <div id="milestones-list" style="max-height: 300px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="results-section">
+                <h4>🎉 PR Breakthroughs (Sample Data):</h4>
+                <div id="pr-list"></div>
             </div>
 
             <div class="results-section">
@@ -253,6 +261,7 @@ document.getElementById('btn-simulate-gameday').addEventListener('click', async 
             // Update summary
             document.getElementById('games-count').textContent = data.games_count;
             document.getElementById('milestones-count').textContent = data.proximities_count;
+            document.getElementById('pr-count').textContent = data.pr_breakthroughs_count || 0;
             document.getElementById('sports-list').textContent = data.sports_with_games.join(', ') || 'None';
 
             // Display games
@@ -282,23 +291,23 @@ document.getElementById('btn-simulate-gameday').addEventListener('click', async 
                 milestonesList.innerHTML = '<p class="empty">No players close to milestones</p>';
             }
 
-            // Display email preview safely
-            document.getElementById('email-subject').textContent = data.email_subject || 'No subject';
-            const iframe = document.getElementById('email-preview');
-            try {
-                // Use srcdoc for safer HTML injection (supported in all modern browsers)
-                if ('srcdoc' in iframe) {
-                    iframe.srcdoc = data.email_html || '<p>No email content</p>';
-                } else {
-                    // Fallback for older browsers
-                    iframe.contentDocument.open();
-                    iframe.contentDocument.write(data.email_html || '<p>No email content</p>');
-                    iframe.contentDocument.close();
-                }
-            } catch (err) {
-                console.error('Failed to load email preview:', err);
-                iframe.srcdoc = '<p style="color: red;">Failed to load email preview</p>';
+            // Display PR breakthroughs
+            const prList = document.getElementById('pr-list');
+            if (data.pr_breakthroughs && data.pr_breakthroughs.length > 0) {
+                prList.innerHTML = data.pr_breakthroughs.map(pr => `
+                    <div class="result-item">
+                        <strong>${pr.athlete_name}</strong> - ${pr.event}<br>
+                        Previous: ${pr.old_pr} → New PR: <strong>${pr.new_pr}</strong> (↓ ${pr.improvement})<br>
+                        <em>at ${pr.meet_name}</em>
+                    </div>
+                `).join('');
+            } else {
+                prList.innerHTML = '<p class="empty">No PR breakthroughs (sample data shown in email preview)</p>';
             }
+
+            // Display email preview
+            document.getElementById('email-subject').textContent = data.email_subject;
+            document.getElementById('email-preview').innerHTML = data.email_html;
 
             results.style.display = 'block';
             button.textContent = '📅 Simulate Gameday';
