@@ -573,6 +573,11 @@ class PlayerDatabase:
                 query += " AND p.sport = ?"
                 params.append(sport)
 
+            # Add sport pattern filter (e.g., "basketball" matches mens_basketball and womens_basketball)
+            if filters.get("sport_pattern"):
+                query += " AND p.sport LIKE ?"
+                params.append(f"%{filters['sport_pattern']}%")
+
             if stat_name:
                 query += " AND s.stat_name = ?"
                 params.append(stat_name)

@@ -58,6 +58,10 @@ QUERY_SCHEMA = {
                     "type": "string",
                     "description": "Player year filter (e.g., 'Freshman', 'Sophomore', 'Junior', 'Senior')",
                 },
+                "sport_pattern": {
+                    "type": "string",
+                    "description": "Sport pattern filter (e.g., 'basketball' matches mens_basketball and womens_basketball). Use when user mentions a sport without specifying gender.",
+                },
             },
             "description": "Additional filters to apply",
         },
@@ -153,9 +157,20 @@ parameters.
 - "top [N] [stat/position]" → intent: rank_by_stat, limit: N
 - "who has the most [stat]" → intent: rank_by_stat, limit: 1
 - "players close to [number] [stat]" → intent: filter_threshold, set min/max range
+- "[sport] players [query]" → IMPORTANT: Extract the sport! "basketball players" → sport="all" (searches both mens_basketball and womens_basketball)
 - "[player name]" → intent: search_name, set player_name field
 - "find [player name]" → intent: search_name
 - "show me [player name]" → intent: search_name
+
+**Sport Extraction Rules:**
+- CRITICAL: When user mentions a sport name (basketball, soccer, lacrosse, etc.) without specifying gender, you MUST:
+  1. Set sport="all"
+  2. Add filters.sport_pattern with the sport name (e.g., "basketball", "soccer", "lacrosse")
+- "basketball players over 500 points" → sport="all", filters.sport_pattern="basketball" (will match mens_basketball AND womens_basketball only)
+- "soccer players with most goals" → sport="all", filters.sport_pattern="soccer" (will match mens_soccer AND womens_soccer only)
+- "lacrosse assists leaders" → sport="all", filters.sport_pattern="lacrosse" (will match mens_lacrosse AND womens_lacrosse only)
+- If user says "men's basketball" or "women's soccer", then use the specific sport code (mens_basketball, womens_soccer) and DON'T use sport_pattern
+- The sport_pattern filter ensures we only get results from that specific sport type, not from other sports that might share the same stat name
 
 **Stat Name Matching:**
 - Match stat names EXACTLY as they appear in the schema above
@@ -254,7 +269,23 @@ Query: "players close to 1000 points"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding players with 950-1050 career points (close to 1000)"
+  "interpretation": "Finding players with 950-1050 career points (close to 1000) across all sports"
+}
+```
+
+Query: "basketball players over 500 points"
+```json
+{
+  "intent": "filter_threshold",
+  "sport": "all",
+  "stat_name": "PTS",
+  "filters": {
+    "min_value": 500,
+    "sport_pattern": "basketball"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding basketball players (both men's and women's) with over 500 career points"
 }
 ```
 
