@@ -89,88 +89,45 @@ const today = new Date().toISOString().split('T')[0];
 document.getElementById('gameday-date').value = today;
 
 // Update Stats Button with Real-Time Progress
+let activeEventSource = null;
+let activeCheckInterval = null;
+
+// Cleanup function for update stats
+function cleanupUpdateStats() {
+    if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+    }
+    if (activeCheckInterval) {
+        clearInterval(activeCheckInterval);
+        activeCheckInterval = null;
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', cleanupUpdateStats);
+
 document.getElementById('btn-update-stats').addEventListener('click', async function() {
     const button = this;
     const status = document.getElementById('update-status');
     const progressBox = document.getElementById('update-progress');
     const currentItem = document.getElementById('update-current-item');
 
+    // Clean up any existing connections
+    cleanupUpdateStats();
+
     button.disabled = true;
     button.textContent = '⏳ Updating... (10-15 minutes)';
     status.style.display = 'block';
     status.className = 'status-message status-loading';
+    status.textContent = 'Starting update...';
     progressBox.style.display = 'block';
 
     // Generate unique session ID
     const sessionId = 'update-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 
-    // Connect to SSE endpoint for real-time progress
-    const eventSource = new EventSource(`/api/progress/${sessionId}`);
-    let lastMessageTime = Date.now();
-    let errorCount = 0;
-    let completedSuccessfully = false;
-
-    const checkConnection = setInterval(() => {
-        const timeSinceLastMessage = Date.now() - lastMessageTime;
-        if (timeSinceLastMessage > 30000) {
-            console.warn('No activity for 30 seconds, connection may be dead');
-        }
-    }, 5000);
-
-    eventSource.onmessage = function(event) {
-        lastMessageTime = Date.now();
-        const message = JSON.parse(event.data);
-
-        if (message.type === 'info' || message.type === 'fetch') {
-            currentItem.textContent = message.message;
-        } else if (message.type === 'warning') {
-            currentItem.textContent = '⚠️ ' + message.message;
-        } else if (message.type === 'error') {
-            currentItem.textContent = '❌ ' + message.message;
-            status.className = 'status-message status-error';
-            status.textContent = `❌ Error: ${message.message}`;
-            button.textContent = '🔄 Update All Stats';
-            button.disabled = false;
-            progressBox.style.display = 'none';
-            clearInterval(checkConnection);
-            eventSource.close();
-        } else if (message.type === 'success') {
-            completedSuccessfully = true;
-            currentItem.textContent = message.message;
-            status.className = 'status-message status-success';
-            status.textContent = '✅ All stats updated successfully!';
-            button.textContent = '✅ Update Complete';
-            clearInterval(checkConnection);
-            setTimeout(() => {
-                progressBox.style.display = 'none';
-                eventSource.close();
-            }, 2000);
-        }
-    };
-
-    eventSource.onerror = function(err) {
-        if (completedSuccessfully) {
-            console.log('SSE stream closed after successful completion (expected)');
-            eventSource.close();
-            return;
-        }
-
-        errorCount++;
-        console.error('SSE error (count: ' + errorCount + '):', err);
-
-        if (errorCount > 2) {
-            currentItem.textContent = 'Connection error';
-            status.className = 'status-message status-error';
-            status.textContent = '❌ Connection lost - try refreshing the page';
-            button.textContent = '🔄 Update All Stats';
-            button.disabled = false;
-            progressBox.style.display = 'none';
-            clearInterval(checkConnection);
-            eventSource.close();
-        }
-    };
-
     try {
+        // First, start the update task
         const response = await fetch('/api/update-stats', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -182,6 +139,79 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
         if (!data.success) {
             throw new Error(data.error || 'Update failed');
         }
+
+        // Task started successfully, now connect to SSE for progress
+        status.textContent = 'Update started, receiving progress...';
+
+        activeEventSource = new EventSource(`/api/progress/${sessionId}`);
+        let lastMessageTime = Date.now();
+        let errorCount = 0;
+        let completedSuccessfully = false;
+
+        activeCheckInterval = setInterval(() => {
+            const timeSinceLastMessage = Date.now() - lastMessageTime;
+            if (timeSinceLastMessage > 60000) {
+                console.warn('No activity for 60 seconds, connection may be dead');
+                currentItem.textContent = '⏳ Still updating... (no recent activity)';
+            }
+        }, 10000);
+
+        activeEventSource.onmessage = function(event) {
+            lastMessageTime = Date.now();
+            try {
+                const message = JSON.parse(event.data);
+
+                if (message.type === 'info' || message.type === 'fetch') {
+                    currentItem.textContent = message.message;
+                } else if (message.type === 'warning') {
+                    currentItem.textContent = '⚠️ ' + message.message;
+                } else if (message.type === 'error') {
+                    currentItem.textContent = '❌ ' + message.message;
+                    status.className = 'status-message status-error';
+                    status.textContent = `❌ Error: ${message.message}`;
+                    button.textContent = '🔄 Update All Stats';
+                    button.disabled = false;
+                    progressBox.style.display = 'none';
+                    cleanupUpdateStats();
+                } else if (message.type === 'success') {
+                    completedSuccessfully = true;
+                    currentItem.textContent = message.message;
+                    status.className = 'status-message status-success';
+                    status.textContent = '✅ All stats updated successfully!';
+                    button.textContent = '✅ Update Complete';
+                    setTimeout(() => {
+                        progressBox.style.display = 'none';
+                        button.textContent = '🔄 Update All Stats';
+                        button.disabled = false;
+                        cleanupUpdateStats();
+                    }, 3000);
+                }
+            } catch (parseError) {
+                console.error('Failed to parse SSE message:', parseError);
+            }
+        };
+
+        activeEventSource.onerror = function(err) {
+            if (completedSuccessfully) {
+                console.log('SSE stream closed after successful completion (expected)');
+                cleanupUpdateStats();
+                return;
+            }
+
+            errorCount++;
+            console.error('SSE error (count: ' + errorCount + '):', err);
+
+            if (errorCount > 3) {
+                currentItem.textContent = 'Connection error - update may still be running in background';
+                status.className = 'status-message status-error';
+                status.textContent = '❌ Connection lost - update may still be running. Check logs or try again later.';
+                button.textContent = '🔄 Update All Stats';
+                button.disabled = false;
+                progressBox.style.display = 'none';
+                cleanupUpdateStats();
+            }
+        };
+
     } catch (error) {
         currentItem.textContent = 'Failed to start update';
         status.className = 'status-message status-error';
@@ -189,7 +219,7 @@ document.getElementById('btn-update-stats').addEventListener('click', async func
         button.textContent = '🔄 Update All Stats';
         button.disabled = false;
         progressBox.style.display = 'none';
-        eventSource.close();
+        cleanupUpdateStats();
     }
 });
 
@@ -252,12 +282,23 @@ document.getElementById('btn-simulate-gameday').addEventListener('click', async 
                 milestonesList.innerHTML = '<p class="empty">No players close to milestones</p>';
             }
 
-            // Display email preview
-            document.getElementById('email-subject').textContent = data.email_subject;
+            // Display email preview safely
+            document.getElementById('email-subject').textContent = data.email_subject || 'No subject';
             const iframe = document.getElementById('email-preview');
-            iframe.contentDocument.open();
-            iframe.contentDocument.write(data.email_html);
-            iframe.contentDocument.close();
+            try {
+                // Use srcdoc for safer HTML injection (supported in all modern browsers)
+                if ('srcdoc' in iframe) {
+                    iframe.srcdoc = data.email_html || '<p>No email content</p>';
+                } else {
+                    // Fallback for older browsers
+                    iframe.contentDocument.open();
+                    iframe.contentDocument.write(data.email_html || '<p>No email content</p>');
+                    iframe.contentDocument.close();
+                }
+            } catch (err) {
+                console.error('Failed to load email preview:', err);
+                iframe.srcdoc = '<p style="color: red;">Failed to load email preview</p>';
+            }
 
             results.style.display = 'block';
             button.textContent = '📅 Simulate Gameday';
