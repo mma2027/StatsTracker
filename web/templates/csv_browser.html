@@ -104,10 +104,76 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!query) {
             semanticResults.style.display = 'none';
             queryInterpretation.style.display = 'none';
+
+            // Restore all teams when search is cleared
+            const sportItems = document.querySelectorAll('#sports-list .file-item');
+            sportItems.forEach(item => {
+                item.style.display = '';
+            });
+            const teamsHeader = document.querySelector('.csv-section h2');
+            if (teamsHeader) {
+                teamsHeader.textContent = `Browse by Team/Sport (${sportItems.length} teams)`;
+            }
             return;
         }
 
         searchTimeout = setTimeout(async () => {
+            // First check if query is just a sport/team name for filtering
+            const sportKeywords = {
+                'basketball': ['mens_basketball', 'womens_basketball'],
+                'soccer': ['mens_soccer', 'womens_soccer'],
+                'lacrosse': ['mens_lacrosse', 'womens_lacrosse'],
+                'track': ['mens_track_xc', 'womens_track_xc'],
+                'cross country': ['mens_track_xc', 'womens_track_xc'],
+                'xc': ['mens_track_xc', 'womens_track_xc'],
+                'baseball': ['baseball'],
+                'softball': ['softball'],
+                'squash': ['squash_mens', 'squash_womens'],
+                'cricket': ['cricket'],
+                'volleyball': ['womens_volleyball'],
+                'field hockey': ['field_hockey']
+            };
+
+            const lowerQuery = query.toLowerCase();
+            let matchedSports = [];
+
+            // Check if query matches a sport keyword
+            for (const [keyword, sportKeys] of Object.entries(sportKeywords)) {
+                if (lowerQuery.includes(keyword)) {
+                    matchedSports = matchedSports.concat(sportKeys);
+                }
+            }
+
+            // If it's just a sport name, filter teams without API call
+            if (matchedSports.length > 0 && query.split(' ').length <= 3) {
+                searchLoading.style.display = 'none';
+                semanticResults.style.display = 'none';
+
+                // Filter the sports list
+                const sportItems = document.querySelectorAll('#sports-list .file-item');
+                let visibleTeams = 0;
+                sportItems.forEach(item => {
+                    const viewButton = item.querySelector('a[href*="view-sport"]');
+                    if (viewButton) {
+                        const sportKey = viewButton.href.split('/view-sport/')[1];
+                        if (matchedSports.includes(sportKey)) {
+                            item.style.display = '';
+                            visibleTeams++;
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    }
+                });
+
+                // Update teams section header
+                const teamsHeader = document.querySelector('.csv-section h2');
+                if (teamsHeader) {
+                    teamsHeader.textContent = `Browse by Team/Sport (${visibleTeams} teams shown)`;
+                }
+                return;
+            }
+
+            // Otherwise, do semantic search
             searchLoading.style.display = 'block';
             semanticResults.style.display = 'block';
             queryInterpretation.style.display = 'none';
@@ -155,6 +221,38 @@ document.addEventListener('DOMContentLoaded', function() {
             countText += ` (${data.query_time_ms}ms)`;
         }
         semanticCount.textContent = countText;
+
+        // Filter teams based on sports found in results
+        const sportsFound = new Set();
+        if (data.results && data.results.length > 0) {
+            data.results.forEach(result => {
+                if (result.sport_key) {
+                    sportsFound.add(result.sport_key);
+                }
+            });
+        }
+
+        // Filter the sports list
+        const sportItems = document.querySelectorAll('#sports-list .file-item');
+        let visibleTeams = 0;
+        sportItems.forEach(item => {
+            const viewButton = item.querySelector('a[href*="view-sport"]');
+            if (viewButton) {
+                const sportKey = viewButton.href.split('/view-sport/')[1];
+                if (sportsFound.size === 0 || sportsFound.has(sportKey)) {
+                    item.style.display = '';
+                    visibleTeams++;
+                } else {
+                    item.style.display = 'none';
+                }
+            }
+        });
+
+        // Update teams section header
+        const teamsHeader = document.querySelector('.csv-section h2');
+        if (teamsHeader && sportsFound.size > 0) {
+            teamsHeader.textContent = `Browse by Team/Sport (${visibleTeams} teams shown)`;
+        }
 
         // Build results
         let html = '<div style="color: #333;">';
@@ -211,65 +309,6 @@ document.addEventListener('DOMContentLoaded', function() {
         semanticCount.textContent = 'Error';
         semanticList.innerHTML = `<p style="padding: 20px; text-align: center; color: #cc0000;">${message}</p>`;
     }
-
-    // Old player search removed since semantic search replaces it
-
-    let searchTimeout2;
-
-    playerSearchInput.addEventListener('input', function() {
-        const searchTerm = this.value.trim();
-
-        // Clear previous timeout
-        clearTimeout(searchTimeout);
-
-        if (searchTerm === '') {
-            playerSearchResults.style.display = 'none';
-            return;
-        }
-
-        // Debounce search - wait 300ms after user stops typing
-        searchTimeout = setTimeout(function() {
-            fetch(`/api/search-players?q=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.results && data.results.length > 0) {
-                        playerSearchResults.style.display = 'block';
-                        playerSearchCount.textContent = `Found ${data.count} player(s)`;
-
-                        // Build results HTML
-                        let html = '<div class="file-list">';
-                        data.results.forEach(function(player) {
-                            html += `
-                                <div class="file-item">
-                                    <div class="file-info">
-                                        <span class="file-name">${player.name}</span>
-                                        <span class="file-meta">
-                                            ${player.sport}
-                                            ${player.last_updated ? ' | Last updated: ' + player.last_updated : ''}
-                                        </span>
-                                    </div>
-                                    <div class="file-actions">
-                                        <a href="/view-sport/${player.sport_key}" class="btn btn-sm btn-primary">View ${player.sport} Stats</a>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        html += '</div>';
-                        playerResultsList.innerHTML = html;
-                    } else {
-                        playerSearchResults.style.display = 'block';
-                        playerSearchCount.textContent = 'No players found';
-                        playerResultsList.innerHTML = '<p style="color: #666; padding: 10px;">Try a different search term</p>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Search error:', error);
-                    playerSearchResults.style.display = 'block';
-                    playerSearchCount.textContent = 'Error searching';
-                    playerResultsList.innerHTML = '<p style="color: #cc0000; padding: 10px;">Error performing search</p>';
-                });
-        }, 300);
-    });
 });
 </script>
 {% endblock %}

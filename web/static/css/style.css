@@ -364,6 +364,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    max-width: 100%;
 }
 
 .demo-section {
@@ -371,6 +372,8 @@ body {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .demo-section h2 {
@@ -426,6 +429,8 @@ body {
     margin-top: 2rem;
     padding-top: 2rem;
     border-top: 2px solid #e0e0e0;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .results-summary {
@@ -444,6 +449,8 @@ body {
 
 .results-section {
     margin-bottom: 2rem;
+    max-width: 100%;
+    overflow-x: auto;
 }
 
 .results-section h4 {
@@ -467,6 +474,30 @@ body {
     margin-top: 1rem;
     max-height: 600px;
     overflow-y: auto;
+    overflow-x: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.email-preview * {
+    max-width: 100%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.email-preview table {
+    width: auto !important;
+    max-width: 100% !important;
+    table-layout: auto;
+    display: block;
+    overflow-x: auto;
+}
+
+.email-preview td,
+.email-preview th {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .email-subject {

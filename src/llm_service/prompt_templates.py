@@ -58,6 +58,10 @@ QUERY_SCHEMA = {
                     "type": "string",
                     "description": "Player year filter (e.g., 'Freshman', 'Sophomore', 'Junior', 'Senior')",
                 },
+                "sport_pattern": {
+                    "type": "string",
+                    "description": "Sport pattern filter (e.g., 'basketball' matches mens_basketball and womens_basketball). Use when user mentions a sport without specifying gender.",
+                },
             },
             "description": "Additional filters to apply",
         },
@@ -153,9 +157,20 @@ parameters.
 - "top [N] [stat/position]" → intent: rank_by_stat, limit: N
 - "who has the most [stat]" → intent: rank_by_stat, limit: 1
 - "players close to [number] [stat]" → intent: filter_threshold, set min/max range
+- "[sport] players [query]" → IMPORTANT: Extract the sport! "basketball players" → sport="all" (searches both mens_basketball and womens_basketball)
 - "[player name]" → intent: search_name, set player_name field
 - "find [player name]" → intent: search_name
 - "show me [player name]" → intent: search_name
+
+**Sport Extraction Rules:**
+- CRITICAL: When user mentions a sport name (basketball, soccer, lacrosse, etc.) without specifying gender, you MUST:
+  1. Set sport="all"
+  2. Add filters.sport_pattern with the sport name (e.g., "basketball", "soccer", "lacrosse")
+- "basketball players over 500 points" → sport="all", filters.sport_pattern="basketball" (will match mens_basketball AND womens_basketball only)
+- "soccer players with most goals" → sport="all", filters.sport_pattern="soccer" (will match mens_soccer AND womens_soccer only)
+- "lacrosse assists leaders" → sport="all", filters.sport_pattern="lacrosse" (will match mens_lacrosse AND womens_lacrosse only)
+- If user says "men's basketball" or "women's soccer", then use the specific sport code (mens_basketball, womens_soccer) and DON'T use sport_pattern
+- The sport_pattern filter ensures we only get results from that specific sport type, not from other sports that might share the same stat name
 
 **Stat Name Matching:**
 - Match stat names EXACTLY as they appear in the schema above
@@ -164,7 +179,10 @@ parameters.
 - "assists" → "AST" for field hockey, "Assists" for others
 - "goals" → "Goals" (capitalize first letter)
 - Track & Field: Use exact event codes (e.g., "800" not "800m", "HJ" not "high jump")
-  - CRITICAL: "5k" or "5K" or "5000m" → MUST USE "5K (XC)" (include the space and parentheses)
+  - CRITICAL for 5K queries: Use stat_name="5K (XC)" for general 5K queries (system will search both men's "5000" and women's "5K (XC)" automatically)
+    - "fastest 5k" or "5000m" WITHOUT gender specified → stat_name="5K (XC)", sport="all"
+    - "5k men" or "men's 5k" → stat_name="5000", sport="mens_track_xc"
+    - "5k women" or "women's 5k" → stat_name="5K (XC)", sport="womens_track_xc"
   - "6k" or "6K" or "6000m" → "6K (XC)"
   - "8k" or "8K" or "8000m" → "8K (XC)"
   - "3 mile" → "3 MILE (XC)"
@@ -186,7 +204,10 @@ parameters.
 - Field events (HJ, LJ, TJ, PV, SP, DT, JT, HT) use "DESC" (higher/farther is better)
 - Limit: Default to 20 unless user specifies (e.g., "top 5")
 - Sport: If ambiguous, set to "all" and note in interpretation
-- Track/Cross Country Gender: If user doesn't specify "men's" or "women's", use "all" to search across both
+- **Gender: When gender is NOT specified, search across BOTH men's and women's teams by using "all" for the sport**
+  - Examples: "basketball" → sport="all", "soccer" → sport="all", "lacrosse" → sport="all"
+  - Only use specific gendered sports (mens_basketball, womens_basketball) when the user explicitly says "men's" or "women's"
+  - Sports that only have one gender (field_hockey=women only, baseball=men only, softball=women only) should use their specific sport code
 
 **Threshold Queries:**
 - "close to [N]" → min: N*0.95, max: N*1.05
@@ -207,11 +228,11 @@ Query: "best basketball scorers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_basketball",
+  "sport": "all",
   "stat_name": "PTS",
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding top scorers in men's basketball (career points)"
+  "interpretation": "Finding top scorers across both men's and women's basketball (career points)"
 }
 ```
 
@@ -219,11 +240,23 @@ Query: "top 5 soccer goal scorers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_soccer",
+  "sport": "all",
   "stat_name": "Goals",
   "ordering": "DESC",
   "limit": 5,
-  "interpretation": "Finding top 5 goal scorers in men's soccer"
+  "interpretation": "Finding top 5 goal scorers across both men's and women's soccer"
+}
+```
+
+Query: "best men's basketball scorers"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "mens_basketball",
+  "stat_name": "PTS",
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding top scorers in men's basketball (career points)"
 }
 ```
 
@@ -239,7 +272,23 @@ Query: "players close to 1000 points"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding players with 950-1050 career points (close to 1000)"
+  "interpretation": "Finding players with 950-1050 career points (close to 1000) across all sports"
+}
+```
+
+Query: "basketball players over 500 points"
+```json
+{
+  "intent": "filter_threshold",
+  "sport": "all",
+  "stat_name": "PTS",
+  "filters": {
+    "min_value": 500,
+    "sport_pattern": "basketball"
+  },
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding basketball players (both men's and women's) with over 500 career points"
 }
 ```
 
@@ -286,8 +335,8 @@ Query: "find Seth Anderson basketball"
 {
   "intent": "search_name",
   "player_name": "Seth Anderson",
-  "sport": "mens_basketball",
-  "interpretation": "Searching for player named Seth Anderson in basketball"
+  "sport": "all",
+  "interpretation": "Searching for player named Seth Anderson in basketball (checking both men's and women's teams)"
 }
 ```
 
@@ -295,14 +344,14 @@ Query: "best 800 meter runners"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_track_xc",
+  "sport": "all",
   "stat_name": "800",
   "filters": {
     "season": "2024-25"
   },
   "ordering": "ASC",
   "limit": 20,
-  "interpretation": "Finding fastest 800 meter runners (lower times are better)"
+  "interpretation": "Finding fastest 800 meter runners across both men's and women's teams (lower times are better)"
 }
 ```
 
@@ -310,14 +359,14 @@ Query: "top high jumpers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_track_xc",
+  "sport": "all",
   "stat_name": "HJ",
   "filters": {
     "season": "2024-25"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding best high jumpers (higher is better)"
+  "interpretation": "Finding best high jumpers across both men's and women's teams (higher is better)"
 }
 ```
 
@@ -325,14 +374,14 @@ Query: "squash players with most wins"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "squash_mens",
+  "sport": "all",
   "stat_name": "wins",
   "filters": {
     "season": "2025-26"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding squash players with most wins in 2025-26 season"
+  "interpretation": "Finding squash players with most wins in 2025-26 season across both men's and women's teams"
 }
 ```
 

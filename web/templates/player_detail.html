@@ -3,13 +3,13 @@
 {% block title %}{{ player.name }} - {{ sport_display }} - StatsTracker{% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="page-header" style="position: relative;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
         <div>
             <h1>{{ player.name }}</h1>
             <p>{{ sport_display }}{% if player.year %} - {{ player.year }}{% endif %}</p>
         </div>
-        <a href="{{ url_for('view_sport', sport_key=player.sport) }}" class="btn btn-secondary">
+        <a href="{{ url_for('view_sport', sport_key=player.sport) }}" class="btn btn-secondary" style="position: absolute; right: 0; top: 0;">
             ← Back to {{ sport_display }}
         </a>
     </div>
@@ -22,7 +22,7 @@
         {% for stat_name, stat_value in career_stats.items() %}
         <div class="stat-card" style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 8px; text-align: center;">
             <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px;">
-                {{ stat_value }}
+                {{ stat_value|format_decimal }}
             </div>
             <div style="font-size: 14px; opacity: 0.9;">
                 {{ stat_name }}
@@ -57,7 +57,7 @@
                 <tbody>
                     <tr>
                         {% for stat_value in season_data.stats.values() %}
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ stat_value }}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ stat_value|format_decimal }}</td>
                         {% endfor %}
                     </tr>
                 </tbody>

@@ -35,14 +35,23 @@ from main import load_config, generate_player_id  # noqa: E402
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "haverford-stats-tracker-2026"
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Paths
 PROJECT_ROOT = Path(__file__).parent.parent
 CSV_EXPORTS_DIR = PROJECT_ROOT / "csv_exports"
 CONFIG_PATH = PROJECT_ROOT / "config" / "config.yaml"
+
+# Configure logging from config file
+try:
+    from main import load_config as _load_config_for_logging
+    _config_for_logging = _load_config_for_logging(str(CONFIG_PATH))
+    log_level_str = _config_for_logging.get("logging", {}).get("level", "INFO")
+    log_level = getattr(logging, log_level_str.upper(), logging.INFO)
+    logging.basicConfig(level=log_level, force=True)
+except Exception:
+    # Fallback to INFO if config loading fails
+    logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 # Progress tracking
 progress_queues = {}  # session_id -> Queue
@@ -59,6 +68,35 @@ def get_sport_display_name(sport_key):
     if sport_key in SPORT_DISPLAY_NAMES:
         return SPORT_DISPLAY_NAMES[sport_key]
     return sport_key.replace("_", " ").title()
+
+
+def format_decimal(value, max_decimals=3):
+    """Format a number to limit decimal places to max_decimals."""
+    if value is None:
+        return value
+
+    # If it's already a string, try to convert to float
+    if isinstance(value, str):
+        try:
+            value = float(value)
+        except (ValueError, TypeError):
+            return value
+
+    # If it's a number, format it
+    if isinstance(value, (int, float)):
+        # Check if it's a whole number
+        if value == int(value):
+            return int(value)
+
+        # Format with up to max_decimals places, removing trailing zeros
+        formatted = f"{value:.{max_decimals}f}".rstrip('0').rstrip('.')
+        return formatted
+
+    return value
+
+
+# Register custom Jinja2 filter
+app.jinja_env.filters['format_decimal'] = format_decimal
 
 
 def create_progress_stream(session_id):
@@ -520,6 +558,7 @@ def view_sport(sport_key):
         # Build table data with seasons
         all_stat_names = set()
         player_seasons = []
+        all_seasons = set()
 
         for player in players:
             # Get all stats for this player
@@ -533,10 +572,14 @@ def view_sport(sport_key):
                 for stat_name in season_stats.keys():
                     all_stat_names.add(stat_name)
 
+                # Track available seasons
+                all_seasons.add(season)
+
                 # Add season row
                 player_seasons.append(
                     {
                         "player_name": player.name,
+                        "player_id": player.player_id,
                         "season": season,
                         "stats": season_stats,
                         "is_career": season == "Career",
@@ -585,14 +628,26 @@ def view_sport(sport_key):
         rows = []
 
         for entry in player_seasons:
-            row = {"Player Name": entry["player_name"], "Season": entry["season"]}
+            row = {
+                "Player Name": entry["player_name"],
+                "Season": entry["season"],
+                "player_id": entry.get("player_id")  # Include player_id for linking
+            }
             # Add stats
             for stat_name in sorted_stats:
                 row[stat_name] = entry["stats"].get(stat_name, "-")
             rows.append(row)
 
+        # Sort seasons: Career first, then most recent to oldest
+        sorted_seasons = sorted(
+            [s for s in all_seasons if s != "Career"],
+            reverse=True
+        )
+        if "Career" in all_seasons:
+            sorted_seasons.insert(0, "Career")
+
         sport_display = get_sport_display_name(sport_key)
-        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows, sport_key=sport_key)
+        return render_template("csv_viewer.html", filename=f"{sport_display} Stats", headers=headers, rows=rows, sport_key=sport_key, available_seasons=sorted_seasons)
 
     except Exception as e:
         logger.error(f"Error loading sport data: {e}")
@@ -1649,7 +1704,8 @@ def api_simulate_gameday():
         gameday_checker = GamedayChecker()
         database = PlayerDatabase(db_path=str(PROJECT_ROOT / "data" / "stats.db"))
         milestone_config = config.get("milestones", {})
-        milestone_detector = MilestoneDetector(database, milestone_config)
+        proximity_config = config.get("milestone_proximity", {})
+        milestone_detector = MilestoneDetector(database, milestone_config, proximity_config)
 
         # Get games for the specified date
         games = gameday_checker.get_games_for_date(check_date)
@@ -1670,13 +1726,13 @@ def api_simulate_gameday():
                 sports_with_games.add(sport_key)
 
         # Check milestones for players on teams with games
-        proximity_threshold = config.get("notifications", {}).get("proximity_threshold", 10)
+        # Note: proximity thresholds are now configured per-sport in milestone_proximity config section
         proximities_list = []
 
         if sports_with_games:
             for sport_key in sports_with_games:
                 sport_proximities = milestone_detector.check_all_players_milestones(
-                    sport=sport_key, proximity_threshold=proximity_threshold
+                    sport=sport_key
                 )
 
                 for player_id, proximities in sport_proximities.items():
@@ -1820,7 +1876,8 @@ def api_send_test_email():
         gameday_checker = GamedayChecker()
         database = PlayerDatabase(db_path=str(PROJECT_ROOT / "data" / "stats.db"))
         milestone_config = config.get("milestones", {})
-        milestone_detector = MilestoneDetector(database, milestone_config)
+        proximity_config = config.get("milestone_proximity", {})
+        milestone_detector = MilestoneDetector(database, milestone_config, proximity_config)
 
         games = gameday_checker.get_games_for_date(check_date)
 
@@ -1837,13 +1894,13 @@ def api_send_test_email():
 
                 sports_with_games.add(sport_key)
 
-        proximity_threshold = config.get("notifications", {}).get("proximity_threshold", 10)
+        # Note: proximity thresholds are now configured per-sport in milestone_proximity config section
         proximities_list = []
 
         if sports_with_games:
             for sport_key in sports_with_games:
                 sport_proximities = milestone_detector.check_all_players_milestones(
-                    sport=sport_key, proximity_threshold=proximity_threshold
+                    sport=sport_key
                 )
                 for player_id, proximities in sport_proximities.items():
                     proximities_list.extend(proximities)
@@ -2181,8 +2238,9 @@ def api_run_daily_workflow():
                         sports_with_games.add(sport_key)
 
                     milestone_config = config.get("milestones", {})
-                    milestone_detector = MilestoneDetector(database, milestone_config)
-                    proximity_threshold = config.get("notifications", {}).get("proximity_threshold", 10)
+                    proximity_config = config.get("milestone_proximity", {})
+                    milestone_detector = MilestoneDetector(database, milestone_config, proximity_config)
+                    # Note: proximity thresholds are now configured per-sport in milestone_proximity config section
 
                     for sport_key in sports_with_games:
                         send_progress(
@@ -2193,7 +2251,7 @@ def api_run_daily_workflow():
                             },
                         )
                         sport_proximities = milestone_detector.check_all_players_milestones(
-                            sport=sport_key, proximity_threshold=proximity_threshold
+                            sport=sport_key
                         )
                         for player_id, proximities in sport_proximities.items():
                             proximities_list.extend(proximities)

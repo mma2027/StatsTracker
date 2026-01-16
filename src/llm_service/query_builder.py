@@ -120,6 +120,66 @@ class SemanticQueryBuilder:
             logger.warning("No stat_name provided for ranking query")
             return []
 
+        # Special handling for 5K queries across both genders
+        # Men's track uses "5000" while women's XC uses "5K (XC)"
+        if sport == "all" and stat_name in ["5K (XC)", "5000"]:
+            logger.info("Handling cross-gender 5K query - searching both '5000' and '5K (XC)'")
+
+            # Query men's 5000
+            mens_results = self.database.semantic_query(
+                {
+                    "intent": "rank_by_stat",
+                    "sport": None,
+                    "stat_name": "5000",
+                    "filters": {**filters, "sport_pattern": "mens_track"},
+                    "ordering": ordering,
+                    "limit": limit,
+                }
+            )
+
+            # Query women's 5K (XC)
+            womens_results = self.database.semantic_query(
+                {
+                    "intent": "rank_by_stat",
+                    "sport": None,
+                    "stat_name": "5K (XC)",
+                    "filters": {**filters, "sport_pattern": "womens_track"},
+                    "ordering": ordering,
+                    "limit": limit,
+                }
+            )
+
+            # Merge and sort results
+            all_results = mens_results + womens_results
+
+            # Sort by stat value (convert to float for comparison)
+            def get_sort_value(result):
+                val = result.get("stat_value")
+                if val is None:
+                    return float("inf") if ordering == "ASC" else float("-inf")
+                # Handle time formats like "16:49.87" (MM:SS.ms)
+                if isinstance(val, str) and ":" in val:
+                    parts = val.split(":")
+                    try:
+                        minutes = float(parts[0])
+                        seconds = float(parts[1])
+                        return minutes * 60 + seconds
+                    except (ValueError, IndexError):
+                        return float("inf") if ordering == "ASC" else float("-inf")
+                try:
+                    return float(val)
+                except (ValueError, TypeError):
+                    return float("inf") if ordering == "ASC" else float("-inf")
+
+            all_results.sort(key=get_sort_value, reverse=(ordering == "DESC"))
+            results = all_results[:limit]
+
+            logger.info(
+                f"Combined 5K query returned {len(results)} results "
+                f"(men's: {len(mens_results)}, women's: {len(womens_results)})"
+            )
+            return results
+
         # Use database's semantic_query method
         results = self.database.semantic_query(
             {

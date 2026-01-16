@@ -12,7 +12,30 @@
       "Bash(for i in {1..10})",
       "Bash(do)",
       "Bash(echo:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(find:*)",
+      "Bash(pip3 install:*)",
+      "Bash(source:*)",
+      "Bash(xattr -d com.apple.quarantine:*)",
+      "Bash(/Users/maxfieldma/.wdm/drivers/chromedriver/mac64/144.0.7559.31/chromedriver-mac-arm64/chromedriver:*)",
+      "Bash(/Applications/Google Chrome.app/Contents/MacOS/Google Chrome:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill:*)",
+      "Bash(./venv/bin/python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(kill:*)",
+      "Bash(sqlite3:*)",
+      "Bash(black:*)",
+      "Bash(pytest:*)",
+      "Bash(./venv/bin/python3:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)",
+      "Bash(git stash pop:*)",
+      "Bash(open http://localhost:5001)",
+      "Bash(./venv/bin/black:*)",
+      "Bash(. venv/bin/activate)"
     ]
   }
 }
