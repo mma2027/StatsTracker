@@ -186,7 +186,10 @@ parameters.
 - Field events (HJ, LJ, TJ, PV, SP, DT, JT, HT) use "DESC" (higher/farther is better)
 - Limit: Default to 20 unless user specifies (e.g., "top 5")
 - Sport: If ambiguous, set to "all" and note in interpretation
-- Track/Cross Country Gender: If user doesn't specify "men's" or "women's", use "all" to search across both
+- **Gender: When gender is NOT specified, search across BOTH men's and women's teams by using "all" for the sport**
+  - Examples: "basketball" → sport="all", "soccer" → sport="all", "lacrosse" → sport="all"
+  - Only use specific gendered sports (mens_basketball, womens_basketball) when the user explicitly says "men's" or "women's"
+  - Sports that only have one gender (field_hockey=women only, baseball=men only, softball=women only) should use their specific sport code
 
 **Threshold Queries:**
 - "close to [N]" → min: N*0.95, max: N*1.05
@@ -207,11 +210,11 @@ Query: "best basketball scorers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_basketball",
+  "sport": "all",
   "stat_name": "PTS",
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding top scorers in men's basketball (career points)"
+  "interpretation": "Finding top scorers across both men's and women's basketball (career points)"
 }
 ```
 
@@ -219,11 +222,23 @@ Query: "top 5 soccer goal scorers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_soccer",
+  "sport": "all",
   "stat_name": "Goals",
   "ordering": "DESC",
   "limit": 5,
-  "interpretation": "Finding top 5 goal scorers in men's soccer"
+  "interpretation": "Finding top 5 goal scorers across both men's and women's soccer"
+}
+```
+
+Query: "best men's basketball scorers"
+```json
+{
+  "intent": "rank_by_stat",
+  "sport": "mens_basketball",
+  "stat_name": "PTS",
+  "ordering": "DESC",
+  "limit": 20,
+  "interpretation": "Finding top scorers in men's basketball (career points)"
 }
 ```
 
@@ -286,8 +301,8 @@ Query: "find Seth Anderson basketball"
 {
   "intent": "search_name",
   "player_name": "Seth Anderson",
-  "sport": "mens_basketball",
-  "interpretation": "Searching for player named Seth Anderson in basketball"
+  "sport": "all",
+  "interpretation": "Searching for player named Seth Anderson in basketball (checking both men's and women's teams)"
 }
 ```
 
@@ -295,14 +310,14 @@ Query: "best 800 meter runners"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_track_xc",
+  "sport": "all",
   "stat_name": "800",
   "filters": {
     "season": "2024-25"
   },
   "ordering": "ASC",
   "limit": 20,
-  "interpretation": "Finding fastest 800 meter runners (lower times are better)"
+  "interpretation": "Finding fastest 800 meter runners across both men's and women's teams (lower times are better)"
 }
 ```
 
@@ -310,14 +325,14 @@ Query: "top high jumpers"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "mens_track_xc",
+  "sport": "all",
   "stat_name": "HJ",
   "filters": {
     "season": "2024-25"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding best high jumpers (higher is better)"
+  "interpretation": "Finding best high jumpers across both men's and women's teams (higher is better)"
 }
 ```
 
@@ -325,14 +340,14 @@ Query: "squash players with most wins"
 ```json
 {
   "intent": "rank_by_stat",
-  "sport": "squash_mens",
+  "sport": "all",
   "stat_name": "wins",
   "filters": {
     "season": "2025-26"
   },
   "ordering": "DESC",
   "limit": 20,
-  "interpretation": "Finding squash players with most wins in 2025-26 season"
+  "interpretation": "Finding squash players with most wins in 2025-26 season across both men's and women's teams"
 }
 ```
 
