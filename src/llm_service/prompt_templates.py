@@ -179,7 +179,10 @@ parameters.
 - "assists" → "AST" for field hockey, "Assists" for others
 - "goals" → "Goals" (capitalize first letter)
 - Track & Field: Use exact event codes (e.g., "800" not "800m", "HJ" not "high jump")
-  - CRITICAL: "5k" or "5K" or "5000m" → MUST USE "5K (XC)" (include the space and parentheses)
+  - CRITICAL for 5K queries: Use stat_name="5K (XC)" for general 5K queries (system will search both men's "5000" and women's "5K (XC)" automatically)
+    - "fastest 5k" or "5000m" WITHOUT gender specified → stat_name="5K (XC)", sport="all"
+    - "5k men" or "men's 5k" → stat_name="5000", sport="mens_track_xc"
+    - "5k women" or "women's 5k" → stat_name="5K (XC)", sport="womens_track_xc"
   - "6k" or "6K" or "6000m" → "6K (XC)"
   - "8k" or "8K" or "8000m" → "8K (XC)"
   - "3 mile" → "3 MILE (XC)"

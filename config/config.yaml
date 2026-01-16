@@ -5,7 +5,7 @@ email:
   sender_password: oenp drlw zixn wdjr
   recipients:
   - mma@haverford.edu
-  - hzhang3@haverford.edu
+  - mnissenfel@haverford.edu
 database:
   type: sqlite
   path: data/stats.db
@@ -477,7 +477,7 @@ notifications:
   include_historical: false
   auto_update_stats: false
 logging:
-  level: INFO
+  level: DEBUG
   file: logs/statstrack.log
   console: true
 cache:
@@ -489,7 +489,6 @@ llm:
   timeout: 10
   max_tokens: 1024
   temperature: 0.1
-  # api_key stored in .env as ANTHROPIC_API_KEY for security
 semantic_search:
   enabled: true
   cache_ttl: 3600
@@ -575,12 +574,8 @@ milestone_proximity:
     Block Assists: 10
     Block Solos: 10
     PTS: 10
+    S: 10
   squash_mens:
     Wins: 2
   squash_womens:
     Wins: 2
-  cricket:
-    Runs: 10
-    Wickets: 10
-    Catches: 10
-    Stumpings: 10

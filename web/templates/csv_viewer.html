@@ -44,13 +44,28 @@
 }
 </style>
 
-<!-- Basic Search Bar -->
-<div class="search-container" style="margin-bottom: 20px;">
-    <input type="text"
-           id="player-search"
-           placeholder="🔍 Filter table by player name or stats..."
-           style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
-    <p id="search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+<!-- Filters Section -->
+<div style="display: flex; gap: 20px; margin-bottom: 20px; align-items: flex-end;">
+    <!-- Basic Search Bar -->
+    <div class="search-container" style="flex: 1;">
+        <label for="player-search" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Search Players/Stats:</label>
+        <input type="text"
+               id="player-search"
+               placeholder="🔍 Filter table by player name or stats..."
+               style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box;">
+        <p id="search-results" style="margin-top: 10px; color: #666; font-size: 14px;"></p>
+    </div>
+
+    <!-- Season Filter -->
+    <div style="min-width: 200px;">
+        <label for="season-filter" style="display: block; margin-bottom: 8px; font-weight: 500; color: #333;">Filter by Season:</label>
+        <select id="season-filter" style="width: 100%; padding: 12px; font-size: 16px; border: 2px solid #ddd; border-radius: 8px; box-sizing: border-box; background-color: white;">
+            <option value="all">All Seasons</option>
+            {% for season in available_seasons %}
+            <option value="{{ season }}">{{ season }}</option>
+            {% endfor %}
+        </select>
+    </div>
 </div>
 
 <div class="csv-viewer">
@@ -68,9 +83,15 @@
             </thead>
             <tbody>
                 {% for row in rows %}
-                <tr>
+                <tr data-season="{{ row['Season'] }}">
                     {% for header in headers %}
-                    <td>{{ row[header] or '-' }}</td>
+                    <td>
+                        {% if header == 'Player Name' and row.get('player_id') %}
+                            <a href="{{ url_for('player_detail', player_id=row['player_id']) }}" style="color: #667eea; text-decoration: none; font-weight: 500;">{{ row[header] }}</a>
+                        {% else %}
+                            {{ row[header] or '-' }}
+                        {% endif %}
+                    </td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
@@ -220,23 +241,37 @@ document.addEventListener('DOMContentLoaded', function() {
         semanticList.innerHTML = `<p style="padding: 20px; text-align: center; color: #cc0000;">${message}</p>`;
     }
 
-    // Basic table filter search
+    // Basic table filter search and season filter
     const searchInput = document.getElementById('player-search');
     const searchResults = document.getElementById('search-results');
+    const seasonFilter = document.getElementById('season-filter');
     const table = document.querySelector('.sortable-table');
     const tableBody = table.querySelector('tbody');
     const tableRows = Array.from(tableBody.querySelectorAll('tr'));
     const totalRows = tableRows.length;
     const footerText = document.getElementById('table-footer-text');
 
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
+    // Filter function that considers both search and season
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        const seasonValue = seasonFilter.value;
         let visibleCount = 0;
 
         tableRows.forEach(function(row) {
             const rowText = row.textContent.toLowerCase();
+            const season = row.getAttribute('data-season');
 
-            if (rowText.includes(searchTerm)) {
+            // Check search match
+            const matchesSearch = searchTerm === '' || rowText.includes(searchTerm);
+
+            // Check season match
+            let matchesSeason = true;
+            if (seasonValue !== 'all') {
+                // Match specific season (including "Career")
+                matchesSeason = season === seasonValue;
+            }
+
+            if (matchesSearch && matchesSeason) {
                 row.style.display = '';
                 visibleCount++;
             } else {
@@ -245,14 +280,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         // Update results text
-        if (searchTerm === '') {
+        if (searchTerm === '' && seasonValue === 'all') {
             searchResults.textContent = '';
             footerText.textContent = `Showing ${totalRows} rows`;
         } else {
             searchResults.textContent = `Found ${visibleCount} matching rows`;
             footerText.textContent = `Showing ${visibleCount} of ${totalRows} rows`;
         }
-    });
+    }
+
+    // Season filter handler
+    seasonFilter.addEventListener('change', filterTable);
+
+    // Search input handler
+    searchInput.addEventListener('input', filterTable);
 
     // Table sorting functionality
     const headers = table.querySelectorAll('th.sortable');

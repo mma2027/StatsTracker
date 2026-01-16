@@ -97,8 +97,18 @@ class MilestoneDetector:
         for milestone in relevant_milestones:
             proximity = self._calculate_proximity(player_stats, milestone)
 
-            # Get stat-specific proximity threshold
-            stat_threshold = self._get_proximity_threshold(milestone.sport, milestone.stat_name, proximity_threshold)
+            # Get stat-specific proximity threshold from config
+            # Note: No default passed - uses sport-specific config or fallback of 10
+            stat_threshold = self._get_proximity_threshold(milestone.sport, milestone.stat_name)
+
+            # DEBUG: Log threshold for ALL milestones for player 145d23d5a40a8c2b (Audrey)
+            if proximity and player_id == "145d23d5a40a8c2b":
+                logger.debug(
+                    f"Player {player_id}: {milestone.stat_name} milestone {milestone.threshold} - "
+                    f"current: {proximity.current_value}, distance: {proximity.distance}, "
+                    f"threshold: {stat_threshold}, is_close: {self._is_close_to_milestone(proximity, stat_threshold)}, "
+                    f"has_passed: {self._has_passed_milestone(proximity)}"
+                )
 
             # Only include if close AND not already passed
             if (
@@ -222,10 +232,6 @@ class MilestoneDetector:
         if isinstance(proximity.distance, (int, float)):
             if proximity.distance <= threshold and proximity.distance > 0:
                 return True
-
-        # Or check if very close by percentage
-        if proximity.percentage >= 90:
-            return True
 
         return False
 
