@@ -174,7 +174,10 @@ class SemanticQueryBuilder:
             all_results.sort(key=get_sort_value, reverse=(ordering == "DESC"))
             results = all_results[:limit]
 
-            logger.info(f"Combined 5K query returned {len(results)} results (men's: {len(mens_results)}, women's: {len(womens_results)})")
+            logger.info(
+                f"Combined 5K query returned {len(results)} results "
+                f"(men's: {len(mens_results)}, women's: {len(womens_results)})"
+            )
             return results
 
         # Use database's semantic_query method
