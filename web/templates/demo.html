@@ -307,7 +307,8 @@ document.getElementById('btn-simulate-gameday').addEventListener('click', async 
 
             // Display email preview
             document.getElementById('email-subject').textContent = data.email_subject;
-            document.getElementById('email-preview').innerHTML = data.email_html;
+            const iframe = document.getElementById('email-preview');
+            iframe.srcdoc = data.email_html || '<p>No email content</p>';
 
             results.style.display = 'block';
             button.textContent = '📅 Simulate Gameday';
