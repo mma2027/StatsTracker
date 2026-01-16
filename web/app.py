@@ -1119,9 +1119,6 @@ def api_update_stats():
                             },
                         )
 
-                # Clean up Playwright fetcher
-                tfrr_fetcher.close()
-
                 # Final success message
                 if csv_exports_successful > 0:
                     send_progress(
