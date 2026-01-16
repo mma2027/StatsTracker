@@ -164,11 +164,11 @@ class SemanticQueryBuilder:
                         minutes = float(parts[0])
                         seconds = float(parts[1])
                         return minutes * 60 + seconds
-                    except:
+                    except (ValueError, IndexError):
                         return float("inf") if ordering == "ASC" else float("-inf")
                 try:
                     return float(val)
-                except:
+                except (ValueError, TypeError):
                     return float("inf") if ordering == "ASC" else float("-inf")
 
             all_results.sort(key=get_sort_value, reverse=(ordering == "DESC"))
